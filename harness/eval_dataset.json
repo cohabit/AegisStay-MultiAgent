@@ -1,0 +1,22 @@
+[
+  {"id":"H01","name":"单轮送毛巾","turns":["1208 房间送一条毛巾"],"expected_intent":"送物","expected_dept":"楼层保洁","should_create_ticket":true},
+  {"id":"H02","name":"单轮送水","turns":["1506 请送两瓶矿泉水"],"expected_intent":"送物","expected_dept":"楼层保洁","should_create_ticket":true},
+  {"id":"H03","name":"送吹风机","turns":["0818 房间需要一个吹风机"],"expected_intent":"送物","expected_dept":"楼层保洁","should_create_ticket":true},
+  {"id":"H04","name":"多轮补全送物","turns":["我需要两个枕头","1208"],"expected_intent":"送物","expected_dept":"楼层保洁","should_create_ticket":true},
+  {"id":"H05","name":"空调报修","turns":["1208 房间空调坏了"],"expected_intent":"工程报修","expected_dept":"工程部","should_create_ticket":true},
+  {"id":"H06","name":"漏水报修","turns":["1506 卫生间漏水，请安排维修"],"expected_intent":"工程报修","expected_dept":"工程部","should_create_ticket":true},
+  {"id":"H07","name":"灯具报修","turns":["0818 房间的灯坏了"],"expected_intent":"工程报修","expected_dept":"工程部","should_create_ticket":true},
+  {"id":"H08","name":"无房号报修补全","turns":["房间空调坏了","1208"],"expected_intent":"工程报修","expected_dept":"工程部","should_create_ticket":true},
+  {"id":"H09","name":"普通投诉","turns":["1208 我要投诉房间噪音"],"expected_intent":"客诉紧急","expected_dept":"大堂经理","should_create_ticket":true},
+  {"id":"H10","name":"暴怒客诉","turns":["1506 房间太差了，我非常生气，马上处理"],"expected_intent":"客诉紧急","expected_dept":"大堂经理","should_create_ticket":true},
+  {"id":"H11","name":"多轮客诉补全","turns":["我想投诉隔壁噪音，无法忍受","0818"],"expected_intent":"客诉紧急","expected_dept":"大堂经理","should_create_ticket":true},
+  {"id":"H12","name":"早餐 FAQ","turns":["早餐几点开始？"],"expected_intent":"酒店咨询","expected_dept":null,"should_create_ticket":false},
+  {"id":"H13","name":"退房 FAQ","turns":["退房时间是几点？"],"expected_intent":"酒店咨询","expected_dept":null,"should_create_ticket":false},
+  {"id":"H14","name":"Wi-Fi FAQ","turns":["无线网络密码在哪里？"],"expected_intent":"酒店咨询","expected_dept":null,"should_create_ticket":false},
+  {"id":"H15","name":"健身房 FAQ","turns":["健身房几点开放？"],"expected_intent":"酒店咨询","expected_dept":null,"should_create_ticket":false},
+  {"id":"H16","name":"押金 FAQ","turns":["入住需要押金吗？"],"expected_intent":"酒店咨询","expected_dept":null,"should_create_ticket":false},
+  {"id":"H17","name":"发票 FAQ","turns":["退房可以开发票吗？"],"expected_intent":"酒店咨询","expected_dept":null,"should_create_ticket":false},
+  {"id":"H18","name":"停车 FAQ","turns":["酒店有停车场吗？"],"expected_intent":"酒店咨询","expected_dept":null,"should_create_ticket":false},
+  {"id":"H19","name":"范围外闲聊","turns":["帮我写一首关于三亚的诗"],"expected_intent":"其他","expected_dept":null,"should_create_ticket":false},
+  {"id":"H20","name":"范围外天气","turns":["明天北京天气怎么样？"],"expected_intent":"其他","expected_dept":null,"should_create_ticket":false}
+]

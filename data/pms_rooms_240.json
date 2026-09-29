@@ -1,0 +1,2402 @@
+{
+  "101": {
+    "room_no": "101",
+    "floor": "1",
+    "room_type": "标准双床房",
+    "guest_name": "张女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "102": {
+    "room_no": "102",
+    "floor": "1",
+    "room_type": "标准双床房",
+    "guest_name": "高先生",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "103": {
+    "room_no": "103",
+    "floor": "1",
+    "room_type": "标准双床房",
+    "guest_name": "黄先生",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "104": {
+    "room_no": "104",
+    "floor": "1",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "105": {
+    "room_no": "105",
+    "floor": "1",
+    "room_type": "标准双床房",
+    "guest_name": "胡女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "106": {
+    "room_no": "106",
+    "floor": "1",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "107": {
+    "room_no": "107",
+    "floor": "1",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "108": {
+    "room_no": "108",
+    "floor": "1",
+    "room_type": "标准双床房",
+    "guest_name": "陈先生",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "109": {
+    "room_no": "109",
+    "floor": "1",
+    "room_type": "高级大床房",
+    "guest_name": "赵女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "110": {
+    "room_no": "110",
+    "floor": "1",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "111": {
+    "room_no": "111",
+    "floor": "1",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "112": {
+    "room_no": "112",
+    "floor": "1",
+    "room_type": "高级大床房",
+    "guest_name": "马先生",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "113": {
+    "room_no": "113",
+    "floor": "1",
+    "room_type": "高级大床房",
+    "guest_name": "孙先生",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "114": {
+    "room_no": "114",
+    "floor": "1",
+    "room_type": "高级大床房",
+    "guest_name": "周先生",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "115": {
+    "room_no": "115",
+    "floor": "1",
+    "room_type": "高级大床房",
+    "guest_name": "胡女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "116": {
+    "room_no": "116",
+    "floor": "1",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "117": {
+    "room_no": "117",
+    "floor": "1",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "118": {
+    "room_no": "118",
+    "floor": "1",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "119": {
+    "room_no": "119",
+    "floor": "1",
+    "room_type": "行政大床房",
+    "guest_name": "刘先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "120": {
+    "room_no": "120",
+    "floor": "1",
+    "room_type": "行政大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "维修中",
+    "inventory_status": "充裕"
+  },
+  "121": {
+    "room_no": "121",
+    "floor": "1",
+    "room_type": "行政大床房",
+    "guest_name": "高先生",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "122": {
+    "room_no": "122",
+    "floor": "1",
+    "room_type": "行政大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "123": {
+    "room_no": "123",
+    "floor": "1",
+    "room_type": "豪华景观套房",
+    "guest_name": "李女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "124": {
+    "room_no": "124",
+    "floor": "1",
+    "room_type": "豪华景观套房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "201": {
+    "room_no": "201",
+    "floor": "2",
+    "room_type": "标准双床房",
+    "guest_name": "徐先生",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "202": {
+    "room_no": "202",
+    "floor": "2",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "203": {
+    "room_no": "203",
+    "floor": "2",
+    "room_type": "标准双床房",
+    "guest_name": "吴先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "204": {
+    "room_no": "204",
+    "floor": "2",
+    "room_type": "标准双床房",
+    "guest_name": "林女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "205": {
+    "room_no": "205",
+    "floor": "2",
+    "room_type": "标准双床房",
+    "guest_name": "陈女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "206": {
+    "room_no": "206",
+    "floor": "2",
+    "room_type": "标准双床房",
+    "guest_name": "刘女士",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "207": {
+    "room_no": "207",
+    "floor": "2",
+    "room_type": "标准双床房",
+    "guest_name": "胡女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "208": {
+    "room_no": "208",
+    "floor": "2",
+    "room_type": "标准双床房",
+    "guest_name": "赵女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "209": {
+    "room_no": "209",
+    "floor": "2",
+    "room_type": "高级大床房",
+    "guest_name": "刘女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "210": {
+    "room_no": "210",
+    "floor": "2",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "211": {
+    "room_no": "211",
+    "floor": "2",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "维修中",
+    "inventory_status": "充裕"
+  },
+  "212": {
+    "room_no": "212",
+    "floor": "2",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "213": {
+    "room_no": "213",
+    "floor": "2",
+    "room_type": "高级大床房",
+    "guest_name": "赵女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "214": {
+    "room_no": "214",
+    "floor": "2",
+    "room_type": "高级大床房",
+    "guest_name": "孙先生",
+    "member_level": "携程黑金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "215": {
+    "room_no": "215",
+    "floor": "2",
+    "room_type": "高级大床房",
+    "guest_name": "张女士",
+    "member_level": "携程黑金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "216": {
+    "room_no": "216",
+    "floor": "2",
+    "room_type": "高级大床房",
+    "guest_name": "周先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "217": {
+    "room_no": "217",
+    "floor": "2",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "218": {
+    "room_no": "218",
+    "floor": "2",
+    "room_type": "高级大床房",
+    "guest_name": "郭先生",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "219": {
+    "room_no": "219",
+    "floor": "2",
+    "room_type": "行政大床房",
+    "guest_name": "郭先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "220": {
+    "room_no": "220",
+    "floor": "2",
+    "room_type": "行政大床房",
+    "guest_name": "杨先生",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "221": {
+    "room_no": "221",
+    "floor": "2",
+    "room_type": "行政大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "222": {
+    "room_no": "222",
+    "floor": "2",
+    "room_type": "行政大床房",
+    "guest_name": "何女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "223": {
+    "room_no": "223",
+    "floor": "2",
+    "room_type": "豪华景观套房",
+    "guest_name": "林先生",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "224": {
+    "room_no": "224",
+    "floor": "2",
+    "room_type": "豪华景观套房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "301": {
+    "room_no": "301",
+    "floor": "3",
+    "room_type": "标准双床房",
+    "guest_name": "王先生",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "302": {
+    "room_no": "302",
+    "floor": "3",
+    "room_type": "标准双床房",
+    "guest_name": "郭先生",
+    "member_level": "携程黑金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "303": {
+    "room_no": "303",
+    "floor": "3",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "304": {
+    "room_no": "304",
+    "floor": "3",
+    "room_type": "标准双床房",
+    "guest_name": "黄女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "305": {
+    "room_no": "305",
+    "floor": "3",
+    "room_type": "标准双床房",
+    "guest_name": "朱女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "306": {
+    "room_no": "306",
+    "floor": "3",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "307": {
+    "room_no": "307",
+    "floor": "3",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "308": {
+    "room_no": "308",
+    "floor": "3",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "维修中",
+    "inventory_status": "充裕"
+  },
+  "309": {
+    "room_no": "309",
+    "floor": "3",
+    "room_type": "高级大床房",
+    "guest_name": "马女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "310": {
+    "room_no": "310",
+    "floor": "3",
+    "room_type": "高级大床房",
+    "guest_name": "高女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "311": {
+    "room_no": "311",
+    "floor": "3",
+    "room_type": "高级大床房",
+    "guest_name": "王女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "312": {
+    "room_no": "312",
+    "floor": "3",
+    "room_type": "高级大床房",
+    "guest_name": "高先生",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "313": {
+    "room_no": "313",
+    "floor": "3",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "314": {
+    "room_no": "314",
+    "floor": "3",
+    "room_type": "高级大床房",
+    "guest_name": "郭女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "315": {
+    "room_no": "315",
+    "floor": "3",
+    "room_type": "高级大床房",
+    "guest_name": "马先生",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "316": {
+    "room_no": "316",
+    "floor": "3",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "317": {
+    "room_no": "317",
+    "floor": "3",
+    "room_type": "高级大床房",
+    "guest_name": "朱女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "318": {
+    "room_no": "318",
+    "floor": "3",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "维修中",
+    "inventory_status": "充裕"
+  },
+  "319": {
+    "room_no": "319",
+    "floor": "3",
+    "room_type": "行政大床房",
+    "guest_name": "高先生",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "320": {
+    "room_no": "320",
+    "floor": "3",
+    "room_type": "行政大床房",
+    "guest_name": "何先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "321": {
+    "room_no": "321",
+    "floor": "3",
+    "room_type": "行政大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "322": {
+    "room_no": "322",
+    "floor": "3",
+    "room_type": "行政大床房",
+    "guest_name": "王先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "323": {
+    "room_no": "323",
+    "floor": "3",
+    "room_type": "豪华景观套房",
+    "guest_name": "林先生",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "324": {
+    "room_no": "324",
+    "floor": "3",
+    "room_type": "豪华景观套房",
+    "guest_name": "何女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "401": {
+    "room_no": "401",
+    "floor": "4",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "402": {
+    "room_no": "402",
+    "floor": "4",
+    "room_type": "标准双床房",
+    "guest_name": "马先生",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "403": {
+    "room_no": "403",
+    "floor": "4",
+    "room_type": "标准双床房",
+    "guest_name": "王先生",
+    "member_level": "携程黑金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "404": {
+    "room_no": "404",
+    "floor": "4",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "维修中",
+    "inventory_status": "充裕"
+  },
+  "405": {
+    "room_no": "405",
+    "floor": "4",
+    "room_type": "标准双床房",
+    "guest_name": "杨女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "406": {
+    "room_no": "406",
+    "floor": "4",
+    "room_type": "标准双床房",
+    "guest_name": "黄女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "407": {
+    "room_no": "407",
+    "floor": "4",
+    "room_type": "标准双床房",
+    "guest_name": "周先生",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "408": {
+    "room_no": "408",
+    "floor": "4",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "409": {
+    "room_no": "409",
+    "floor": "4",
+    "room_type": "高级大床房",
+    "guest_name": "陈女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "410": {
+    "room_no": "410",
+    "floor": "4",
+    "room_type": "高级大床房",
+    "guest_name": "吴女士",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "411": {
+    "room_no": "411",
+    "floor": "4",
+    "room_type": "高级大床房",
+    "guest_name": "吴女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "412": {
+    "room_no": "412",
+    "floor": "4",
+    "room_type": "高级大床房",
+    "guest_name": "朱女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "413": {
+    "room_no": "413",
+    "floor": "4",
+    "room_type": "高级大床房",
+    "guest_name": "吴先生",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "414": {
+    "room_no": "414",
+    "floor": "4",
+    "room_type": "高级大床房",
+    "guest_name": "张先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "415": {
+    "room_no": "415",
+    "floor": "4",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "416": {
+    "room_no": "416",
+    "floor": "4",
+    "room_type": "高级大床房",
+    "guest_name": "孙先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "417": {
+    "room_no": "417",
+    "floor": "4",
+    "room_type": "高级大床房",
+    "guest_name": "李女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "418": {
+    "room_no": "418",
+    "floor": "4",
+    "room_type": "高级大床房",
+    "guest_name": "高女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "419": {
+    "room_no": "419",
+    "floor": "4",
+    "room_type": "行政大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "420": {
+    "room_no": "420",
+    "floor": "4",
+    "room_type": "行政大床房",
+    "guest_name": "刘先生",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "421": {
+    "room_no": "421",
+    "floor": "4",
+    "room_type": "行政大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "422": {
+    "room_no": "422",
+    "floor": "4",
+    "room_type": "行政大床房",
+    "guest_name": "朱先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "423": {
+    "room_no": "423",
+    "floor": "4",
+    "room_type": "豪华景观套房",
+    "guest_name": "李女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "424": {
+    "room_no": "424",
+    "floor": "4",
+    "room_type": "豪华景观套房",
+    "guest_name": "周先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "501": {
+    "room_no": "501",
+    "floor": "5",
+    "room_type": "标准双床房",
+    "guest_name": "吴先生",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "502": {
+    "room_no": "502",
+    "floor": "5",
+    "room_type": "标准双床房",
+    "guest_name": "马女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "503": {
+    "room_no": "503",
+    "floor": "5",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "维修中",
+    "inventory_status": "充裕"
+  },
+  "504": {
+    "room_no": "504",
+    "floor": "5",
+    "room_type": "标准双床房",
+    "guest_name": "吴先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "505": {
+    "room_no": "505",
+    "floor": "5",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "506": {
+    "room_no": "506",
+    "floor": "5",
+    "room_type": "标准双床房",
+    "guest_name": "罗先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "507": {
+    "room_no": "507",
+    "floor": "5",
+    "room_type": "标准双床房",
+    "guest_name": "朱先生",
+    "member_level": "携程黑金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "508": {
+    "room_no": "508",
+    "floor": "5",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "509": {
+    "room_no": "509",
+    "floor": "5",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "510": {
+    "room_no": "510",
+    "floor": "5",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "511": {
+    "room_no": "511",
+    "floor": "5",
+    "room_type": "高级大床房",
+    "guest_name": "朱先生",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "512": {
+    "room_no": "512",
+    "floor": "5",
+    "room_type": "高级大床房",
+    "guest_name": "赵女士",
+    "member_level": "携程黑金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "513": {
+    "room_no": "513",
+    "floor": "5",
+    "room_type": "高级大床房",
+    "guest_name": "周先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "514": {
+    "room_no": "514",
+    "floor": "5",
+    "room_type": "高级大床房",
+    "guest_name": "刘女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "515": {
+    "room_no": "515",
+    "floor": "5",
+    "room_type": "高级大床房",
+    "guest_name": "杨女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "516": {
+    "room_no": "516",
+    "floor": "5",
+    "room_type": "高级大床房",
+    "guest_name": "胡女士",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "517": {
+    "room_no": "517",
+    "floor": "5",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "518": {
+    "room_no": "518",
+    "floor": "5",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "维修中",
+    "inventory_status": "充裕"
+  },
+  "519": {
+    "room_no": "519",
+    "floor": "5",
+    "room_type": "行政大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "520": {
+    "room_no": "520",
+    "floor": "5",
+    "room_type": "行政大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "521": {
+    "room_no": "521",
+    "floor": "5",
+    "room_type": "行政大床房",
+    "guest_name": "罗女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "522": {
+    "room_no": "522",
+    "floor": "5",
+    "room_type": "行政大床房",
+    "guest_name": "周先生",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "523": {
+    "room_no": "523",
+    "floor": "5",
+    "room_type": "豪华景观套房",
+    "guest_name": "郭先生",
+    "member_level": "携程黑金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "524": {
+    "room_no": "524",
+    "floor": "5",
+    "room_type": "豪华景观套房",
+    "guest_name": "马女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "601": {
+    "room_no": "601",
+    "floor": "6",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "602": {
+    "room_no": "602",
+    "floor": "6",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "603": {
+    "room_no": "603",
+    "floor": "6",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "604": {
+    "room_no": "604",
+    "floor": "6",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "605": {
+    "room_no": "605",
+    "floor": "6",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "606": {
+    "room_no": "606",
+    "floor": "6",
+    "room_type": "标准双床房",
+    "guest_name": "何女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "607": {
+    "room_no": "607",
+    "floor": "6",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "608": {
+    "room_no": "608",
+    "floor": "6",
+    "room_type": "标准双床房",
+    "guest_name": "胡女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "609": {
+    "room_no": "609",
+    "floor": "6",
+    "room_type": "高级大床房",
+    "guest_name": "何女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "610": {
+    "room_no": "610",
+    "floor": "6",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "611": {
+    "room_no": "611",
+    "floor": "6",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "612": {
+    "room_no": "612",
+    "floor": "6",
+    "room_type": "高级大床房",
+    "guest_name": "吴先生",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "613": {
+    "room_no": "613",
+    "floor": "6",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "614": {
+    "room_no": "614",
+    "floor": "6",
+    "room_type": "高级大床房",
+    "guest_name": "黄女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "615": {
+    "room_no": "615",
+    "floor": "6",
+    "room_type": "高级大床房",
+    "guest_name": "徐女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "616": {
+    "room_no": "616",
+    "floor": "6",
+    "room_type": "高级大床房",
+    "guest_name": "马先生",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "617": {
+    "room_no": "617",
+    "floor": "6",
+    "room_type": "高级大床房",
+    "guest_name": "高女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "618": {
+    "room_no": "618",
+    "floor": "6",
+    "room_type": "高级大床房",
+    "guest_name": "林先生",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "619": {
+    "room_no": "619",
+    "floor": "6",
+    "room_type": "行政大床房",
+    "guest_name": "张女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "620": {
+    "room_no": "620",
+    "floor": "6",
+    "room_type": "行政大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "621": {
+    "room_no": "621",
+    "floor": "6",
+    "room_type": "行政大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "622": {
+    "room_no": "622",
+    "floor": "6",
+    "room_type": "行政大床房",
+    "guest_name": "高先生",
+    "member_level": "携程黑金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "623": {
+    "room_no": "623",
+    "floor": "6",
+    "room_type": "豪华景观套房",
+    "guest_name": "马女士",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "624": {
+    "room_no": "624",
+    "floor": "6",
+    "room_type": "豪华景观套房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "701": {
+    "room_no": "701",
+    "floor": "7",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "702": {
+    "room_no": "702",
+    "floor": "7",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "703": {
+    "room_no": "703",
+    "floor": "7",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "维修中",
+    "inventory_status": "充裕"
+  },
+  "704": {
+    "room_no": "704",
+    "floor": "7",
+    "room_type": "标准双床房",
+    "guest_name": "马先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "705": {
+    "room_no": "705",
+    "floor": "7",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "706": {
+    "room_no": "706",
+    "floor": "7",
+    "room_type": "标准双床房",
+    "guest_name": "吴女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "707": {
+    "room_no": "707",
+    "floor": "7",
+    "room_type": "标准双床房",
+    "guest_name": "马女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "708": {
+    "room_no": "708",
+    "floor": "7",
+    "room_type": "标准双床房",
+    "guest_name": "王女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "709": {
+    "room_no": "709",
+    "floor": "7",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "维修中",
+    "inventory_status": "充裕"
+  },
+  "710": {
+    "room_no": "710",
+    "floor": "7",
+    "room_type": "高级大床房",
+    "guest_name": "王先生",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "711": {
+    "room_no": "711",
+    "floor": "7",
+    "room_type": "高级大床房",
+    "guest_name": "张先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "712": {
+    "room_no": "712",
+    "floor": "7",
+    "room_type": "高级大床房",
+    "guest_name": "杨女士",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "713": {
+    "room_no": "713",
+    "floor": "7",
+    "room_type": "高级大床房",
+    "guest_name": "罗先生",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "714": {
+    "room_no": "714",
+    "floor": "7",
+    "room_type": "高级大床房",
+    "guest_name": "林先生",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "715": {
+    "room_no": "715",
+    "floor": "7",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "716": {
+    "room_no": "716",
+    "floor": "7",
+    "room_type": "高级大床房",
+    "guest_name": "杨先生",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "717": {
+    "room_no": "717",
+    "floor": "7",
+    "room_type": "高级大床房",
+    "guest_name": "周先生",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "718": {
+    "room_no": "718",
+    "floor": "7",
+    "room_type": "高级大床房",
+    "guest_name": "高女士",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "719": {
+    "room_no": "719",
+    "floor": "7",
+    "room_type": "行政大床房",
+    "guest_name": "张女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "720": {
+    "room_no": "720",
+    "floor": "7",
+    "room_type": "行政大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "维修中",
+    "inventory_status": "充裕"
+  },
+  "721": {
+    "room_no": "721",
+    "floor": "7",
+    "room_type": "行政大床房",
+    "guest_name": "胡先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "722": {
+    "room_no": "722",
+    "floor": "7",
+    "room_type": "行政大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "维修中",
+    "inventory_status": "充裕"
+  },
+  "723": {
+    "room_no": "723",
+    "floor": "7",
+    "room_type": "豪华景观套房",
+    "guest_name": "高女士",
+    "member_level": "携程黑金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "724": {
+    "room_no": "724",
+    "floor": "7",
+    "room_type": "豪华景观套房",
+    "guest_name": "徐先生",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "801": {
+    "room_no": "801",
+    "floor": "8",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "802": {
+    "room_no": "802",
+    "floor": "8",
+    "room_type": "标准双床房",
+    "guest_name": "胡女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "803": {
+    "room_no": "803",
+    "floor": "8",
+    "room_type": "标准双床房",
+    "guest_name": "郭先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "804": {
+    "room_no": "804",
+    "floor": "8",
+    "room_type": "标准双床房",
+    "guest_name": "罗女士",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "805": {
+    "room_no": "805",
+    "floor": "8",
+    "room_type": "标准双床房",
+    "guest_name": "黄女士",
+    "member_level": "携程黑金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "806": {
+    "room_no": "806",
+    "floor": "8",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "807": {
+    "room_no": "807",
+    "floor": "8",
+    "room_type": "标准双床房",
+    "guest_name": "郭女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "808": {
+    "room_no": "808",
+    "floor": "8",
+    "room_type": "高级大床房",
+    "guest_name": "李女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "809": {
+    "room_no": "809",
+    "floor": "8",
+    "room_type": "高级大床房",
+    "guest_name": "孙女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "810": {
+    "room_no": "810",
+    "floor": "8",
+    "room_type": "高级大床房",
+    "guest_name": "胡女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "811": {
+    "room_no": "811",
+    "floor": "8",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "812": {
+    "room_no": "812",
+    "floor": "8",
+    "room_type": "高级大床房",
+    "guest_name": "高先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "813": {
+    "room_no": "813",
+    "floor": "8",
+    "room_type": "高级大床房",
+    "guest_name": "林女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "814": {
+    "room_no": "814",
+    "floor": "8",
+    "room_type": "高级大床房",
+    "guest_name": "孙先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "815": {
+    "room_no": "815",
+    "floor": "8",
+    "room_type": "高级大床房",
+    "guest_name": "李先生",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "816": {
+    "room_no": "816",
+    "floor": "8",
+    "room_type": "高级大床房",
+    "guest_name": "郭先生",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "817": {
+    "room_no": "817",
+    "floor": "8",
+    "room_type": "高级大床房",
+    "guest_name": "胡女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "818": {
+    "room_no": "818",
+    "floor": "8",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "819": {
+    "room_no": "819",
+    "floor": "8",
+    "room_type": "行政大床房",
+    "guest_name": "王女士",
+    "member_level": "携程黑金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "820": {
+    "room_no": "820",
+    "floor": "8",
+    "room_type": "行政大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "821": {
+    "room_no": "821",
+    "floor": "8",
+    "room_type": "行政大床房",
+    "guest_name": "林女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "822": {
+    "room_no": "822",
+    "floor": "8",
+    "room_type": "行政大床房",
+    "guest_name": "朱先生",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "823": {
+    "room_no": "823",
+    "floor": "8",
+    "room_type": "豪华景观套房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "824": {
+    "room_no": "824",
+    "floor": "8",
+    "room_type": "豪华景观套房",
+    "guest_name": "林女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "901": {
+    "room_no": "901",
+    "floor": "9",
+    "room_type": "标准双床房",
+    "guest_name": "赵先生",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "902": {
+    "room_no": "902",
+    "floor": "9",
+    "room_type": "标准双床房",
+    "guest_name": "王先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "903": {
+    "room_no": "903",
+    "floor": "9",
+    "room_type": "标准双床房",
+    "guest_name": "罗女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "904": {
+    "room_no": "904",
+    "floor": "9",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "905": {
+    "room_no": "905",
+    "floor": "9",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "906": {
+    "room_no": "906",
+    "floor": "9",
+    "room_type": "标准双床房",
+    "guest_name": "黄女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "907": {
+    "room_no": "907",
+    "floor": "9",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "908": {
+    "room_no": "908",
+    "floor": "9",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "909": {
+    "room_no": "909",
+    "floor": "9",
+    "room_type": "高级大床房",
+    "guest_name": "高先生",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "910": {
+    "room_no": "910",
+    "floor": "9",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "911": {
+    "room_no": "911",
+    "floor": "9",
+    "room_type": "高级大床房",
+    "guest_name": "刘女士",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "912": {
+    "room_no": "912",
+    "floor": "9",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "913": {
+    "room_no": "913",
+    "floor": "9",
+    "room_type": "高级大床房",
+    "guest_name": "胡女士",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "914": {
+    "room_no": "914",
+    "floor": "9",
+    "room_type": "高级大床房",
+    "guest_name": "郭女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "915": {
+    "room_no": "915",
+    "floor": "9",
+    "room_type": "高级大床房",
+    "guest_name": "徐女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "916": {
+    "room_no": "916",
+    "floor": "9",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "917": {
+    "room_no": "917",
+    "floor": "9",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "918": {
+    "room_no": "918",
+    "floor": "9",
+    "room_type": "高级大床房",
+    "guest_name": "张女士",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "919": {
+    "room_no": "919",
+    "floor": "9",
+    "room_type": "行政大床房",
+    "guest_name": "何女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "920": {
+    "room_no": "920",
+    "floor": "9",
+    "room_type": "行政大床房",
+    "guest_name": "郭先生",
+    "member_level": "携程黑金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "921": {
+    "room_no": "921",
+    "floor": "9",
+    "room_type": "行政大床房",
+    "guest_name": "赵先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "922": {
+    "room_no": "922",
+    "floor": "9",
+    "room_type": "行政大床房",
+    "guest_name": "马先生",
+    "member_level": "携程黑金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "923": {
+    "room_no": "923",
+    "floor": "9",
+    "room_type": "豪华景观套房",
+    "guest_name": "马先生",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "924": {
+    "room_no": "924",
+    "floor": "9",
+    "room_type": "豪华景观套房",
+    "guest_name": "杨女士",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "1003": {
+    "room_no": "1003",
+    "floor": "10",
+    "room_type": "标准双床房",
+    "guest_name": "李先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "1004": {
+    "room_no": "1004",
+    "floor": "10",
+    "room_type": "标准双床房",
+    "guest_name": "郭先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "1005": {
+    "room_no": "1005",
+    "floor": "10",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "1006": {
+    "room_no": "1006",
+    "floor": "10",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "1007": {
+    "room_no": "1007",
+    "floor": "10",
+    "room_type": "标准双床房",
+    "guest_name": "张女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "1008": {
+    "room_no": "1008",
+    "floor": "10",
+    "room_type": "标准双床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "1009": {
+    "room_no": "1009",
+    "floor": "10",
+    "room_type": "高级大床房",
+    "guest_name": "赵先生",
+    "member_level": "携程黑金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "1010": {
+    "room_no": "1010",
+    "floor": "10",
+    "room_type": "高级大床房",
+    "guest_name": "吴女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "1011": {
+    "room_no": "1011",
+    "floor": "10",
+    "room_type": "高级大床房",
+    "guest_name": "高先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "1012": {
+    "room_no": "1012",
+    "floor": "10",
+    "room_type": "高级大床房",
+    "guest_name": "陈先生",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "1013": {
+    "room_no": "1013",
+    "floor": "10",
+    "room_type": "高级大床房",
+    "guest_name": "何女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "1014": {
+    "room_no": "1014",
+    "floor": "10",
+    "room_type": "高级大床房",
+    "guest_name": "林女士",
+    "member_level": "散客非会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "1015": {
+    "room_no": "1015",
+    "floor": "10",
+    "room_type": "高级大床房",
+    "guest_name": "徐女士",
+    "member_level": "携程黑金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "1016": {
+    "room_no": "1016",
+    "floor": "10",
+    "room_type": "高级大床房",
+    "guest_name": "黄女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "1017": {
+    "room_no": "1017",
+    "floor": "10",
+    "room_type": "高级大床房",
+    "guest_name": "郭女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "1018": {
+    "room_no": "1018",
+    "floor": "10",
+    "room_type": "高级大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "空净房",
+    "inventory_status": "充裕"
+  },
+  "1019": {
+    "room_no": "1019",
+    "floor": "10",
+    "room_type": "行政大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "维修中",
+    "inventory_status": "充裕"
+  },
+  "1020": {
+    "room_no": "1020",
+    "floor": "10",
+    "room_type": "行政大床房",
+    "guest_name": "李先生",
+    "member_level": "携程黑金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "1021": {
+    "room_no": "1021",
+    "floor": "10",
+    "room_type": "行政大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "1022": {
+    "room_no": "1022",
+    "floor": "10",
+    "room_type": "行政大床房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "1023": {
+    "room_no": "1023",
+    "floor": "10",
+    "room_type": "豪华景观套房",
+    "guest_name": "何女士",
+    "member_level": "普通会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "紧张"
+  },
+  "1024": {
+    "room_no": "1024",
+    "floor": "10",
+    "room_type": "豪华景观套房",
+    "guest_name": "—",
+    "member_level": "—",
+    "checkout_time": "—",
+    "room_status": "待清洁",
+    "inventory_status": "充裕"
+  },
+  "1128": {
+    "room_no": "1128",
+    "floor": "11",
+    "room_type": "行政套房",
+    "guest_name": "张先生",
+    "member_level": "携程黑金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  },
+  "1106": {
+    "room_no": "1106",
+    "floor": "11",
+    "room_type": "行政大床房",
+    "guest_name": "赵女士",
+    "member_level": "携程白金会员",
+    "checkout_time": "12:00",
+    "room_status": "在住",
+    "inventory_status": "充裕"
+  }
+}

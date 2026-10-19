@@ -1,14 +1,108 @@
 import unittest
+import threading
+from unittest.mock import patch
 
 from fastapi.testclient import TestClient
 
 from server import app, session_manager
+from hotel_core import EngineeringAgent, HousekeepingAgent
 
 
 class FastAPISessionTests(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
+        self.addCleanup(self.client.close)
         session_manager.reset_all()
+
+    def test_async_submit_accepts_replacement_and_poll_enforces_session(self):
+        started, release = threading.Event(), threading.Event()
+        self.addCleanup(release.set)
+        original = HousekeepingAgent.dispatch
+
+        def dispatch(agent, room, detail, state):
+            if "毛巾" in detail:
+                started.set()
+                if not release.wait(4):
+                    raise RuntimeError("old API worker was not released")
+            return original(agent, room, detail, state)
+
+        with patch.object(HousekeepingAgent, "dispatch", dispatch):
+            first = self.client.post("/api/chat/submit", json={
+                "session_id": "async", "message": "1128 送两条毛巾", "force_rules": True,
+            })
+            self.assertEqual(first.status_code, 202)
+            old_id = first.json()["run_id"]
+            self.assertTrue(started.wait(2))
+            poll = self.client.get(f"/api/tasks/{old_id}", params={"session_id": "async"})
+            self.assertEqual(poll.json()["status"], "running")
+            self.assertNotIn("result", poll.json())
+            payload = {"session_id": "async", "message": "不要毛巾了，我要浴巾",
+                       "force_rules": True, "request_id": "change-1"}
+            second = self.client.post("/api/chat/submit", json=payload)
+            self.assertEqual(second.status_code, 202)
+            latest = second.json()
+            session_manager.wait("async", latest["run_id"], timeout=2)
+            result = self.client.get(f"/api/tasks/{latest['run_id']}", params={"session_id": "async"}).json()
+            self.assertEqual(result["result"]["version"], 2)
+            self.assertEqual(result["result"]["run_status"], "completed")
+            self.assertEqual(result["task_id"], first.json()["task_id"])
+            self.assertEqual(self.client.get(f"/api/tasks/{old_id}", params={"session_id": "other"}).status_code, 404)
+            self.assertEqual(self.client.post("/api/chat/submit", json=payload).json()["run_id"], latest["run_id"])
+            payload["message"] = "改成矿泉水"
+            self.assertEqual(self.client.post("/api/chat/submit", json=payload).status_code, 409)
+            self.assertEqual(session_manager.shared_tickets[0]["inventory_item"], "浴巾")
+            self.assertEqual(len(session_manager.shared_tickets), 1)
+            release.set()
+
+    def test_dispatched_change_confirmation_is_idempotent(self):
+        self.client.post("/api/chat", json={"session_id": "change", "message": "1128 送两条毛巾", "force_rules": True})
+        ticket_id = session_manager.shared_tickets[0]["ticket_id"]
+        self.assertEqual(self.client.post(f"/api/tickets/{ticket_id}/dispatch").status_code, 200)
+        response = self.client.post("/api/chat", json={"session_id": "change", "message": "不要毛巾了，改成浴巾", "force_rules": True})
+        self.assertIn("尚未确认取消成功", response.json()["reply"])
+        confirmation = self.client.post(f"/api/tickets/{ticket_id}/change/confirm", json={"approved": True})
+        self.assertEqual(confirmation.status_code, 200)
+        self.assertEqual(confirmation.json()["ticket"]["inventory_item"], "浴巾")
+        self.client.post(f"/api/tickets/{ticket_id}/change/confirm", json={"approved": True})
+        self.assertEqual(session_manager.housekeeping.inventory["毛巾"], 24)
+        self.assertEqual(session_manager.housekeeping.inventory["浴巾"], 22)
+
+    def test_cancelled_delivery_cannot_be_completed(self):
+        self.client.post("/api/chat", json={"session_id": "cancel", "message": "1128 送毛巾", "force_rules": True})
+        ticket_id = session_manager.shared_tickets[0]["ticket_id"]
+        self.client.post("/api/chat", json={"session_id": "cancel", "message": "不用了", "force_rules": True})
+        response = self.client.post(f"/api/tickets/{ticket_id}/complete")
+        self.assertEqual(response.status_code, 409)
+        self.assertEqual(session_manager.shared_tickets[0]["status"], "已取消")
+
+    def test_out_of_stock_ticket_cannot_be_dispatched_or_marked_delivered(self):
+        response = self.client.post("/api/chat", json={"session_id": "shortage", "message": "1128 送100条毛巾", "force_rules": True})
+        self.assertIn("库存不足", response.json()["reply"])
+        ticket = session_manager.shared_tickets[0]
+        self.assertEqual(self.client.post(f"/api/tickets/{ticket['ticket_id']}/dispatch").status_code, 409)
+        self.assertEqual(self.client.post(f"/api/tickets/{ticket['ticket_id']}/complete").status_code, 409)
+        self.assertEqual(ticket["status"], "处理中")
+        self.assertEqual(session_manager.housekeeping.inventory["毛巾"], 24)
+        receipt = self.client.post("/api/chat", json={"session_id": "shortage", "message": "毛巾送到了", "force_rules": True})
+        self.assertIn("暂未标记完成", receipt.json()["reply"])
+        self.assertEqual(ticket["status"], "处理中")
+
+    def test_conflicting_child_is_visible_as_review_without_order(self):
+        original = EngineeringAgent.diagnose
+
+        def wrong_room(agent, *args, **kwargs):
+            ticket = original(agent, *args, **kwargs)
+            ticket["room_no"] = "808"
+            return ticket
+
+        with patch.object(EngineeringAgent, "diagnose", wrong_room):
+            response = self.client.post("/api/chat", json={"session_id": "conflict", "message": "1128 空调坏了", "force_rules": True})
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["run_status"], "needs_review")
+        detail = self.client.get("/api/session/conflict").json()
+        self.assertEqual(detail["tickets"], [])
+        self.assertEqual(len(detail["agent_conflicts"]), 1)
+        self.assertEqual(detail["agent_conflicts"][0]["status"], "需人工核验")
 
     def test_multi_session_isolation(self):
         response_a = self.client.post(

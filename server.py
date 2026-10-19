@@ -1,8 +1,6 @@
 """AegisStay FastAPI gateway with isolated conversation sessions."""
 from __future__ import annotations
 
-import threading
-import time
 from copy import deepcopy
 from datetime import datetime
 from typing import Any, Optional
@@ -11,120 +9,7 @@ from fastapi import FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
-from hotel_core import HotelOrchestrator, HotelState, PMS_ROOMS
-
-
-class SessionManager:
-    """Own session-private blackboards while sharing the hotel data bus."""
-
-    def __init__(self, ttl_seconds: int = 1800, kiosk_ttl_seconds: int = 30):
-        self.ttl_seconds = ttl_seconds
-        self.kiosk_ttl_seconds = kiosk_ttl_seconds
-        self.sessions: dict[str, HotelOrchestrator] = {}
-        self.last_active: dict[str, float] = {}
-        self.session_ttls: dict[str, int] = {}
-        self.lock = threading.RLock()
-
-        self.shared_pms = deepcopy(PMS_ROOMS)
-        self.shared_tickets: list[dict[str, Any]] = []
-        self.shared_checkout_requests: list[dict[str, Any]] = []
-        self.shared_voucher_ledger: list[dict[str, Any]] = []
-
-    def _cleanup_expired(self) -> None:
-        now = time.time()
-        expired = [
-            sid for sid, timestamp in self.last_active.items()
-            if now - timestamp > self.session_ttls.get(sid, self.ttl_seconds)
-        ]
-        for sid in expired:
-            self.sessions.pop(sid, None)
-            self.last_active.pop(sid, None)
-            self.session_ttls.pop(sid, None)
-
-    def cleanup_expired(self) -> list[str]:
-        with self.lock:
-            before = set(self.sessions)
-            self._cleanup_expired()
-            return sorted(before - set(self.sessions))
-
-    def get_or_create(
-        self,
-        session_id: str,
-        force_rules: bool = False,
-        client_type: str = "guest",
-    ) -> HotelOrchestrator:
-        with self.lock:
-            self._cleanup_expired()
-            if session_id not in self.sessions:
-                state = HotelState(
-                    pms_rooms=self.shared_pms,
-                    tickets=self.shared_tickets,
-                    checkout_requests=self.shared_checkout_requests,
-                    voucher_ledger=self.shared_voucher_ledger,
-                )
-                self.sessions[session_id] = HotelOrchestrator(state=state, force_rules=force_rules)
-                self.session_ttls[session_id] = (
-                    self.kiosk_ttl_seconds if client_type.lower() == "kiosk" else self.ttl_seconds
-                )
-            self.last_active[session_id] = time.time()
-            return self.sessions[session_id]
-
-    def chat(
-        self,
-        session_id: str,
-        message: str,
-        room_no: str | None = None,
-        force_rules: bool = False,
-        client_type: str = "guest",
-    ) -> HotelOrchestrator:
-        """Process one turn atomically, preventing concurrent state interleaving."""
-        with self.lock:
-            flow = self.get_or_create(session_id, force_rules=force_rules, client_type=client_type)
-            if force_rules:
-                flow.force_rules = True
-                flow.model.disabled = True
-            else:
-                flow.force_rules = False
-                flow.model.disabled = False
-            if room_no and not flow.state.room_no:
-                flow._bind_room(room_no)
-            flow.process(message)
-            self.last_active[session_id] = time.time()
-            return flow
-
-    def get_session(self, session_id: str) -> Optional[HotelOrchestrator]:
-        with self.lock:
-            self._cleanup_expired()
-            flow = self.sessions.get(session_id)
-            if flow:
-                self.last_active[session_id] = time.time()
-            return flow
-
-    def reset(self, session_id: str) -> bool:
-        with self.lock:
-            existed = session_id in self.sessions
-            self.sessions.pop(session_id, None)
-            self.last_active.pop(session_id, None)
-            self.session_ttls.pop(session_id, None)
-            return existed
-
-    def reset_all(self) -> None:
-        """Reset in-memory state; used by tests and controlled process resets."""
-        with self.lock:
-            self.sessions.clear()
-            self.last_active.clear()
-            self.session_ttls.clear()
-            self.shared_pms.clear()
-            self.shared_pms.update(deepcopy(PMS_ROOMS))
-            self.shared_tickets.clear()
-            self.shared_checkout_requests.clear()
-            self.shared_voucher_ledger.clear()
-
-    @property
-    def active_session_count(self) -> int:
-        with self.lock:
-            self._cleanup_expired()
-            return len(self.sessions)
+from agent_runtime import RunOutcome, RuntimeBusy, SessionManager
 
 
 session_manager = SessionManager()
@@ -136,6 +21,7 @@ class ChatRequest(BaseModel):
     room_no: Optional[str] = Field(None, description="可选的预填房间号")
     client_type: str = Field("guest", description="guest 或 kiosk；kiosk 空闲 30 秒自动销毁")
     force_rules: bool = Field(False, description="压测或验收时禁用云端模型")
+    request_id: Optional[str] = Field(None, min_length=1, max_length=128, description="可选的重试去重标识")
 
 
 class ProgressItem(BaseModel):
@@ -156,6 +42,10 @@ class ChatResponse(BaseModel):
     model_name: str
     trace: list[dict[str, str]]
     progress_items: list[ProgressItem]
+    run_id: str
+    task_id: str
+    version: int
+    run_status: str
 
 
 class SessionResetRequest(BaseModel):
@@ -171,6 +61,13 @@ class SessionDetailResponse(BaseModel):
     messages_count: int
     messages: list[dict[str, Any]]
     tickets: list[dict[str, Any]]
+    tasks: list[dict[str, Any]]
+    agent_conflicts: list[dict[str, Any]]
+
+
+class ChangeConfirmation(BaseModel):
+    approved: bool
+    returned: bool = False
 
 
 class DepartmentStatus(BaseModel):
@@ -215,25 +112,13 @@ def health_check() -> dict[str, Any]:
         }
 
 
-@app.post("/api/chat", response_model=ChatResponse, tags=["Guest Chat"])
-def guest_chat(req: ChatRequest) -> ChatResponse:
-    flow = session_manager.chat(
-        session_id=req.session_id,
-        message=req.message,
-        room_no=req.room_no,
-        force_rules=req.force_rules,
-        client_type=req.client_type,
-    )
+def _chat_response(outcome: RunOutcome) -> ChatResponse:
+    flow = outcome.flow
     state = flow.state
     profile = state.guest_profile or {}
-    reply = (
-        state.messages[-1]["content"]
-        if state.messages and state.messages[-1].get("role") == "assistant"
-        else "请告诉我您需要的服务。"
-    )
     return ChatResponse(
-        session_id=req.session_id,
-        reply=reply,
+        session_id="",
+        reply=outcome.reply,
         active_agent=state.active_agent,
         room_no=state.room_no,
         guest_name=profile.get("guest_name"),
@@ -249,7 +134,54 @@ def guest_chat(req: ChatRequest) -> ChatResponse:
         ),
         trace=state.last_trace,
         progress_items=[ProgressItem(**item) for item in flow.guest_progress_items()],
+        run_id=outcome.run_id,
+        task_id=outcome.task_id,
+        version=outcome.version,
+        run_status=outcome.status,
     )
+
+
+def _submit_request(req: ChatRequest):
+    try:
+        return session_manager.submit(req.session_id, req.message, req.room_no, req.force_rules,
+                                      req.client_type, req.request_id)
+    except RuntimeBusy as error:
+        raise HTTPException(status_code=503, detail=str(error)) from error
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+
+
+@app.post("/api/chat", response_model=ChatResponse, tags=["Guest Chat"])
+def guest_chat(req: ChatRequest) -> ChatResponse:
+    run = _submit_request(req)
+    try:
+        outcome = session_manager.wait(req.session_id, run.run_id)
+    except TimeoutError as error:
+        raise HTTPException(status_code=504, detail={"message": "处理仍在进行，请查询任务状态", "run_id": run.run_id}) from error
+    response = _chat_response(outcome)
+    response.session_id = req.session_id
+    return response
+
+
+@app.post("/api/chat/submit", status_code=202, tags=["Guest Chat"])
+def submit_chat(req: ChatRequest) -> dict[str, Any]:
+    run = _submit_request(req)
+    return {"session_id": req.session_id, **run.public()}
+
+
+@app.get("/api/tasks/{run_id}", tags=["Guest Chat"])
+def get_task(run_id: str, session_id: str = Query(..., min_length=1)) -> dict[str, Any]:
+    with session_manager.lock:
+        try:
+            run = session_manager.get_run(session_id, run_id)
+        except KeyError as error:
+            raise HTTPException(status_code=404, detail="任务不存在或不属于该会话") from error
+        result: dict[str, Any] = {"session_id": session_id, **run.public()}
+        if run.result.done():
+            response = _chat_response(run.result.result())
+            response.session_id = session_id
+            result["result"] = response
+        return result
 
 
 @app.post("/api/session/reset", tags=["Session"])
@@ -270,7 +202,7 @@ def reset_all_sessions() -> dict[str, str]:
 
 @app.get("/api/session/{session_id}", response_model=SessionDetailResponse, tags=["Session"])
 def get_session_detail(session_id: str) -> SessionDetailResponse:
-    flow = session_manager.get_session(session_id)
+    flow = session_manager.snapshot(session_id)
     if not flow:
         raise HTTPException(status_code=404, detail="会话不存在或已超时")
     state = flow.state
@@ -287,6 +219,8 @@ def get_session_detail(session_id: str) -> SessionDetailResponse:
         messages_count=len(messages),
         messages=messages,
         tickets=tickets,
+        tasks=list(state.tasks.values()),
+        agent_conflicts=state.agent_conflicts,
     )
 
 
@@ -343,6 +277,46 @@ def complete_ticket(ticket_id: str) -> dict[str, str]:
         ticket = next((item for item in session_manager.shared_tickets if item.get("ticket_id") == ticket_id), None)
         if not ticket:
             raise HTTPException(status_code=404, detail="工单未找到")
+        if ticket["status"] == "已取消":
+            raise HTTPException(status_code=409, detail="已取消工单不能标记为完成")
+        if ticket.get("inventory_item") in session_manager.housekeeping.inventory and ticket.get("reserved_quantity", 0) != ticket.get("quantity", 1):
+            raise HTTPException(status_code=409, detail="库存尚未预留，不能确认送达")
         ticket["status"] = "已结单"
+        if ticket.get("category") == "送物":
+            ticket["delivery_status"] = "已送达"
         ticket["completed_at"] = datetime.now().isoformat(timespec="seconds")
         return {"status": "success", "ticket_id": ticket_id, "ticket_status": "已结单"}
+
+
+@app.post("/api/tickets/{ticket_id}/dispatch", tags=["Operations & PMS"])
+def dispatch_delivery(ticket_id: str) -> dict[str, Any]:
+    try:
+        return session_manager.dispatch_delivery(ticket_id)
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="工单未找到") from error
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+
+
+@app.post("/api/tickets/{ticket_id}/change/confirm", tags=["Operations & PMS"])
+def confirm_delivery_change(ticket_id: str, confirmation: ChangeConfirmation) -> dict[str, Any]:
+    try:
+        return session_manager.confirm_delivery_change(ticket_id, confirmation.approved, confirmation.returned)
+    except KeyError as error:
+        raise HTTPException(status_code=404, detail="工单未找到") from error
+    except ValueError as error:
+        raise HTTPException(status_code=409, detail=str(error)) from error
+
+
+@app.post("/api/pms/night-audit", tags=["Operations & PMS"])
+def trigger_night_audit() -> dict[str, Any]:
+    record = session_manager.night_audit()
+    return {"status": "success", "current_date": record.pop("date"), **record}
+
+
+@app.post("/api/harness/evolve", tags=["Harness Evolution"])
+def trigger_evolution_cycle() -> dict[str, Any]:
+    from harness.self_evolution import EvolutionDeltaRunner
+    runner = EvolutionDeltaRunner()
+    report = runner.run_evolution_cycle()
+    return report

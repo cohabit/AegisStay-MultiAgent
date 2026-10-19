@@ -5,6 +5,9 @@ import os
 import streamlit as st
 
 from hotel_core import HotelOrchestrator
+from agent_runtime import RuntimeBusy, SessionManager
+
+GUEST_SESSION = "streamlit-guest"
 
 AGENT_BADGES = {
     "ReceptionAgent": ("🧭", "接待分流台"),
@@ -88,7 +91,28 @@ def _style() -> None:
     )
 
 
+def _runtime_for_ui(orchestrator: HotelOrchestrator) -> SessionManager:
+    runtime = st.session_state.get("agent_runtime")
+    if runtime is None or runtime.sessions.get(GUEST_SESSION) is not orchestrator:
+        if runtime is not None:
+            runtime.close()
+        runtime = SessionManager()
+        runtime.adopt(GUEST_SESSION, orchestrator)
+        st.session_state.agent_runtime = runtime
+    return runtime
+
+
+def _staff_action(orchestrator: HotelOrchestrator, method: str, *args):
+    runtime = _runtime_for_ui(orchestrator)
+    with runtime.lock:
+        return getattr(orchestrator, method)(*args)
+
+
+@st.fragment(run_every=0.5)
 def _render_guest(orchestrator: HotelOrchestrator) -> None:
+    runtime = _runtime_for_ui(orchestrator)
+    force_rules = orchestrator.force_rules
+    orchestrator = runtime.snapshot(GUEST_SESSION)
     state = orchestrator.state
     st.markdown('<div class="eyebrow">GUEST EXPERIENCE</div>', unsafe_allow_html=True)
     st.subheader("住客智能管家")
@@ -109,6 +133,16 @@ def _render_guest(orchestrator: HotelOrchestrator) -> None:
             with st.chat_message("user" if message["role"] == "user" else "assistant"):
                 st.write(message["content"])
 
+    active_tasks = [task for task in state.tasks.values() if task["status"] in {"running", "queued"}]
+    if active_tasks:
+        st.info("正在处理您的请求，您可以继续输入补充、修改或取消。")
+        if st.button("取消当前请求", key="cancel-current-task"):
+            try:
+                runtime.submit(GUEST_SESSION, "不用了", force_rules=force_rules)
+                st.rerun()
+            except RuntimeBusy as error:
+                st.warning(str(error))
+
     st.markdown("#### 我的服务进度")
     progress_items = orchestrator.guest_progress_items()
     if not progress_items:
@@ -124,13 +158,47 @@ def _render_guest(orchestrator: HotelOrchestrator) -> None:
             else:
                 st.info(item["label"], icon="🛎️")
 
-    prompt = st.chat_input("例如：1128 能两点退房吗？")
+    with st.expander("查看会话与工作黑板（本地内存演示）", expanded=False):
+        m_c1, m_c2, m_c3, m_c4 = st.columns(4)
+        with m_c1:
+            st.markdown("**1️⃣ 短期会话 (L1)**")
+            st.caption("Sliding Window 轮次")
+            st.write(f"- 消息数: `{len(state.messages)}` 条")
+            st.write(f"- 滚动摘要: `{state.rolling_summary or '活跃窗口内'}`")
+        with m_c2:
+            st.markdown("**2️⃣ 工作黑板 (L2)**")
+            st.caption("Blackboard 跨 Agent 共享")
+            st.write(f"- 绑定房号: `{state.room_no or '待补全'}`")
+            st.write(f"- 待办挂起: `{state.pending.get('intent') if state.pending else '无'}`")
+            st.write(f"- 主控 Agent: `{state.active_agent}`")
+        with m_c3:
+            st.markdown("**3️⃣ 模拟住客档案**")
+            st.caption("本地 PMS 档案与权益核准")
+            prof = state.guest_profile or {}
+            st.write(f"- 住客: `{prof.get('guest_name', '未绑定')}`")
+            st.write(f"- 会员: `{prof.get('member_level', '普通')}`")
+            st.write(f"- 房态: `{prof.get('room_status', '待查')}`")
+        with m_c4:
+            st.markdown("**4️⃣ 公共总线 (L4)**")
+            st.caption("全店 PMS & 物资总线")
+            st.write(f"- 系统日期: `{getattr(state, 'current_date', '2026-10-01')}`")
+            st.write(f"- 全局工单: `{len(state.tickets)}` 张")
+            st.write(f"- 借用物资: `{len(state.borrowed_items)}` 件")
+
+    prompt = st.chat_input("例如：1128 送两条毛巾；也可以继续输入修改", key="guest-prompt")
     if prompt:
-        orchestrator.process(prompt)
-        st.rerun()  # Immediate rerun eliminates single-turn chat latency
+        try:
+            runtime.submit(GUEST_SESSION, prompt, force_rules=force_rules)
+            st.rerun()
+        except (RuntimeBusy, ValueError) as error:
+            st.warning(str(error))
 
 
+@st.fragment(run_every=1.0)
 def _render_staff(orchestrator: HotelOrchestrator) -> None:
+    canonical = orchestrator
+    runtime = _runtime_for_ui(canonical)
+    orchestrator = runtime.snapshot(GUEST_SESSION)
     state = orchestrator.state
     tickets = state.tickets
     pms = state.pms_rooms
@@ -144,6 +212,17 @@ def _render_staff(orchestrator: HotelOrchestrator) -> None:
 
     st.markdown('<div class="eyebrow">OPERATIONS CONTROL CENTER</div>', unsafe_allow_html=True)
     st.subheader("酒店运营管理中枢 (PMS 240房数字大板)")
+
+    cur_date = getattr(state, "current_date", "2026-10-01")
+    date_col1, date_col2 = st.columns([3, 1.2])
+    with date_col1:
+        summary_txt = f"已压缩生成滚动摘要" if state.rolling_summary else "无需压缩"
+        st.markdown(f"**📅 业务系统当前日期**：`{cur_date}` &nbsp;&nbsp;|&nbsp;&nbsp; **PMS 共享总线**：🟢 联机 &nbsp;&nbsp;|&nbsp;&nbsp; **分层记忆**：`{summary_txt}`")
+    with date_col2:
+        if st.button("🌙 执行夜审跨日流转 (Night Audit)", help="将系统推进至次日，自动流转到期未退客房并重置会员权益"):
+            audit_result = runtime.night_audit()
+            st.success(f"已完成夜审！日期流转至 {audit_result['date']}，处理 {audit_result['actions_count']} 条到期记录")
+            st.rerun()
 
     # KPI Metrics
     m1, m2, m3, m4, m5, m6 = st.columns(6)
@@ -227,10 +306,10 @@ def _render_staff(orchestrator: HotelOrchestrator) -> None:
                     st.warning(f"⚠️ [待审核] {request['room_no']} 房申请延迟至 {request['requested_time']}：{request['reason']}")
                     x, y = st.columns(2)
                     if x.button("✅ 批准延退", key=f"approve-{req_key}"):
-                        orchestrator.review_checkout(request["room_no"], request["requested_time"], True)
+                        _staff_action(canonical, "review_checkout", request["room_no"], request["requested_time"], True)
                         st.rerun()
                     if y.button("❌ 拒绝延退", key=f"reject-{req_key}"):
-                        orchestrator.review_checkout(request["room_no"], request["requested_time"], False)
+                        _staff_action(canonical, "review_checkout", request["room_no"], request["requested_time"], False)
                         st.rerun()
                 elif r_status == "已批准":
                     c1, c2 = st.columns([3.2, 1.2])
@@ -238,7 +317,7 @@ def _render_staff(orchestrator: HotelOrchestrator) -> None:
                         st.success(f"✅ [已批准] {request['room_no']} 房延迟至 {request['requested_time']}（退房时间已更新）")
                     with c2:
                         if st.button("↩️ 撤回", key=f"revoke-{req_key}"):
-                            orchestrator.review_checkout(request["room_no"], request["requested_time"], None)
+                            _staff_action(canonical, "review_checkout", request["room_no"], request["requested_time"], None)
                             st.rerun()
                 elif r_status == "未批准":
                     c1, c2 = st.columns([3.2, 1.2])
@@ -246,7 +325,7 @@ def _render_staff(orchestrator: HotelOrchestrator) -> None:
                         st.error(f"❌ [已拒绝] {request['room_no']} 房延迟至 {request['requested_time']}（{request['reason']}）")
                     with c2:
                         if st.button("↩️ 撤回", key=f"revoke-{req_key}"):
-                            orchestrator.review_checkout(request["room_no"], request["requested_time"], None)
+                            _staff_action(canonical, "review_checkout", request["room_no"], request["requested_time"], None)
                             st.rerun()
 
         # Work orders list
@@ -262,9 +341,59 @@ def _render_staff(orchestrator: HotelOrchestrator) -> None:
                 f"<small class='muted'>接管 Agent：{ticket.get('agent', 'DispatchAgent')}</small></div>",
                 unsafe_allow_html=True,
             )
-            if ticket["status"] == "处理中" and st.button("完成结单", key=f"close-{ticket['ticket_id']}"):
-                orchestrator.complete_ticket(ticket["ticket_id"])
+            if ticket.get("category") == "送物":
+                st.caption(f"派送进度：{ticket.get('delivery_status', '待派送')}")
+                change = ticket.get("change_request", {})
+                if change.get("status") == "待部门确认":
+                    st.warning(f"住客申请{ '取消' if change['action'] == 'cancel' else '更换为 ' + str(change.get('quantity', 1)) + ' 件' + str(change.get('item', '')) }，请核实实际派送情况。")
+                    delivered = ticket.get("delivery_status") == "已送达" or ticket["status"] == "已结单"
+                    returned = st.checkbox("已确认取回原物品", key=f"returned-{ticket['ticket_id']}") if delivered else False
+                    approve, reject = st.columns(2)
+                    if approve.button("确认撤回并处理变更", key=f"confirm-change-{ticket['ticket_id']}"):
+                        try:
+                            runtime.confirm_delivery_change(ticket["ticket_id"], approved=True, returned=returned)
+                            st.rerun()
+                        except ValueError as error:
+                            st.warning(str(error))
+                    if reject.button("确认无法撤回", key=f"reject-change-{ticket['ticket_id']}"):
+                        runtime.confirm_delivery_change(ticket["ticket_id"], approved=False)
+                        st.rerun()
+                elif ticket["status"] == "处理中" and ticket.get("delivery_status") == "待派送":
+                    if st.button("确认开始派送", key=f"dispatch-{ticket['ticket_id']}"):
+                        try:
+                            runtime.dispatch_delivery(ticket["ticket_id"])
+                            st.rerun()
+                        except ValueError as error:
+                            st.warning(str(error))
+            stock_missing = ticket.get("inventory_item") in orchestrator.housekeeping.inventory and ticket.get("reserved_quantity", 0) != ticket.get("quantity", 1)
+            if ticket["status"] == "处理中" and st.button("完成结单", key=f"close-{ticket['ticket_id']}", disabled=stock_missing):
+                try:
+                    _staff_action(canonical, "complete_ticket", ticket["ticket_id"])
+                    st.rerun()
+                except ValueError as error:
+                    st.warning(str(error))
+
+        pending_conflicts = [c for c in state.agent_conflicts if c["status"] == "需人工核验"]
+        if pending_conflicts:
+            st.markdown("#### 需核验的部门结果")
+        for conflict in pending_conflicts:
+            st.warning(f"{conflict.get('room_no') or '未绑定'} 房 · {conflict['intent']}：{conflict['reason']}。此次操作暂未派单。")
+            if st.button("标记已核验（不自动派单）", key=f"resolve-{conflict['conflict_id']}"):
+                _staff_action(canonical, "resolve_agent_conflict", conflict["conflict_id"])
                 st.rerun()
+
+        # Live Inventory & Queue ETA Monitor
+        active_deliveries = sum(t.get("category") == "送物" and t.get("status") == "处理中" for t in tickets)
+        current_eta = 5 if active_deliveries <= 1 else min(10, 8 + active_deliveries - 2)
+        st.markdown("#### 📦 物料库存与实时派单队列 (Atomic Inventory & ETA)")
+        inv_c1, inv_c2 = st.columns(2)
+        inv_c1.metric("送物队列排队深度", f"{active_deliveries} 单待送")
+        inv_c2.metric("当前动态推导 ETA", f"{current_eta} 分钟", delta="根据拥堵自适应推导")
+        with st.expander("查看保洁部物资实时库存 (支持原子扣减防超卖)"):
+            st.write(orchestrator.housekeeping.inventory)
+            if state.borrowed_items:
+                st.markdown("**借出在房借还物资：**")
+                st.dataframe(state.borrowed_items, hide_index=True)
 
     with st.expander("🔍 查看 Blackboard 与 Agent 交接追踪（运营内部）"):
         st.json({
@@ -274,6 +403,8 @@ def _render_staff(orchestrator: HotelOrchestrator) -> None:
             "sentiment": state.sentiment,
             "model_mode": state.model_mode,
             "last_trace": state.last_trace,
+            "tasks": list(state.tasks.values()),
+            "agent_conflicts": state.agent_conflicts,
         })
 
 
@@ -336,6 +467,57 @@ def _render_harness(orchestrator: HotelOrchestrator) -> None:
     st.dataframe(report["rows"], width="stretch", hide_index=True)
 
 
+def _render_evolution(orchestrator: HotelOrchestrator) -> None:
+    st.markdown('<div class="eyebrow">EXAMPLES & REGRESSION</div>', unsafe_allow_html=True)
+    st.subheader("🧬 难例回归与 Few-Shot 示例库")
+    st.caption("运行已有基线与难例，查看示例库。当前未接通线上错误自动收集、自动诊断或严格的效果前后对照。")
+
+    if "evolution_report" not in st.session_state:
+        st.session_state.evolution_report = None
+
+    col_btn, col_info = st.columns([1.2, 2])
+    with col_btn:
+        if st.button("运行基线与难例回归", type="primary"):
+            from harness.self_evolution import EvolutionDeltaRunner
+            with st.spinner("正在读取难例并执行离线回归…"):
+                runner = EvolutionDeltaRunner()
+                st.session_state.evolution_report = runner.run_evolution_cycle()
+            st.success("基线与难例评测完成！")
+            st.rerun()
+    with col_info:
+        st.info("Few-shot 在调用时提供参考示例，不修改模型参数。当前从已有 JSON 示例库按字符相似度选择最多两条；线上错误收集、审核与发布仍需实现。")
+
+    evo = st.session_state.evolution_report
+    if not evo:
+        from harness.self_evolution import HardCaseMiner, DynamicExemplarCurator
+        miner = HardCaseMiner()
+        curator = DynamicExemplarCurator()
+        cases = miner.load_cases()
+        exemplars = curator.load_exemplars()
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("基准用例", "20 组（待运行）")
+        m2.metric("当前已收录难例", f"{len(cases)} 组")
+        m3.metric("提炼 Few-Shot 样本", f"{len(exemplars)} 条")
+        m4.metric("示例读取方式", "运行时按需读取")
+    else:
+        m1, m2, m3, m4 = st.columns(4)
+        m1.metric("基线用例回归", evo.get("baseline_pass_rate", "100.0%"))
+        m2.metric("难例通过率", f"{evo.get('hard_cases_passed')}/{evo.get('hard_cases_total')} ({evo.get('hard_cases_accuracy')})")
+        m3.metric("提炼 Few-Shot 样本", f"{evo.get('curated_exemplars_count')} 条")
+        m4.metric("效果前后对照", "尚未实测")
+
+        st.markdown("#### 🔬 难例库诊断与根因反思清单 (Diagnostic Reflection)")
+        st.dataframe(evo.get("diagnostics", []), width="stretch", hide_index=True)
+
+    with st.expander("📚 查看当前已提炼并动态热注入的 Few-Shot 黄金样例库"):
+        import json
+        from harness.self_evolution import DynamicExemplarCurator
+        exemplars = DynamicExemplarCurator().load_exemplars()
+        for idx, ex in enumerate(exemplars, 1):
+            st.markdown(f"**【黄金示例 {idx}】**")
+            st.code(f"住客表达: {ex.get('user')}\n思考逻辑: {ex.get('assistant_thought')}\n输出JSON: {json.dumps(ex.get('json_output', {}), ensure_ascii=False)}")
+
+
 def main() -> None:
     st.set_page_config(page_title="AegisStay · Multi-Agent", page_icon="🏨", layout="wide", initial_sidebar_state="expanded")
     _style()
@@ -356,7 +538,7 @@ def main() -> None:
 
     # Sidebar Controls
     st.sidebar.title("AegisStay")
-    st.sidebar.caption("企业级演示环境 · 240 间客房真实仿真")
+    st.sidebar.caption("本地模拟演示 · 240 间客房")
     if has_model:
         st.sidebar.success(f"🟢 **云端大模型在线**\n\n`{orchestrator.model.model}`", icon="⚡")
     else:
@@ -408,13 +590,36 @@ def main() -> None:
         st.session_state.harness_report = None
         st.rerun()
 
-    guest, staff, harness = st.tabs(["📱 住客智能管家端", "🖥️ 酒店运营与工单中枢", "🧪 Harness 自动化质检底座"])
+    with st.sidebar.expander("🏛️ 架构与实现范围", expanded=True):
+        st.markdown("""
+- 🛡️ **接待理解与业务校验**
+  可选模型辅助理解，业务写入由程序规则核验
+- 🧠 **会话与工作黑板**
+  滑动消息窗口 + 工作状态 + 模拟 PMS，当前存于内存
+- ⚡ **后台任务与版本校验**
+  支持处理中继续输入、取消、改单及旧结果失效
+- ⚖️ **部门结果校验**
+  按最新需求、库存与安全规则核验，冲突转人工确认
+- 🧬 **Harness 与 Few-Shot 示例库**
+  离线回归 + 预置难例 + 运行时示例检索
+- 🌙 **PMS 跨日夜审 (Night Audit)**
+  跨日到期房态流转 + 次日预订保洁冲突预检
+""")
+
+    guest, staff, harness, evolution = st.tabs([
+        "📱 住客智能管家端",
+        "🖥️ 酒店运营与工单中枢",
+        "🧪 Harness 自动化质检底座",
+        "🧬 难例回归与 Few-Shot",
+    ])
     with guest:
         _render_guest(orchestrator)
     with staff:
         _render_staff(orchestrator)
     with harness:
         _render_harness(orchestrator)
+    with evolution:
+        _render_evolution(orchestrator)
 
 
 if __name__ == "__main__":

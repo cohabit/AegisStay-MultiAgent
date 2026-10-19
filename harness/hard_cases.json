@@ -1,0 +1,70 @@
+[
+  {
+    "id": "HC-01",
+    "category": "口误换房纠错",
+    "input": "我是1102……不对我记错了，其实我是1106，送两块毛巾，不不不，三块毛巾",
+    "expected_intent": "送物",
+    "expected_room": "1106",
+    "diagnosis": "用户在单轮对话中同时发生了【房号口误更正】和【物料数量末尾修正】，需要以最后认定的有效实体为准。",
+    "few_shot_exemplar": {
+      "user": "我是1102……不对我记错了，其实我是1106，送两块毛巾，不不不，三块毛巾",
+      "assistant_thought": "用户纠错：房号先说1102后更正为1106，有效房号为1106；毛巾数量最终修正为三块；主诉求为送物。",
+      "json_output": {
+        "intent": "送物",
+        "room_no": "1106",
+        "sentiment": "正常"
+      }
+    }
+  },
+  {
+    "id": "HC-02",
+    "category": "复合意图分流",
+    "input": "1106空调坏了不制冷，很生气！顺便问下早餐几点开始？",
+    "expected_intent": "工程报修",
+    "expected_room": "1106",
+    "diagnosis": "复合输入同时包含【设备硬件故障+生气】与【早餐政策问询】。状态机必须优先派发工程高优先工单，问询通过双流知识检索合并回复。",
+    "few_shot_exemplar": {
+      "user": "1106空调坏了不制冷，很生气！顺便问下早餐几点开始？",
+      "assistant_thought": "包含工程维修（空调不制冷+愤怒）与FAQ（早餐时间）。主动作意图锁定为工程报修，情绪为愤怒，FAQ走双流合并。",
+      "json_output": {
+        "intent": "工程报修",
+        "room_no": "1106",
+        "sentiment": "愤怒"
+      }
+    }
+  },
+  {
+    "id": "HC-03",
+    "category": "退房政策防越权",
+    "input": "明天几点退房？我没说要退房，只是问问政策",
+    "expected_intent": "酒店咨询",
+    "expected_room": null,
+    "diagnosis": "客人询问退房规则并明确否定退房动作，绝不能因为提到‘退房’而触发延迟退房或写工单操作。",
+    "few_shot_exemplar": {
+      "user": "明天几点退房？我没说要退房，只是问问政策",
+      "assistant_thought": "纯政策咨询并包含明确否定词，无服务写操作意图，锁定为酒店咨询。",
+      "json_output": {
+        "intent": "酒店咨询",
+        "room_no": null,
+        "sentiment": "正常"
+      }
+    }
+  },
+  {
+    "id": "HC-04",
+    "category": "严重卫生客诉升级",
+    "input": "808房间卫生间有一股恶臭，地漏反水，怎么做卫生的？马上让大堂经理给我解释！",
+    "expected_intent": "客诉紧急",
+    "expected_room": "808",
+    "diagnosis": "住客针对客房恶臭、卫生指责并指名要求管理层介入，优先级超越普通地漏报修，锁定为大堂经理紧急客诉。",
+    "few_shot_exemplar": {
+      "user": "808房间卫生间有一股恶臭，地漏反水，怎么做卫生的？马上让大堂经理给我解释！",
+      "assistant_thought": "涉及卫生恶臭指责且要求大堂经理介入，判定为客诉紧急，情绪为愤怒。",
+      "json_output": {
+        "intent": "客诉紧急",
+        "room_no": "808",
+        "sentiment": "愤怒"
+      }
+    }
+  }
+]

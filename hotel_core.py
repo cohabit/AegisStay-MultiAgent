@@ -4,13 +4,16 @@ from __future__ import annotations
 import json
 import os
 import re
+import threading
 import uuid
-from copy import deepcopy
+from copy import copy, deepcopy
 from dataclasses import dataclass, field
 from datetime import datetime
 from difflib import SequenceMatcher
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
+
+from agent_protocol import AgentConflict, TaskInterrupted, parse_delivery_command, validate_department_ticket
 
 ROOT = Path(__file__).resolve().parent
 DEPARTMENTS = {"送物": "楼层保洁", "工程报修": "工程部", "客诉紧急": "大堂经理", "续住申请": "前台接待", "票券服务": "礼宾部"}
@@ -103,6 +106,12 @@ class HotelState:
     late_checkout: dict[str, Any] | None = None
     checkout_requests: list[dict[str, Any]] = field(default_factory=list)
     voucher_ledger: list[dict[str, Any]] = field(default_factory=list)
+    current_date: str = "2026-10-01"
+    borrowed_items: list[dict[str, Any]] = field(default_factory=list)
+    audit_logs: list[dict[str, Any]] = field(default_factory=list)
+    rolling_summary: str | None = None
+    tasks: dict[str, dict[str, Any]] = field(default_factory=dict)
+    agent_conflicts: list[dict[str, Any]] = field(default_factory=list)
 
 
 def _load_env_or_config() -> None:
@@ -142,8 +151,8 @@ _load_env_or_config()
 class OpenAICompatibleClient:
     def __init__(self, *, disabled: bool = False) -> None:
         self.client: Any = None
-        self.disabled = disabled
-        if disabled:
+        self.disabled = disabled or os.getenv("AEGIS_FORCE_RULES", "").lower() in {"1", "true", "yes"}
+        if self.disabled:
             self.model = "offline_rules"
             return
         _load_env_or_config()
@@ -294,10 +303,12 @@ def _rules_extract(text: str, knowledge: HotelKnowledge) -> dict[str, Any]:
     if checkout_policy_question and not explicit_delay:
         late = False
     broken = any(w in text for w in ("坏", "漏水", "不制冷", "不亮", "没热水", "没有热水", "故障", "报修", "维修", "停电", "断电", "水管爆", "门锁"))
-    delivery = any(w in text for w in (
-        "毛巾", "矿泉水", "瓶水", "送水", "吹风机", "枕头", "被子", "牙刷",
+    delivery_command = parse_delivery_command(text)
+    delivery = (delivery_command.item is not None or any(w in text for w in (
+        "浴巾", "毛巾", "矿泉水", "瓶水", "送水", "吹风机", "枕头", "被子", "牙刷",
         "早餐券", "早饭券", "餐券", "房卡", "拖鞋", "洗发水", "沐浴露", "梳子", "剃须刀", "雨伞", "充电器"
-    )) and any(w in text for w in ("送", "要", "需要", "借", "来", "拿", "发", "补", "加", "给"))
+    ))) and any(w in text for w in ("送", "要", "需要", "借", "来", "拿", "发", "补", "加", "给", "换", "改"))
+    delivery = delivery and delivery_command.action != "cancel"
     voucher = any(w in text for w in ("早餐券", "早饭券", "餐券", "体验券"))
     voucher_delivery = voucher and (
         any(w in compact for w in ("送到", "送来", "发给", "给我发", "给房间发"))
@@ -394,6 +405,13 @@ class ReceptionAgent:
             "只有住客表达严重恶劣指责、卫生极差（如‘臭死了’、‘怎么做卫生的’）或明确要求管理层介入（如‘让大堂经理给我解释’、‘找经理’）主意图才属于【客诉紧急】；"
             "确认服务已完成（如‘修好了’、‘送到了’、‘搞定了’）不属于工程报修或送物。"
         )
+        try:
+            from harness.self_evolution import DynamicExemplarCurator
+            exemplar_block = DynamicExemplarCurator().retrieve_prompt_block(text, top_k=2)
+            if exemplar_block:
+                prompt += "\n" + exemplar_block
+        except Exception:
+            pass
         cloud = self.model.json_extract(prompt, text)
         if not cloud:
             return result, "规则降级"
@@ -495,63 +513,141 @@ def apply_late_checkout(room_no: str, requested_time: str, profile: dict[str, st
         reason = "超出 14:00 免费权益时限，需前台审核费用"
     elif profile.get("inventory_status") != "充裕":
         reason = "房态紧张，需前台协调"
+    elif profile.get("next_booking") and profile["next_booking"].get("expected_checkin", "15:00") < "15:00" and requested_time >= "14:00":
+        reason = f"次日新客预计 {profile['next_booking']['expected_checkin']} 到店，为预留消杀保洁排期需前台人工核准"
     elif profile.get("member_level") == "携程黑金会员":
         profile["checkout_time"] = max(profile["checkout_time"], requested_time)
         approved, reason = True, "黑金会员且房态充裕，权益内免费延迟退房"
     return {"room_no": room_no, "requested_time": requested_time, "status": "已批准" if approved else "需前台审核", "checkout_time": profile["checkout_time"] if profile else None, "reason": reason, "updated_pms": approved}
 
 
+def run_pms_night_audit(pms_rooms: dict[str, dict[str, Any]], current_date: str) -> tuple[str, list[dict[str, Any]]]:
+    """Execute hotel night audit, advancing date and rolling over occupied/overdue rooms."""
+    from datetime import date, timedelta
+    try:
+        cur = date.fromisoformat(current_date)
+    except Exception:
+        cur = date(2026, 10, 1)
+    next_date = (cur + timedelta(days=1)).isoformat()
+
+    actions = []
+    for r_no, room in pms_rooms.items():
+        status = room.get("room_status", "在住")
+        if status == "在住":
+            chk_date = room.get("checkout_date", current_date)
+            if chk_date <= current_date:
+                room["room_status"] = "超时待结"
+                actions.append({"room_no": r_no, "action": "标记为超时待结", "detail": f"退房日 {chk_date} 已过，需前台核对结账"})
+            room["daily_voucher_used"] = 0
+        elif status == "空房清洁中":
+            room["room_status"] = "空房可用"
+            actions.append({"room_no": r_no, "action": "夜审保洁归档", "detail": "保洁夜审归档，房间可重新安排入住"})
+
+    return next_date, actions
+
+
 def _requested_quantity(detail: str) -> int:
-    words = {"一": 1, "两": 2, "二": 2, "三": 3, "四": 4, "五": 5}
-    match = re.search(r"(\d+|一|两|二|三|四|五)\s*(?:条|瓶|个|把|双|份|张)", detail)
-    if not match:
-        return 1
-    value = match.group(1)
-    return int(value) if value.isdigit() else words[value]
+    return parse_delivery_command(detail).quantity or 1
 
 
 class HousekeepingAgent:
-    """专业处理送物，并将库存与动态派送 ETA 写回工单。"""
+    """专业处理送物，支持线程安全原子库存扣减、借还类物资登记与动态派送 ETA。"""
 
     name = "HousekeepingAgent"
     display_name = "客房保洁管家"
+    BORROWABLE_ITEMS = {"雨伞", "充电器", "吹风机"}
 
     def __init__(self) -> None:
+        self.lock = threading.RLock()
         self.inventory = {
-            "毛巾": 24, "矿泉水": 36, "吹风机": 6, "枕头": 12,
+            "浴巾": 24, "毛巾": 24, "矿泉水": 36, "吹风机": 6, "枕头": 12,
             "被子": 8, "牙刷": 30, "早餐券": 40, "拖鞋": 24,
             "洗发水": 18, "沐浴露": 18, "梳子": 20, "剃须刀": 12,
             "雨伞": 10, "充电器": 8,
         }
 
     def _item(self, detail: str) -> str:
-        return next((item for item in self.inventory if item in detail), "综合物料")
+        item = parse_delivery_command(detail).item
+        return item if item in self.inventory else "综合物料"
 
     def dispatch(self, room_no: str, detail: str, state: HotelState) -> dict[str, Any]:
-        active = sum(
-            ticket.get("category") == "送物" and ticket.get("status") == "处理中"
-            for ticket in state.tickets
-        )
-        eta_minutes = 5 if active <= 1 else min(10, 8 + active - 2)
-        item = self._item(detail)
-        quantity = _requested_quantity(detail)
-        remaining = None
-        inventory_status = "无需库存扣减"
-        if item != "综合物料":
-            before = self.inventory[item]
-            remaining = max(0, before - quantity)
-            self.inventory[item] = remaining
-            inventory_status = "库存充足" if before >= quantity else "库存不足，已转前台协调"
-        ticket = create_hotel_ticket(room_no, "送物", detail, "低", DEPARTMENTS["送物"])
-        ticket.update(
-            agent=self.name,
-            department_agent=self.name,
-            eta_minutes=eta_minutes,
-            inventory_item=item,
-            inventory_remaining=remaining,
-            inventory_status=inventory_status,
-        )
-        return ticket
+        with self.lock:
+            active = sum(
+                ticket.get("category") == "送物" and ticket.get("status") == "处理中"
+                for ticket in state.tickets
+            )
+            eta_minutes = 5 if active <= 1 else min(10, 8 + active - 2)
+            item = self._item(detail)
+            quantity = _requested_quantity(detail)
+            remaining = None
+            reserved = 0
+            inventory_status = "无需库存扣减"
+            is_borrow = item in self.BORROWABLE_ITEMS
+            if item != "综合物料":
+                before = self.inventory[item]
+                reserved = quantity if before >= quantity else 0
+                remaining = before - reserved
+                self.inventory[item] = remaining
+                inventory_status = "库存充足" if before >= quantity else "库存不足，已转前台协调"
+            ticket = create_hotel_ticket(room_no, "送物", detail, "低", DEPARTMENTS["送物"])
+            ticket.update(
+                agent=self.name,
+                department_agent=self.name,
+                eta_minutes=eta_minutes,
+                inventory_item=item,
+                inventory_remaining=remaining,
+                inventory_status=inventory_status,
+                is_borrowable=is_borrow,
+                quantity=quantity,
+                reserved_quantity=reserved,
+                delivery_status="待派送",
+            )
+            if is_borrow and reserved:
+                state.borrowed_items.append({
+                    "ticket_id": ticket["ticket_id"],
+                    "room_no": room_no,
+                    "item": item,
+                    "quantity": quantity,
+                    "status": "借用在房",
+                    "borrowed_at": datetime.now().isoformat(timespec="seconds"),
+                })
+            return ticket
+
+    def revise(self, ticket: dict[str, Any], command: Any, quantity: int | None = None) -> str:
+        """Amend a queued demo delivery; dispatched effects require staff acknowledgement."""
+        with self.lock:
+            desired_quantity = command.quantity if command.quantity is not None else (quantity or ticket.get("quantity", 1))
+            if command.action != "cancel" and desired_quantity <= 0:
+                return "物品数量需要大于零，暂未修改原工单。"
+            if ticket.get("delivery_status") in {"配送中", "已送达"} or ticket.get("status") == "已结单":
+                ticket["change_request"] = {
+                    "action": command.action, "item": command.item, "quantity": desired_quantity,
+                    "status": "待部门确认",
+                }
+                return "已收到修改请求，原送物已派出或送达，正在等待保洁确认撤回或更换；目前尚未确认取消成功。"
+            old_item = ticket.get("inventory_item")
+            old_reserved = ticket.get("reserved_quantity", 0)
+            if command.action != "cancel" and command.item not in self.inventory:
+                return "请确认需要更换成哪种物品，暂未修改原工单。"
+            if command.action != "cancel":
+                available = self.inventory[command.item] + (old_reserved if old_item == command.item else 0)
+                if available < desired_quantity:
+                    return "更换物品的库存不足，原工单暂未修改，请联系前台协调。"
+            if old_item in self.inventory:
+                self.inventory[old_item] += old_reserved
+            ticket["reserved_quantity"] = 0
+            if command.action == "cancel":
+                ticket.update(status="已取消", delivery_status="已取消", cancelled_at=datetime.now().isoformat(timespec="seconds"))
+                return "已取消尚未派送的送物工单，并释放预留库存。"
+            self.inventory[command.item] -= desired_quantity
+            ticket.update(
+                inventory_item=command.item, quantity=desired_quantity, reserved_quantity=desired_quantity,
+                inventory_remaining=self.inventory[command.item], inventory_status="库存充足",
+                item_detail=f"送 {desired_quantity} 件{command.item}",
+                is_borrowable=command.item in self.BORROWABLE_ITEMS,
+                revision=ticket.get("revision", 1) + 1,
+            )
+            return f"已将原送物工单改为 {desired_quantity} 件{command.item}，原物品不再派送。"
 
 
 class EngineeringAgent:
@@ -680,12 +776,156 @@ class HotelOrchestrator:
         self.state.guest_profile = self.state.pms_rooms.get(room_no)
         self.state.late_checkout = next((r for r in reversed(self.state.checkout_requests) if r["room_no"] == room_no), None)
 
-    def process(self, text: str) -> str:
+    def _verified_department_ticket(self, intent: str, detail: str) -> dict[str, Any]:
+        """Departments propose against copies; only a validated proposal changes this state."""
+        state = self.state
+        child_state = deepcopy(state)
+        delivery = parse_delivery_command(detail) if intent == "送物" else None
+        minimum = "低"
+        if intent == "送物":
+            child = copy(self.housekeeping)
+            child.lock = threading.RLock()
+            child.inventory = deepcopy(self.housekeeping.inventory)
+            ticket = child.dispatch(state.room_no, detail, child_state)
+        elif intent == "工程报修":
+            minimum = "高" if state.sentiment == "愤怒" or any(w in detail for w in self.engineering.MAJOR_INCIDENTS) else "中"
+            ticket = self.engineering.diagnose(state.room_no, detail, child_state, state.sentiment)
+        elif intent == "客诉紧急":
+            minimum = "高"
+            ticket = self.manager_escalation.escalate(state.room_no, detail, child_state, state.sentiment)
+        elif intent == "续住申请":
+            ticket = self.concierge.apply_stay_extension(
+                state.room_no, state.pending.get("nights", 1), child_state.guest_profile, child_state,
+            )
+        else:
+            ticket, _ = self.dispatcher.dispatch(state.room_no, intent, detail, state.sentiment)
+        validate_department_ticket(
+            ticket, room_no=state.room_no, intent=intent, department=DEPARTMENTS[intent],
+            minimum_priority=minimum, delivery=delivery,
+        )
+        if any(existing["ticket_id"] == ticket["ticket_id"] for existing in state.tickets):
+            raise AgentConflict("部门结果复用了已有工单标识")
+        if intent == "送物":
+            item, quantity = ticket.get("inventory_item"), ticket.get("quantity", 1)
+            expected_item = delivery.item if delivery.item in self.housekeeping.inventory else "综合物料"
+            if item != expected_item or set(child.inventory) != set(self.housekeeping.inventory):
+                raise AgentConflict("部门物品或库存字段不符合任务约定")
+            if item in self.housekeeping.inventory:
+                before = self.housekeeping.inventory[item]
+                reserved = quantity if before >= quantity else 0
+                if (ticket.get("reserved_quantity") != reserved
+                        or ticket.get("inventory_remaining") != before - reserved
+                        or child.inventory.get(item) != before - reserved
+                        or ticket.get("inventory_status") != ("库存充足" if before >= quantity else "库存不足，已转前台协调")
+                        or ticket.get("delivery_status") != "待派送"):
+                    raise AgentConflict("部门库存判断与库存账本不一致")
+                if any(child.inventory.get(other) != value for other, value in self.housekeeping.inventory.items() if other != item):
+                    raise AgentConflict("部门结果修改了任务以外的物品库存")
+            elif child.inventory != self.housekeeping.inventory:
+                raise AgentConflict("未识别的物品不得修改库存")
+            borrowed_changes = child_state.borrowed_items[len(state.borrowed_items):]
+            expected_borrow = item in self.housekeeping.BORROWABLE_ITEMS and bool(ticket.get("reserved_quantity"))
+            if ticket.get("is_borrowable") != (item in self.housekeeping.BORROWABLE_ITEMS) or len(borrowed_changes) != int(expected_borrow):
+                raise AgentConflict("借用标识或记录数量与库存预留不一致")
+            for borrowed in borrowed_changes:
+                if (borrowed.get("ticket_id") != ticket["ticket_id"] or borrowed.get("room_no") != state.room_no
+                        or borrowed.get("item") != item or borrowed.get("quantity") != quantity):
+                    raise AgentConflict("借用记录与已核验工单不一致")
+            self.housekeeping.inventory.clear()
+            self.housekeeping.inventory.update(child.inventory)
+            state.borrowed_items.extend(borrowed_changes)
+        return ticket
+
+    def _record_agent_conflict(self, error: AgentConflict, trace: list[dict[str, str]]) -> str:
+        state = self.state
+        conflict = {
+            "conflict_id": f"CF-{uuid.uuid4().hex[:10]}", "room_no": state.room_no,
+            "intent": state.intent, "detail": state.pending.get("detail") if state.pending else None,
+            "reason": str(error), "status": "需人工核验",
+            "created_at": datetime.now().isoformat(timespec="seconds"),
+        }
+        state.agent_conflicts.append(conflict)
+        state.active_agent = "Supervisor · 需人工核验"
+        trace.append({"agent": "Supervisor", "event": "agent_conflict", "detail": str(error)})
+        return "部门处理结果与您的需求或业务规则不一致，暂未派单，已记录待核验事项，请联系前台确认。"
+
+    def delivery_target(self, text: str, command: Any = None) -> tuple[dict[str, Any] | None, str | None]:
+        """Resolve one business order consistently for both scheduling and execution."""
+        command = command or parse_delivery_command(text)
+        if command.unresolved_target:
+            return None, "请确认要取消或修改的具体送物物品，暂未修改任何工单。"
+        if command.ambiguous:
+            return None, "您提到了多种物品，请分别说明要修改或取消哪一种；暂未修改工单。"
+        if self.state.pending and self.state.pending.get("uncommitted_delivery"):
+            return None, None
+        tickets = [t for t in self.state.tickets if t.get("room_no") == self.state.room_no and t.get("category") == "送物"]
+        active = [t for t in tickets if t["status"] == "处理中"]
+        completed = [t for t in tickets if t["status"] == "已结单"]
+        old_items = set(command.references) - {command.item}
+        if old_items:
+            matching = [t for t in active if t.get("inventory_item") in old_items]
+            if len(matching) == 1:
+                return matching[0], None
+            if len(matching) > 1:
+                return None, "同一种物品有多张送物工单，请联系前台确认要修改哪一单。"
+            historical = [t for t in completed if t.get("inventory_item") in old_items]
+            if historical:
+                return historical[-1], None
+            if not self.state.pending and tickets:
+                return None, "未找到对应的可处理送物工单，请说明要修改或取消哪种物品。"
+            return None, None
+        if len(active) > 1:
+            return None, "当前有多项送物服务，请先说明要修改或取消哪一种物品。"
+        if active:
+            return active[0], None
+        pending_delivery = self.state.pending and self.state.pending.get("intent") == "送物"
+        return (completed[-1] if completed and not pending_delivery else None), None
+
+    def _delivery_change(self, text: str, trace: list[dict[str, str]]) -> tuple[str | None, str | None]:
+        command = parse_delivery_command(text)
+        state = self.state
+        if command.action not in {"replace", "cancel"}:
+            return None, None
+        if command.unresolved_target or command.ambiguous or command.action == "replace" and command.quantity == 0:
+            trace.append({"agent": "Supervisor", "event": "delivery_target_required", "detail": "需要确认更换的物品和有效数量"})
+            return "请确认要修改或取消的具体送物物品及有效数量，暂未修改任何工单。", None
+        pending_delivery = state.pending and state.pending.get("intent") == "送物"
+        named_item = bool(command.references)
+        if not command.item and not named_item and not pending_delivery and state.intent != "送物":
+            return None, None
+        ticket, target_error = self.delivery_target(text, command)
+        if target_error:
+            trace.append({"agent": "Supervisor", "event": "delivery_target_required", "detail": target_error})
+            return target_error, None
+        if ticket:
+            reply = self.housekeeping.revise(ticket, command)
+            state.pending = None
+            state.intent, state.active_agent = "送物", self.housekeeping.name
+            self.sync_borrowed_ticket(ticket)
+            trace.append({"agent": self.housekeeping.name, "event": "delivery_change", "detail": reply})
+            return reply, None
+        if command.action == "cancel":
+            state.pending = None
+            trace.append({"agent": "Supervisor", "event": "task_cancelled", "detail": "送物尚未派单，取消待办"})
+            return "已取消送物请求，尚未派单。", None
+        if command.ambiguous or not command.item:
+            return "请说明需要更换成哪种物品，暂未派送。", None
+        prior_detail = state.pending.get("detail", "") if pending_delivery else ""
+        quantity = command.quantity or _requested_quantity(prior_detail)
+        return None, f"送 {quantity} 件{command.item}"
+
+    def process(
+        self, text: str, *, record_user: bool = True, cancellation_check: Callable[[], bool] | None = None,
+    ) -> str:
         text = text.strip()
         if not text:
             return "请告诉我您需要的服务。"
         state = self.state
+        if cancellation_check and cancellation_check():
+            raise TaskInterrupted()
         analysis, state.model_mode = self.reception.understand(text)
+        if cancellation_check and cancellation_check():
+            raise TaskInterrupted()
         room = analysis["room_no"]
         is_correction = any(w in text for w in (
             "搞错", "更正", "换成", "改为", "重新", "不是",
@@ -693,7 +933,8 @@ class HotelOrchestrator:
         ))
 
         # Always record user turn immediately so conversation history is never dropped
-        state.messages.append({"role": "user", "content": text, "room_no": state.room_no or room})
+        if record_user:
+            state.messages.append({"role": "user", "content": text, "room_no": state.room_no or room})
 
         # Dual-stream FAQ assembly
         faq_part = None
@@ -728,6 +969,13 @@ class HotelOrchestrator:
             self._bind_room(room)
         state.sentiment, state.active_agent = analysis["sentiment"], "ReceptionAgent"
         trace = [{"agent": "ReceptionAgent", "event": "关联档案", "detail": f"房间 {state.room_no or '待补全'}；{'已关联 CRM' if state.guest_profile else '档案待核实'}"}]
+        change_reply, delivery_detail = self._delivery_change(text, trace)
+        if change_reply is not None:
+            return self._finish(f"{faq_part} 另外，{change_reply}" if faq_part else change_reply, trace)
+        if delivery_detail:
+            analysis["intent"] = "送物"
+        if cancellation_check and cancellation_check():
+            raise TaskInterrupted()
 
         pacing_keywords = (
             "还没好", "还没修好", "怎么回事", "还要多久", "多久能到",
@@ -777,7 +1025,13 @@ class HotelOrchestrator:
                 ticket = open_tickets[-1]
             state.intent = "服务完结"
             if ticket:
+                if (ticket.get("inventory_item") in self.housekeeping.inventory
+                        and ticket.get("reserved_quantity", 0) != ticket.get("quantity", 1)):
+                    trace.append({"agent": "Supervisor", "event": "delivery_stock_unconfirmed", "detail": "尚无完整库存预留，需核实实际派送"})
+                    return self._finish("收到您的反馈，这张服务单仍需保洁核验实际派送和库存记录，暂未标记完成。", trace)
                 ticket["status"] = "已结单"
+                if ticket["category"] == "送物":
+                    ticket["delivery_status"] = "已送达"
                 ticket["completed_at"] = datetime.now().isoformat(timespec="seconds")
                 state.active_agent = ticket.get("agent", "EngineeringAgent")
                 trace.append({
@@ -812,7 +1066,7 @@ class HotelOrchestrator:
         if has_service:
             state.pending = {
                 "intent": analysis["intent"],
-                "detail": text,
+                "detail": delivery_detail or text,
                 "sentiment": analysis["sentiment"],
                 "requested_time": analysis["requested_time"],
                 "nights": analysis.get("nights", 1),
@@ -841,6 +1095,13 @@ class HotelOrchestrator:
             return self._finish(reply, trace)
 
         state.intent, state.sentiment = pending["intent"], pending["sentiment"]
+        if state.intent == "送物":
+            delivery = parse_delivery_command(pending["detail"])
+            if delivery.ambiguous or delivery.quantity == 0:
+                state.pending = None
+                trace.append({"agent": "Supervisor", "event": "delivery_target_required", "detail": "单次送物需明确一种物品及有效数量"})
+                notice = "请分别说明要送的物品和数量，每次先处理一种物品，数量需要大于零；本次尚未派单。"
+                return self._finish(f"{faq_part} 另外，{notice}" if faq_part else notice, trace)
         service_reply = ""
         if not state.room_no:
             state.active_agent = "ReceptionAgent · 补全房间号"
@@ -855,7 +1116,10 @@ class HotelOrchestrator:
                 state.pending = None
             else:
                 inventory = state.guest_profile.get("inventory_status", "充裕")
-                ticket = self.concierge.apply_stay_extension(state.room_no, nights, state.guest_profile, state)
+                try:
+                    ticket = self._verified_department_ticket("续住申请", pending["detail"])
+                except AgentConflict as error:
+                    return self._finish(self._record_agent_conflict(error, trace), trace)
                 state.tickets.append(ticket)
                 state.pending, state.active_agent = None, self.concierge.name
                 trace.append({"agent": self.concierge.name, "event": "stay_extension_review", "detail": f"{ticket['ticket_id']} → 前台接待 / 房态{inventory}"})
@@ -907,14 +1171,15 @@ class HotelOrchestrator:
             existing = next((t for t in state.tickets if t["room_no"] == state.room_no and t["item_detail"] == pending["detail"] and t["status"] == "处理中"), None)
             if existing:
                 ticket, dispatch_mode = existing, "重复申请复用"
-            elif state.intent == "送物":
-                ticket, dispatch_mode = self.housekeeping.dispatch(state.room_no, pending["detail"], state), "HousekeepingAgent"
-            elif state.intent == "工程报修":
-                ticket, dispatch_mode = self.engineering.diagnose(state.room_no, pending["detail"], state, state.sentiment), "EngineeringAgent"
-            elif state.intent == "客诉紧急":
-                ticket, dispatch_mode = self.manager_escalation.escalate(state.room_no, pending["detail"], state, state.sentiment), "ManagerEscalationAgent"
             else:
-                ticket, dispatch_mode = self.dispatcher.dispatch(state.room_no, state.intent, pending["detail"], state.sentiment)
+                if cancellation_check and cancellation_check():
+                    raise TaskInterrupted()
+                try:
+                    ticket = self._verified_department_ticket(state.intent, pending["detail"])
+                except AgentConflict as error:
+                    return self._finish(self._record_agent_conflict(error, trace), trace)
+                dispatch_mode = ticket.get("agent", "DispatchAgent")
+                trace.append({"agent": "Supervisor", "event": "proposal_validated", "detail": "用户需求、部门、房号与风险规则校验通过"})
             if not existing:
                 state.tickets.append(ticket)
             state.pending, state.active_agent = None, ticket.get("agent", dispatch_mode)
@@ -923,7 +1188,11 @@ class HotelOrchestrator:
             if ticket["category"] == "客诉紧急":
                 service_reply = f"{ticket.get('empathy_response', '很抱歉给您带来不好的体验，大堂经理已收到您的反馈。')} {ticket.get('compensation_suggestion', '')}"
             elif ticket["category"] == "送物":
-                service_reply = f"已为您创建送物服务单，预计 {ticket.get('eta_minutes', 5)} 分钟送达。"
+                service_reply = (
+                    "该物品库存不足，已记录协调申请，尚未确认派送，请联系前台。"
+                    if ticket.get("inventory_status", "").startswith("库存不足")
+                    else f"已为您创建送物服务单，预计 {ticket.get('eta_minutes', 5)} 分钟送达。"
+                )
             elif ticket["category"] == "工程报修":
                 service_reply = f"{ticket.get('safety_guidance', '')} 已通知工程人员检查，工作人员将尽快联系您。"
             else:
@@ -942,7 +1211,31 @@ class HotelOrchestrator:
         self.state.request_detail = self.state.pending["detail"] if self.state.pending else None
         self.state.messages.append({"role": "assistant", "content": reply, "room_no": self.state.room_no})
         self.state.last_trace = trace
+        self.compact_messages()
         return reply
+
+    def compact_messages(self) -> None:
+        if len(self.state.messages) > 12:
+            archived = self.state.messages[:-6]
+            self.state.messages = self.state.messages[-6:]
+            snippets = [
+                f"{m.get('role', 'user')}:{m.get('content', '')[:25]}"
+                for m in archived[-4:]
+            ]
+            self.state.rolling_summary = "；".join(snippets)
+
+    def night_audit(self) -> dict[str, Any]:
+        """Perform system night audit, advancing date and resetting daily quotas."""
+        new_date, actions = run_pms_night_audit(self.state.pms_rooms, getattr(self.state, "current_date", "2026-10-01"))
+        self.state.current_date = new_date
+        log_entry = {
+            "date": new_date,
+            "actions_count": len(actions),
+            "actions": actions,
+            "audited_at": datetime.now().isoformat(timespec="seconds"),
+        }
+        self.state.audit_logs.append(log_entry)
+        return log_entry
 
     def guest_progress(self) -> list[str]:
         items = []
@@ -956,8 +1249,15 @@ class HotelOrchestrator:
             if ticket["room_no"] != self.state.room_no:
                 continue
             label = "服务反馈" if ticket["category"] == "客诉紧急" else ticket["category"]
-            eta = f" · 预计 {ticket.get('eta_minutes', 5)} 分钟送达" if ticket["category"] == "送物" and ticket["status"] == "处理中" else ""
-            items.append(f"{label}：{'已完成' if ticket['status'] == '已结单' else '处理中'}{eta}")
+            pending_change = ticket.get("change_request", {}).get("status") == "待部门确认"
+            stock_shortage = ticket.get("inventory_status", "").startswith("库存不足")
+            eta = f" · 预计 {ticket.get('eta_minutes', 5)} 分钟送达" if ticket["category"] == "送物" and ticket["status"] == "处理中" and not (pending_change or stock_shortage) else ""
+            status = "已完成" if ticket["status"] == "已结单" else ticket["status"]
+            if pending_change:
+                status = "修改待保洁确认"
+            elif stock_shortage and ticket["status"] == "处理中":
+                status = "待库存协调"
+            items.append(f"{label}：{status}{eta}")
         return items or ["暂无进行中的服务请求"]
 
     def guest_progress_items(self) -> list[dict[str, str]]:
@@ -982,19 +1282,51 @@ class HotelOrchestrator:
             if ticket["room_no"] != self.state.room_no:
                 continue
             label = "服务反馈" if ticket["category"] == "客诉紧急" else ticket["category"]
-            eta = f" · 预计 {ticket.get('eta_minutes', 5)} 分钟送达" if ticket["category"] == "送物" and ticket["status"] == "处理中" else ""
-            st_type = "success" if ticket["status"] == "已结单" else "warning"
+            pending_change = ticket.get("change_request", {}).get("status") == "待部门确认"
+            stock_shortage = ticket.get("inventory_status", "").startswith("库存不足")
+            eta = f" · 预计 {ticket.get('eta_minutes', 5)} 分钟送达" if ticket["category"] == "送物" and ticket["status"] == "处理中" and not (pending_change or stock_shortage) else ""
+            status = "已完成" if ticket["status"] == "已结单" else ticket["status"]
+            if pending_change:
+                status = "修改待保洁确认"
+            elif stock_shortage and ticket["status"] == "处理中":
+                status = "待库存协调"
+            st_type = "warning" if pending_change else "success" if ticket["status"] == "已结单" else "info" if ticket["status"] == "已取消" else "warning"
             items.append({
-                "label": f"{label}：{'已完成' if ticket['status'] == '已结单' else '处理中'}{eta}",
-                "status": ticket["status"],
+                "label": f"{label}：{status}{eta}",
+                "status": status,
                 "type": st_type,
             })
         return items
 
+    def sync_borrowed_ticket(self, ticket: dict[str, Any]) -> None:
+        records = [item for item in self.state.borrowed_items if item["ticket_id"] == ticket["ticket_id"]]
+        is_borrowed = ticket.get("is_borrowable") and ticket.get("reserved_quantity", 0) > 0 and ticket["status"] != "已取消"
+        if not is_borrowed:
+            for item in records:
+                item["status"] = "已取消借用"
+        elif records:
+            records[0].update(item=ticket["inventory_item"], quantity=ticket["quantity"], status="借用在房")
+        else:
+            self.state.borrowed_items.append({
+                "ticket_id": ticket["ticket_id"], "room_no": ticket["room_no"],
+                "item": ticket["inventory_item"], "quantity": ticket["quantity"], "status": "借用在房",
+                "borrowed_at": datetime.now().isoformat(timespec="seconds"),
+            })
+
     def complete_ticket(self, ticket_id: str) -> None:
         ticket = next(t for t in self.state.tickets if t["ticket_id"] == ticket_id)
+        if ticket["status"] == "已取消":
+            raise ValueError("已取消工单不能标记为完成")
+        if ticket.get("inventory_item") in self.housekeeping.inventory and ticket.get("reserved_quantity", 0) != ticket.get("quantity", 1):
+            raise ValueError("库存尚未预留，不能确认送达")
         ticket.update(status="已结单", completed_at=datetime.now().isoformat(timespec="seconds"))
+        if ticket["category"] == "送物":
+            ticket["delivery_status"] = "已送达"
         self.state.last_trace = [{"agent": "PMS", "event": "人工结单", "detail": ticket_id}]
+
+    def resolve_agent_conflict(self, conflict_id: str) -> None:
+        conflict = next(c for c in self.state.agent_conflicts if c["conflict_id"] == conflict_id)
+        conflict.update(status="已核验", reviewed_at=datetime.now().isoformat(timespec="seconds"))
 
     def review_checkout(self, room_no: str, requested_time: str, approved: bool | None) -> None:
         result = next((r for r in self.state.checkout_requests if r["room_no"] == room_no and r["requested_time"] == requested_time), None)

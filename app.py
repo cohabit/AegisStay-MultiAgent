@@ -24,23 +24,12 @@ def _style() -> None:
         <style>
         :root {
             --as-card-bg: #ffffff;
-            --as-card-border: #dce8e1;
-            --as-text: #102a2a;
-            --as-muted: #70817c;
-            --as-tab-color: #243834;
+            --as-card-border: #d9e2ec;
+            --as-text: #102a43;
+            --as-muted: #627d98;
         }
-        @media (prefers-color-scheme: dark) {
-            :root {
-                --as-card-bg: #1c2128;
-                --as-card-border: #30363d;
-                --as-text: #e6edf3;
-                --as-muted: #8b949e;
-                --as-tab-color: #e6edf3;
-            }
-        }
-        [data-testid="stHeader"] { background: transparent; }
-        .hero { padding: 1.0rem 0 .5rem; }
-        .eyebrow { color:#27866b; letter-spacing:.16em; font-size:.72rem; font-weight:700; }
+        .hero { padding: .6rem 0 .35rem; }
+        .eyebrow { color:#0f766e; letter-spacing:.14em; font-size:.7rem; font-weight:800; }
         .muted { color: var(--as-muted); font-size:.85rem; }
         .room-card {
             background-color: var(--as-card-bg);
@@ -49,9 +38,9 @@ def _style() -> None:
             border-radius: 12px;
             padding: 10px 12px;
             margin: 4px 0;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            box-shadow: 0 2px 7px rgba(16,42,67,0.06);
         }
-        .room-card-occ { border-left: 5px solid #27866b !important; }
+        .room-card-occ { border-left: 5px solid #0f766e !important; }
         .room-card-clean { border-left: 5px solid #6b7280 !important; }
         .room-card-dirty { border-left: 5px solid #f59e0b !important; }
         .room-card-repair { border-left: 5px solid #ef4444 !important; }
@@ -76,16 +65,7 @@ def _style() -> None:
         }
         .agent-badge { display: inline-block; margin: 4px 0 12px; font-weight: 700; }
         .agent-monitor-card { min-height: 76px; }
-        /* Fix Dark Mode Tabs invisibility */
-        [data-testid="stTabs"] button {
-            color: var(--as-tab-color) !important;
-            font-weight: 600;
-            font-size: 0.95rem;
-        }
-        [data-testid="stTabs"] button[aria-selected="true"] {
-            color: #27866b !important;
-            border-bottom-color: #27866b !important;
-        }
+        .section-label { color:#486581; font-size:.78rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
         </style>
         """, unsafe_allow_html=True,
     )
@@ -105,7 +85,9 @@ def _runtime_for_ui(orchestrator: HotelOrchestrator) -> SessionManager:
 def _staff_action(orchestrator: HotelOrchestrator, method: str, *args):
     runtime = _runtime_for_ui(orchestrator)
     with runtime.lock:
-        return getattr(orchestrator, method)(*args)
+        result = getattr(orchestrator, method)(*args)
+        runtime.persist(GUEST_SESSION)
+        return result
 
 
 @st.fragment(run_every=0.5)
@@ -114,8 +96,8 @@ def _render_guest(orchestrator: HotelOrchestrator) -> None:
     force_rules = orchestrator.force_rules
     orchestrator = runtime.snapshot(GUEST_SESSION)
     state = orchestrator.state
-    st.markdown('<div class="eyebrow">GUEST EXPERIENCE</div>', unsafe_allow_html=True)
-    st.subheader("住客智能管家")
+    st.markdown('<div class="eyebrow">GUEST SERVICES</div>', unsafe_allow_html=True)
+    st.subheader("住客服务中心")
     has_model = bool(orchestrator.model.client)
     mode_tag = f"🟢 大脑：云端模型 ({orchestrator.model.model})" if has_model else "🟡 大脑：本地规则引擎 (离线保底)"
     if state.guest_profile:
@@ -127,7 +109,7 @@ def _render_guest(orchestrator: HotelOrchestrator) -> None:
     icon, label = AGENT_BADGES.get(current_agent, ("🧭", current_agent))
     st.markdown(f"<div class='agent-badge'>{icon} 当前对接：{label} · <code>{current_agent}</code></div>", unsafe_allow_html=True)
 
-    chat = st.container(height=440)
+    chat = st.container(height=320)
     with chat:
         for message in state.messages:
             with st.chat_message("user" if message["role"] == "user" else "assistant"):
@@ -158,7 +140,7 @@ def _render_guest(orchestrator: HotelOrchestrator) -> None:
             else:
                 st.info(item["label"], icon="🛎️")
 
-    with st.expander("查看会话与工作黑板（本地内存演示）", expanded=False):
+    with st.expander("查看会话与工作状态", expanded=False):
         m_c1, m_c2, m_c3, m_c4 = st.columns(4)
         with m_c1:
             st.markdown("**1️⃣ 短期会话 (L1)**")
@@ -211,7 +193,7 @@ def _render_staff(orchestrator: HotelOrchestrator) -> None:
     alerts = sum(ticket.get("risk_level") == "红色" and ticket["status"] == "处理中" for ticket in tickets)
 
     st.markdown('<div class="eyebrow">OPERATIONS CONTROL CENTER</div>', unsafe_allow_html=True)
-    st.subheader("酒店运营管理中枢 (PMS 240房数字大板)")
+    st.subheader("酒店运营管理中枢")
 
     cur_date = getattr(state, "current_date", "2026-10-01")
     date_col1, date_col2 = st.columns([3, 1.2])
@@ -234,7 +216,7 @@ def _render_staff(orchestrator: HotelOrchestrator) -> None:
     m5.metric("维修中 (OOO)", repair)
     m6.metric("高危客诉", alerts, delta="需立即处理" if alerts else None, delta_color="inverse")
 
-    st.markdown("#### 🤖 各部门智能体实时监控")
+    st.markdown("#### 各部门服务队列")
     monitor_cols = st.columns(4)
     for col, monitor in zip(monitor_cols, orchestrator.agent_monitoring()):
         status_icon = "🟢" if monitor["status"] == "处理中" else "⚪"
@@ -249,7 +231,7 @@ def _render_staff(orchestrator: HotelOrchestrator) -> None:
     left, right = st.columns([1.35, 1.0])
 
     with left:
-        st.markdown("#### 🏢 全酒店数字化房态矩阵 (10层仿真大板)")
+        st.markdown("#### 全酒店房态矩阵")
         
         # Filter controls
         f_col1, f_col2, f_col3 = st.columns([1.2, 1.2, 1.6])
@@ -410,7 +392,7 @@ def _render_staff(orchestrator: HotelOrchestrator) -> None:
 
 def _render_harness(orchestrator: HotelOrchestrator) -> None:
     st.markdown('<div class="eyebrow">QUALITY & EVALUATION</div>', unsafe_allow_html=True)
-    st.subheader("Harness 自动化质检底座")
+    st.subheader("质量验收与回归")
 
     has_model = bool(orchestrator.model.client)
     col_opt, col_status = st.columns([1.5, 1.0])
@@ -469,7 +451,7 @@ def _render_harness(orchestrator: HotelOrchestrator) -> None:
 
 def _render_evolution(orchestrator: HotelOrchestrator) -> None:
     st.markdown('<div class="eyebrow">EXAMPLES & REGRESSION</div>', unsafe_allow_html=True)
-    st.subheader("🧬 难例回归与 Few-Shot 示例库")
+    st.subheader("难例回归与 Few-Shot 示例库")
     st.caption("运行已有基线与难例，查看示例库。当前未接通线上错误自动收集、自动诊断或严格的效果前后对照。")
 
     if "evolution_report" not in st.session_state:
@@ -519,7 +501,7 @@ def _render_evolution(orchestrator: HotelOrchestrator) -> None:
 
 
 def main() -> None:
-    st.set_page_config(page_title="AegisStay · Multi-Agent", page_icon="🏨", layout="wide", initial_sidebar_state="expanded")
+    st.set_page_config(page_title="AegisStay · Hotel Operations", page_icon=":material/hotel:", layout="wide", initial_sidebar_state="collapsed")
     _style()
     if "orchestrator" not in st.session_state:
         st.session_state.orchestrator = HotelOrchestrator()
@@ -528,17 +510,17 @@ def main() -> None:
     mode_text = f"🟢 云端大模型实时驱动（{orchestrator.model.model}）" if has_model else "🟡 本地确定性规则保底（离线零成本模式）"
 
     st.markdown(
-        f'<div class="hero"><div class="eyebrow">AEGISSTAY · BLACKBOARD ORCHESTRATION</div>'
-        f'<h1>智慧酒店多智能体协同系统</h1>'
-        f'<div class="muted">住客体验、PMS 240房运营与自动化质量验收，共享同一条可追踪业务链。'
-        f'&nbsp;&nbsp;<span style="background: rgba(39, 134, 107, 0.15); color: #27866b; padding: 2px 8px; border-radius: 8px; font-weight: 600; font-size: 0.8rem;">{mode_text}</span>'
+        f'<div class="hero"><div class="eyebrow">AEGISSTAY · HOTEL OPERATIONS</div>'
+        f'<h1>酒店服务运营中枢</h1>'
+        f'<div class="muted">住客服务、工单流转与房态管理，共享一条可追踪的业务链。'
+        f'&nbsp;&nbsp;<span style="background: #e6fffa; color: #0f766e; padding: 3px 9px; border-radius: 999px; font-weight: 700; font-size: 0.78rem;">{mode_text}</span>'
         f'</div></div>',
         unsafe_allow_html=True,
     )
 
     # Sidebar Controls
     st.sidebar.title("AegisStay")
-    st.sidebar.caption("本地模拟演示 · 240 间客房")
+    st.sidebar.caption("单酒店运营工作台 · 240 间客房")
     if has_model:
         st.sidebar.success(f"🟢 **云端大模型在线**\n\n`{orchestrator.model.model}`", icon="⚡")
     else:
@@ -590,12 +572,12 @@ def main() -> None:
         st.session_state.harness_report = None
         st.rerun()
 
-    with st.sidebar.expander("🏛️ 架构与实现范围", expanded=True):
+    with st.sidebar.expander("系统能力与运行状态", expanded=False):
         st.markdown("""
 - 🛡️ **接待理解与业务校验**
   可选模型辅助理解，业务写入由程序规则核验
 - 🧠 **会话与工作黑板**
-  滑动消息窗口 + 工作状态 + 模拟 PMS，当前存于内存
+  滑动消息窗口 + 工作状态 + 持久化 PMS
 - ⚡ **后台任务与版本校验**
   支持处理中继续输入、取消、改单及旧结果失效
 - ⚖️ **部门结果校验**
@@ -607,10 +589,10 @@ def main() -> None:
 """)
 
     guest, staff, harness, evolution = st.tabs([
-        "📱 住客智能管家端",
-        "🖥️ 酒店运营与工单中枢",
-        "🧪 Harness 自动化质检底座",
-        "🧬 难例回归与 Few-Shot",
+        "住客服务",
+        "运营中枢",
+        "质量验收",
+        "难例回归",
     ])
     with guest:
         _render_guest(orchestrator)

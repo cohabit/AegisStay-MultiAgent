@@ -1,174 +1,172 @@
-# AegisStay · 智慧酒店 Multi-Agent 协同 Demo
+# AegisStay · 酒店服务运营中枢
 
-用 Python 实现接待、保洁、工程、礼宾和经理的角色协同，将住客需求连接到可校验的工单与模拟 PMS。提供 Streamlit 界面、FastAPI 接口、后台任务控制和离线回归评测。
+AegisStay 将住客服务请求、部门工单、房态和人工审核放在同一条可追踪业务链上。系统由接待、客房保洁、工程、礼宾和大堂经理等职责模块组成，支持多轮补充、处理中取消或改单、部门确认、库存校验和质量回归。
 
-**2026-10-20 版本**：支持处理期间继续输入、取消／改单、旧任务结果失效、部门回执确认和结果冲突核验；补充“水不用了”等口语取消。全部业务数据为本地模拟，状态保存在单进程内存中。
+当前版本面向单酒店小规模部署，提供 Streamlit 工作台、FastAPI 网关、SQLite 持久化、Docker Compose 运行方式和可选的 OpenAI 兼容模型接入。仓库内置 240 间客房初始数据；通过适配层替换为酒店实际 PMS 前，需要完成接口映射、权限审批和现场验收。
 
-## 运行截图
+## 产品界面
 
-以下为本版实际页面，使用离线规则和模拟住客数据。截图不是设计稿；复现过程见 [截图说明](docs/images/README.md)。
+截图来自当前版本页面，统一使用浅色主题和 1280 × 720 浏览器视口。数据为仓库内置的初始酒店数据，图片展示完整业务上下文，不包含密钥或真实住客信息。
 
-### 酒店运营与房态
+### 运营总览
 
-模拟 240 间客房，查看房态、部门待办、工单、延退审批、库存及跨日夜审。
+![酒店运营总览](docs/images/operations-overview.jpg)
 
-![酒店运营与房态总览](docs/images/operations-overview.jpg)
+### 住客服务处理
 
-### 多张工单中的口语取消
+![住客服务对话与服务进度](docs/images/guest-cancellation.jpg)
 
-先申请毛巾和矿泉水；说“不用了”时追问对象，说“水不用了”时只取消矿泉水，保留毛巾工单。本例由物品别名、取消规则和当前工单状态共同完成。
+### 配送变更确认
 
-![水不用了只取消矿泉水](docs/images/guest-cancellation.jpg)
+![配送中的工单变更确认](docs/images/delivery-change-confirmation.jpg)
 
-### 派送中更换，需要部门确认
+### 质量回归
 
-毛巾已开始配送，再改为两条浴巾。系统先记录变更，由运营端确认能否撤回；确认前不向住客承诺已经更换成功。
+![离线质量回归结果](docs/images/harness-evaluation.jpg)
 
-![派送中更换等待部门确认](docs/images/delivery-change-confirmation.jpg)
+截图复现步骤和采集环境见 [产品界面截图说明](docs/images/README.md)。
 
-### 离线 Harness 报告
+## 核心流程
 
-页面运行 20 条固定场景，逐项显示意图、槽位、派单和任务结果。这些指标仅针对已知离线用例，不代表真实模型泛化能力。
+~~~mermaid
+flowchart LR
+    A[住客消息] --> B[接待理解与补槽]
+    B --> C[任务关系判断]
+    C --> D[后台任务与版本控制]
+    D --> E[部门处理模块]
+    E --> F[业务规则与库存校验]
+    F --> G{当前版本仍有效？}
+    G -->|是| H[写入工单与 PMS]
+    G -->|否| I[丢弃过时结果]
+    H --> J[运营确认与状态回执]
+~~~
 
-![二十条离线规则回归报告](docs/images/harness-evaluation.jpg)
+- **需求处理**：缺房号先补充；FAQ 与服务申请可以在同一轮保留。
+- **任务控制**：每次执行有 run_id、task_id 和版本号；新需求可以取消或更新旧任务。
+- **业务安全**：提交前检查房号、部门、物品、数量、风险、库存和当前业务基线。
+- **执行阶段**：待派送可修改，配送中等待部门撤回确认，已送达需要确认取回。
+- **结果仲裁**：主控按最新需求、可信业务记录和规则决定是否提交；冲突进入人工核验。
+- **模型边界**：模型可辅助提取意图、房号和情绪；工单写入、权限、库存和状态转换由程序校验。
 
-## 本版实现
+## 运行方式
 
-| 能力 | 当前行为 |
-| --- | --- |
-| 多轮服务 | 缺房号先追问，保留待办；FAQ 与服务申请可在同一轮处理 |
-| 角色协同 | 接待理解需求，编排器路由部门，校验结构化结果后提交 |
-| 后台任务 | 有界线程池；不同会话可并发，同会话按任务关系更新或排队 |
-| 取消与改单 | `task_id`、`run_id` 和递增版本；提交前阻止过时结果建单、扣库存或发送成功回复 |
-| 库存一致性 | 在业务快照上计算，短临界区核验版本及共享业务基线后提交；冲突有限重试 |
-| 已执行动作 | 待派送可直接变更；配送中等待撤回回执；已送达需确认取回 |
-| 主子结果不一致 | 按最新需求、可信业务状态和规则校验；冲突记录为待核验，不落单、不扣库存 |
-| 重复请求 | 同会话 `request_id` 复用原执行；内存记录保留期间有效 |
-| PMS 与权限规则 | 模拟会员权益、延退人工审批、跨房操作检查、风险提级与夜审 |
-| 评测与示例 | 20 条固定回归、4 条预置难例、最多两条相关 Few-Shot 示例 |
+### 本地运行
 
-## 模型、规则与执行控制怎样分工
+使用 Python 3.12 或更高版本：
 
-```mermaid
-flowchart TD
-    U[住客消息] --> R[任务关系判断：新增、取消或更换]
-    R --> V[会话归属、任务版本与后台调度]
-    V --> P[在业务快照上处理]
-    P --> I[接待理解：可选 LLM 或本地规则]
-    I --> D[保洁 / 工程 / 礼宾 / 经理角色]
-    D --> C[核验需求、部门、房号、数量、风险与库存]
-    C --> G{版本及共享业务基线有效？}
-    G -->|有效| B[提交工单、库存与会话结果]
-    G -->|过时| X[丢弃旧结果]
-    G -->|业务竞争| T[有限重试或提示重试]
-    C -->|结果冲突| H[待人工核验]
-```
-
-接待层可调用兼容接口提取意图、房号和情绪；无 Key、调用失败或设置 `AEGIS_FORCE_RULES=1` 时使用规则。当前取消／更换动作及目标工单定位由程序规则和状态完成，模型没有接收完整历史与当前工单来做该项解析。部门角色主要是 Python 业务类，尚无各自独立的自主规划循环。
-
-取消是协作式的：已经发出的模型请求可能仍会执行，但过时结果不能提交。设置取消标记不等于立即停止推理或节省相应 token。
-
-## 黑板、记忆与 Few-Shot
-
-| 数据 | 存在哪里 | 当前边界 |
-| --- | --- | --- |
-| 会话消息、房号与待办 | `HotelState`，按 `session_id` 管理 | 内存隔离；session ID 不是生产身份认证 |
-| 任务版本、执行记录与冲突 | `SessionManager` 和会话黑板 | 用于任务衔接与提交控制，重启不恢复 |
-| 消息窗口与摘要 | Python 列表和截断文本 | 超过 12 条消息保留 6 条；截断摘要尚未注入模型理解调用 |
-| 房态、工单、库存 | 同一运行时内共享的模拟业务状态 | 单进程有效；Streamlit 与单独启动的 FastAPI 不共享内存 |
-| 业务知识与示例 | 仓库内 JSON 文件 | FAQ 为关键词／模糊匹配；Few-Shot 按字符相似度选最多两条 |
-
-Few-Shot 更新改变的是本次模型输入，没有修改模型参数。`self_evolution.py` 当前加载预置难例和诊断、执行回归并读取示例库；尚未接通线上 bad case 自动采集、自动提炼、候选审核发布和独立前后对照。既有 `evolution_delta` 是固定演示字段，不能作为提升证据。相关 [演进规范](spec/self_evolving_harness_and_memory_spec.md) 包含未来设计目标。
-
-## 快速运行
-
-建议使用独立虚拟环境。前端的 fragment 刷新需要 Streamlit >= 1.57。
-
-```powershell
+~~~powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
+Copy-Item .env.example .env
 $env:AEGIS_FORCE_RULES='1'
 .\.venv\Scripts\python.exe -m streamlit run app.py
-```
+~~~
 
-默认访问 `http://localhost:8501`。页面提供住客、运营、Harness 和“难例回归与 Few-Shot”四个视角。
+工作台默认访问 http://localhost:8501。需要 API 时：
 
-如需尝试模型，复制 `.env.example` 为 `.env`，配置兼容接口、模型和 Key，移除强制规则环境变量后重启。也可使用侧边栏配置。`.env`、`config.json` 和本地虚拟环境均被 Git 忽略，请勿将真实密钥提交仓库。
-
-```powershell
-Copy-Item .env.example .env
-Remove-Item Env:AEGIS_FORCE_RULES -ErrorAction SilentlyContinue
-.\.venv\Scripts\python.exe -m streamlit run app.py
-```
-
-独立启动 API：
-
-```powershell
+~~~powershell
 $env:AEGIS_FORCE_RULES='1'
 .\.venv\Scripts\python.exe -m uvicorn server:app --host 127.0.0.1 --port 8000
-```
+~~~
 
-交互文档：`http://127.0.0.1:8000/docs`。
+### Docker Compose
 
-| 接口 | 用途 |
+~~~powershell
+Copy-Item .env.example .env
+# 部署前编辑 .env：设置 AEGIS_AUTH_ENABLED=1，并替换两个令牌
+docker compose up -d --build
+~~~
+
+- 工作台：http://localhost:8501
+- API 文档：http://localhost:8000/docs
+- 健康检查：http://localhost:8000/health
+- 持久化文件：Docker volume 中的 /data/aegisstay.sqlite3
+
+Compose 使用一个 API worker 和一个工作台进程，适合单酒店小规模部署。扩展到多 worker 或多副本时，应将业务状态迁移到 PostgreSQL/Redis，并增加跨进程锁、备份和故障转移，不要直接把 SQLite 文件挂到多个写入副本。
+
+## 配置与权限
+
+复制 .env.example，生产环境通过部署平台的 Secret 注入敏感值：
+
+| 变量 | 作用 |
 | --- | --- |
-| `POST /api/chat` | 同步兼容入口 |
-| `POST /api/chat/submit` | 提交后台任务，返回 202 与执行标识 |
-| `GET /api/tasks/{run_id}?session_id=...` | 查询归属于该会话的执行记录 |
-| `GET /api/session/{session_id}` | 查看会话状态与任务 |
-| `POST /api/tickets/{ticket_id}/dispatch` | 确认开始配送 |
-| `POST /api/tickets/{ticket_id}/change/confirm` | 同意／拒绝撤回或更换 |
+| AEGIS_DB_PATH | SQLite 文件路径；容器中建议 /data/aegisstay.sqlite3 |
+| AEGIS_AUTH_ENABLED | 设为 1 后启用 Bearer 令牌校验 |
+| AEGIS_GUEST_TOKEN | 住客接口令牌 |
+| AEGIS_STAFF_TOKEN | 员工接口令牌，可访问工单、房态和审核接口 |
+| AEGIS_ALLOWED_ORIGINS | CORS 允许来源，生产环境填写工作台域名 |
+| AEGIS_FORCE_RULES | 设为 1 使用确定性规则；生产可关闭并配置模型 |
+| OPENAI_BASE_URL | OpenAI 兼容服务地址 |
+| OPENAI_MODEL | 模型名称 |
+| OPENAI_API_KEY | 模型密钥，不提交到 Git |
 
-此 API 用于本地演示，生产鉴权、租户隔离、持久化、分布式事务和真实 PMS 对接尚需实现。
+启用鉴权后，请求带上：
 
-## 试一遍取消和改单
+~~~http
+Authorization: Bearer <guest-or-staff-token>
+~~~
 
-在住客端依次发送：
+健康检查保持公开；运营接口要求员工令牌，住客接口要求住客或员工令牌。生产环境还应在反向代理层启用 HTTPS、限流、审计日志和统一身份认证。
 
-```text
-1128 给我送两条毛巾
-再送两瓶矿泉水
-不用了
-水不用了
-```
+## API 入口
 
-预期先追问取消对象，再只取消矿泉水；毛巾仍在处理中。随后在运营页搜索 `1128`，点击毛巾工单的“确认开始派送”，再在住客端输入：
+| 方法 | 路径 | 权限 | 用途 |
+| --- | --- | --- | --- |
+| POST | /api/chat | 住客 | 同步处理一条消息 |
+| POST | /api/chat/submit | 住客 | 提交后台任务，返回执行标识 |
+| GET | /api/tasks/{run_id} | 住客 | 查询本会话任务 |
+| GET | /api/session/{session_id} | 住客 | 查询会话与服务进度 |
+| POST | /api/session/reset | 住客 | 清理本会话 |
+| GET | /api/pms/overview | 员工 | 查看房态与部门队列 |
+| GET | /api/tickets | 员工 | 查询工单 |
+| POST | /api/tickets/{ticket_id}/dispatch | 员工 | 确认开始配送 |
+| POST | /api/tickets/{ticket_id}/change/confirm | 员工 | 确认或拒绝配送变更 |
+| POST | /api/tickets/{ticket_id}/complete | 员工 | 完成工单 |
+| POST | /api/pms/night-audit | 员工 | 执行跨日夜审 |
+| POST | /api/admin/reset | 员工 | 重置全店初始状态 |
 
-```text
-不要毛巾了，改成浴巾
-```
+## 持久化与恢复
 
-预期保留“两条”的数量，等待部门确认。运营端同意或拒绝变更后，住客端收到对应通知。要稳定复现“旧任务晚返回”的竞争条件，请运行自动化竞争测试；本地规则执行很快，连续手工输入未必赶在旧任务提交之前。
+设置 AEGIS_DB_PATH 后，SQLite 保存共享房态、工单、库存、延退记录和会话上下文。服务重启时会恢复已提交业务状态；正在运行的后台任务会标记为 interrupted，需要重新提交，避免恢复一个已经失去外部回执的动作。
 
-更多场景见 [手动测试范例](spec/manual_testing_examples.md)、[取消和仲裁说明](spec/task_interruption_and_arbitration.md)、[口语取消修复](spec/colloquial_delivery_cancellation.md)。
+会话消息按滑动窗口裁剪，工作黑板保存房号、待办、任务版本和冲突。数据库保存的是应用状态，不等于完整 CRM 客史；跨天客史、租户隔离、数据保留策略和删除请求需要根据酒店合规要求另行配置。生产部署请定期备份 /data/aegisstay.sqlite3，并限制文件权限。
 
-## 验证结果
+## 模型与质量控制
 
-2026-10-20，在强制离线规则模式下：**96 项单元／集成测试通过，20/20 条 Harness 场景通过**。测试覆盖业务规则、API 会话归属、幂等、库存竞争、晚到结果、部门变更确认、口语取消及 3 项 Streamlit 交互测试。
+没有模型密钥或调用失败时，系统使用本地规则继续提供确定性业务处理。动态 Few-Shot 只改变本次模型输入，不会更新模型参数。当前质量底座包括 20 条固定回归、预置难例和运行时示例检索；它不把评测通过率当成真实模型泛化率，也不把示例更新称为微调。
 
-```powershell
+固定回归与业务边界测试：
+
+~~~powershell
 $env:AEGIS_FORCE_RULES='1'
 .\.venv\Scripts\python.exe -B -X utf8 -m unittest discover -s tests -p 'test_*.py'
 .\.venv\Scripts\python.exe -B -X utf8 -m unittest tests/test_app.py
 .\.venv\Scripts\python.exe -B -X utf8 -m harness.eval_runner
-```
+~~~
 
-完整摘要、20 条报告及业务状态／Trace 断言见 [本版验收记录](spec/release_verification_2026-10-20.md)。本版未做付费模型评测、生产压测或单／多 Agent token 对照。
+当前验收记录为 98 项测试通过、Harness 20/20；完整输出和 Trace 断言见 [发布验收记录](spec/release_verification_2026-10-20.md)。这是离线规则和本地状态验证，不是生产容量或真实 PMS 回执证明。
 
-## 代码与文档入口
+## 目录
 
-```text
-app.py                 Streamlit 四个工作视角
-server.py              FastAPI 接口
-hotel_core.py          黑板、部门角色与业务规则
-agent_runtime.py       后台执行、版本、幂等和快照提交
-agent_protocol.py      送物解析与部门结果契约
-data/                  模拟 PMS、FAQ
-harness/               固定评测、预置难例和示例检索
-tests/                 96 项离线测试
-docs/images/           实际运行截图及复现说明
-docs/interview.md      项目介绍与面试追问逐字稿
-spec/                  实现说明、测试范例、验收与后续设计
-```
+~~~text
+app.py                 Streamlit 工作台
+server.py              FastAPI 网关与权限入口
+hotel_core.py          黑板状态、部门处理和业务规则
+agent_runtime.py       后台任务、版本、幂等、SQLite 状态边界
+persistence.py         SQLite 状态存储
+auth.py                Bearer 令牌权限边界
+data/                  初始房态与酒店知识
+harness/               回归数据、难例和示例检索
+tests/                 业务、API、并发、界面和持久化测试
+spec/                  接口契约、验收记录和后续设计
+Dockerfile             API 容器镜像
+docker-compose.yml     单酒店部署编排
+~~~
 
-面试练习见 [酒店项目逐字稿](docs/interview.md)，按“问题、职责、机制、证据、边界”说明当前实现。
+## 生产化路线
+
+1. 接入酒店 PMS、库存和工单系统，使用幂等命令和外部回执替换本地写入。
+2. 将令牌替换为酒店统一身份认证，补充员工角色、租户、审计和数据保留策略。
+3. 用 PostgreSQL/Redis 替换 SQLite，配置备份、迁移、监控和多副本一致性。
+4. 建立真实 bad case 审核、独立测试集、发布审批和回滚流程。
+5. 在酒店现场用脱敏数据验证取消、撤回、延退、客诉升级和夜审规则。

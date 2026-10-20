@@ -1,0 +1,33 @@
+[theme]
+base = "light"
+primaryColor = "#0f766e"
+backgroundColor = "#f8fafc"
+secondaryBackgroundColor = "#eef4f5"
+textColor = "#102a43"
+borderColor = "#d9e2ec"
+font = "sans-serif"
+headingFont = "sans-serif"
+baseRadius = "medium"
+buttonRadius = "medium"
+showWidgetBorder = true
+showSidebarBorder = true
+paddingTop = "1rem"
+paddingBottom = "2rem"
+linkUnderline = false
+
+[theme.sidebar]
+backgroundColor = "#102a43"
+secondaryBackgroundColor = "#243b53"
+textColor = "#f0f4f8"
+borderColor = "#486581"
+primaryColor = "#5eead4"
+linkColor = "#99f6e4"
+
+[server]
+headless = true
+enableXsrfProtection = true
+enableCORS = true
+corsAllowedOrigins = ["http://localhost:8501", "http://127.0.0.1:8501"]
+
+[browser]
+gatherUsageStats = false

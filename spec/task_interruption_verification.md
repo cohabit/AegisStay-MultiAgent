@@ -1,6 +1,6 @@
 # 异步中断与主子 Agent 校验：验收记录
 
-日期：2026-10-16。对象：当前工作区的 AegisStay 本地 Demo。所有执行均设置 `AEGIS_FORCE_RULES=1`，没有调用云端模型或真实酒店服务，也没有启动常驻服务。
+日期：2026-10-16。对象：当前工作区的 AegisStay 服务。所有执行均设置 `AEGIS_FORCE_RULES=1`，没有调用云端模型或真实酒店服务，也没有启动常驻服务。
 
 ## 1. 自动化测试
 
@@ -196,6 +196,6 @@ All business-state and Trace assertions passed.
 
 `git diff --check` 退出码为 0；仅有 Windows 的 LF/CRLF 提示，无空白错误。新文件另外核对 UTF-8、尾随空格及本地链接目标。
 
-交付包括后台任务运行时、提案契约、业务改单与库存检查、Streamlit 交互、异步提交／查询 API 和中文面试逐字稿。保留原有暂存修改，没有提交 Git、修改简历正文或运行付费模型。本次没有验证分布式部署、数据库恢复、真实 PMS 回执、历史性能数字或自动模型训练。
+交付包括后台任务运行时、提案契约、业务改单与库存检查、Streamlit 交互、异步提交／查询 API 和业务验收文档。保留原有暂存修改，没有提交 Git、修改简历正文或运行付费模型。本次没有验证分布式部署、数据库恢复、真实 PMS 回执、历史性能数字或自动模型训练。
 
-[实现说明](task_interruption_and_arbitration.md) · [面试逐字稿](../docs/interview.md) · [2026-10-20 最新验收](release_verification_2026-10-20.md)
+[实现说明](task_interruption_and_arbitration.md) · [2026-10-20 最新验收](release_verification_2026-10-20.md)

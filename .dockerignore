@@ -1,0 +1,16 @@
+.git
+.gitignore
+.venv
+__pycache__
+*.pyc
+*.pyo
+*.sqlite3
+.streamlit/secrets.toml
+.env
+config.json
+*.jpg
+*.jpeg
+*.png
+tests
+spec
+agents.md

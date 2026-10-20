@@ -5,14 +5,17 @@ from copy import deepcopy
 from datetime import datetime
 from typing import Any, Optional
 
-from fastapi import FastAPI, HTTPException, Query
+import os
+
+from fastapi import Depends, FastAPI, HTTPException, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
 from agent_runtime import RunOutcome, RuntimeBusy, SessionManager
+from auth import require_role
 
 
-session_manager = SessionManager()
+session_manager = SessionManager(db_path=os.getenv("AEGIS_DB_PATH"))
 
 
 class ChatRequest(BaseModel):
@@ -89,10 +92,11 @@ app = FastAPI(
     description="高并发、多会话隔离、Multi-Agent 协作的智慧酒店运营中枢服务",
     version="2.0.0",
 )
+_allowed_origins = [item.strip() for item in os.getenv("AEGIS_ALLOWED_ORIGINS", "*").split(",") if item.strip()]
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
+    allow_origins=_allowed_origins or ["*"],
+    allow_credentials=bool(_allowed_origins and _allowed_origins != ["*"]),
     allow_methods=["*"],
     allow_headers=["*"],
 )
@@ -151,7 +155,7 @@ def _submit_request(req: ChatRequest):
         raise HTTPException(status_code=409, detail=str(error)) from error
 
 
-@app.post("/api/chat", response_model=ChatResponse, tags=["Guest Chat"])
+@app.post("/api/chat", response_model=ChatResponse, tags=["Guest Chat"], dependencies=[Depends(require_role("guest"))])
 def guest_chat(req: ChatRequest) -> ChatResponse:
     run = _submit_request(req)
     try:
@@ -163,13 +167,13 @@ def guest_chat(req: ChatRequest) -> ChatResponse:
     return response
 
 
-@app.post("/api/chat/submit", status_code=202, tags=["Guest Chat"])
+@app.post("/api/chat/submit", status_code=202, tags=["Guest Chat"], dependencies=[Depends(require_role("guest"))])
 def submit_chat(req: ChatRequest) -> dict[str, Any]:
     run = _submit_request(req)
     return {"session_id": req.session_id, **run.public()}
 
 
-@app.get("/api/tasks/{run_id}", tags=["Guest Chat"])
+@app.get("/api/tasks/{run_id}", tags=["Guest Chat"], dependencies=[Depends(require_role("guest"))])
 def get_task(run_id: str, session_id: str = Query(..., min_length=1)) -> dict[str, Any]:
     with session_manager.lock:
         try:
@@ -184,7 +188,7 @@ def get_task(run_id: str, session_id: str = Query(..., min_length=1)) -> dict[st
         return result
 
 
-@app.post("/api/session/reset", tags=["Session"])
+@app.post("/api/session/reset", tags=["Session"], dependencies=[Depends(require_role("guest"))])
 def reset_session(req: SessionResetRequest) -> dict[str, str]:
     success = session_manager.reset(req.session_id)
     return {
@@ -194,13 +198,13 @@ def reset_session(req: SessionResetRequest) -> dict[str, str]:
     }
 
 
-@app.post("/api/admin/reset", tags=["Session"])
+@app.post("/api/admin/reset", tags=["Session"], dependencies=[Depends(require_role("staff"))])
 def reset_all_sessions() -> dict[str, str]:
     session_manager.reset_all()
     return {"status": "ok", "message": "所有会话已重置并恢复初始状态"}
 
 
-@app.get("/api/session/{session_id}", response_model=SessionDetailResponse, tags=["Session"])
+@app.get("/api/session/{session_id}", response_model=SessionDetailResponse, tags=["Session"], dependencies=[Depends(require_role("guest"))])
 def get_session_detail(session_id: str) -> SessionDetailResponse:
     flow = session_manager.snapshot(session_id)
     if not flow:
@@ -224,7 +228,7 @@ def get_session_detail(session_id: str) -> SessionDetailResponse:
     )
 
 
-@app.get("/api/pms/overview", response_model=PMSOverviewResponse, tags=["Operations & PMS"])
+@app.get("/api/pms/overview", response_model=PMSOverviewResponse, tags=["Operations & PMS"], dependencies=[Depends(require_role("staff"))])
 def get_pms_overview() -> PMSOverviewResponse:
     with session_manager.lock:
         pms = session_manager.shared_pms
@@ -254,7 +258,7 @@ def get_pms_overview() -> PMSOverviewResponse:
         )
 
 
-@app.get("/api/tickets", tags=["Operations & PMS"])
+@app.get("/api/tickets", tags=["Operations & PMS"], dependencies=[Depends(require_role("staff"))])
 def list_tickets(
     room_no: Optional[str] = Query(None),
     status: Optional[str] = Query(None),
@@ -271,7 +275,7 @@ def list_tickets(
         return {"total": len(tickets), "tickets": deepcopy(tickets)}
 
 
-@app.post("/api/tickets/{ticket_id}/complete", tags=["Operations & PMS"])
+@app.post("/api/tickets/{ticket_id}/complete", tags=["Operations & PMS"], dependencies=[Depends(require_role("staff"))])
 def complete_ticket(ticket_id: str) -> dict[str, str]:
     with session_manager.lock:
         ticket = next((item for item in session_manager.shared_tickets if item.get("ticket_id") == ticket_id), None)
@@ -285,10 +289,11 @@ def complete_ticket(ticket_id: str) -> dict[str, str]:
         if ticket.get("category") == "送物":
             ticket["delivery_status"] = "已送达"
         ticket["completed_at"] = datetime.now().isoformat(timespec="seconds")
+        session_manager.persist()
         return {"status": "success", "ticket_id": ticket_id, "ticket_status": "已结单"}
 
 
-@app.post("/api/tickets/{ticket_id}/dispatch", tags=["Operations & PMS"])
+@app.post("/api/tickets/{ticket_id}/dispatch", tags=["Operations & PMS"], dependencies=[Depends(require_role("staff"))])
 def dispatch_delivery(ticket_id: str) -> dict[str, Any]:
     try:
         return session_manager.dispatch_delivery(ticket_id)
@@ -298,7 +303,7 @@ def dispatch_delivery(ticket_id: str) -> dict[str, Any]:
         raise HTTPException(status_code=409, detail=str(error)) from error
 
 
-@app.post("/api/tickets/{ticket_id}/change/confirm", tags=["Operations & PMS"])
+@app.post("/api/tickets/{ticket_id}/change/confirm", tags=["Operations & PMS"], dependencies=[Depends(require_role("staff"))])
 def confirm_delivery_change(ticket_id: str, confirmation: ChangeConfirmation) -> dict[str, Any]:
     try:
         return session_manager.confirm_delivery_change(ticket_id, confirmation.approved, confirmation.returned)
@@ -308,13 +313,13 @@ def confirm_delivery_change(ticket_id: str, confirmation: ChangeConfirmation) ->
         raise HTTPException(status_code=409, detail=str(error)) from error
 
 
-@app.post("/api/pms/night-audit", tags=["Operations & PMS"])
+@app.post("/api/pms/night-audit", tags=["Operations & PMS"], dependencies=[Depends(require_role("staff"))])
 def trigger_night_audit() -> dict[str, Any]:
     record = session_manager.night_audit()
     return {"status": "success", "current_date": record.pop("date"), **record}
 
 
-@app.post("/api/harness/evolve", tags=["Harness Evolution"])
+@app.post("/api/harness/evolve", tags=["Harness Evolution"], dependencies=[Depends(require_role("staff"))])
 def trigger_evolution_cycle() -> dict[str, Any]:
     from harness.self_evolution import EvolutionDeltaRunner
     runner = EvolutionDeltaRunner()

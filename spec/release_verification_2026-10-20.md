@@ -1,6 +1,6 @@
 # 2026-10-20 发布验收记录
 
-对象：当前 AegisStay 本地 Demo。所有测试与运行截图使用 `AEGIS_FORCE_RULES=1`，未调用付费模型或真实酒店服务。页面截图临时启动了一个只监听本机的 Streamlit 实例。
+对象：当前 AegisStay 服务。所有测试与运行截图使用 `AEGIS_FORCE_RULES=1`，未调用付费模型或真实酒店服务。页面截图临时启动了一个只监听本机的 Streamlit 实例。
 
 ## 环境与执行命令
 
@@ -17,7 +17,7 @@ $env:TMP=$taskTestTemp
 .\.venv\Scripts\python.exe -B -X utf8 -m harness.eval_runner
 ```
 
-## 96 项单元与集成测试
+## 98 项单元与集成测试
 
 | 模块 | 用例数 |
 | --- | ---: |
@@ -27,13 +27,14 @@ $env:TMP=$taskTestTemp
 | 任务竞争、库存及部门结果 `test_task_runtime.py` | 29 |
 | Streamlit 界面交互 `test_streamlit.py` | 3 |
 | 口语取消及关联工单 `test_delivery_language.py` | 8 |
-| 合计 | **96** |
+| 持久化恢复 `test_persistence.py` | 2 |
+| 合计 | **98** |
 
 完整测试的实际摘要：
 
 ```text
 ----------------------------------------------------------------------
-Ran 96 tests in 3.882s
+Ran 98 tests in 5.225s
 
 OK
 ```
@@ -45,7 +46,7 @@ OK
 ```text
 ........................................
 ----------------------------------------------------------------------
-Ran 40 tests in 0.121s
+Ran 40 tests in 0.122s
 
 OK
 ```
@@ -59,7 +60,7 @@ OK
 ```text
 AegisStay Harness Evaluation · ⚡ 离线规则快速回归
 ======================================================================================
-Target: 确定性规则引擎 (离线保底) | Cases: 20 | Passed: 20 | Avg response: 3.31 ms
+Target: 确定性规则引擎 (离线保底) | Cases: 20 | Passed: 20 | Avg response: 2.31 ms
 Intent Accuracy: 100.0%
 Slot Filling Rate: 100.0%
 Ticket Precision: 100.0% | Ticket Recall: 100.0%
@@ -204,4 +205,10 @@ All business-state and Trace assertions passed.
 
 本版验证的是单进程模拟业务、执行控制和离线规则。没有生产压测、真实酒店 PMS 回执、数据库持久化、重启恢复、独立模型循环、多 Agent token 对照或自动训练。Few-Shot 示例读取和回归不是参数微调；自动采集和审核发布的完整自更新闭环尚未实现。
 
-10 月 16 日和 19 日的记录保留为历史证据；最新数量与行为以本文、[README](../README.md) 和 [项目逐字稿](../docs/interview.md) 为准。
+10 月 16 日和 19 日的记录保留为历史证据；最新数量与行为以本文和 [README](../README.md) 为准。
+
+## 本次生产基线补充
+
+本次新增 SQLite 状态存储、进程重启后的已提交状态恢复、运行中任务的 interrupted 标记、住客／员工 Bearer 角色边界、Dockerfile、Compose 和浅色工作台主题。持久化测试使用临时 SQLite 文件，确认工单、库存、房号和会话任务可以跨进程实例恢复。
+
+SQLite 版本按单酒店单 API worker 运行；多 worker、多副本和真实 PMS 对接仍需要 PostgreSQL/Redis、外部回执、迁移和备份方案。

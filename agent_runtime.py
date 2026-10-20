@@ -22,6 +22,7 @@ from hotel_core import (
     HotelOrchestrator, HotelState, HousekeepingAgent, OpenAICompatibleClient,
     PMS_ROOMS, _room_no, _rules_extract, run_pms_night_audit,
 )
+from persistence import SQLiteStateStore
 
 
 class RuntimeBusy(RuntimeError):
@@ -73,18 +74,25 @@ class SessionManager:
     """Short shared-state locks; independent sessions execute concurrently."""
 
     def __init__(self, ttl_seconds: int = 1800, kiosk_ttl_seconds: int = 30,
-                 max_workers: int = 8, max_pending: int = 128):
+                 max_workers: int = 8, max_pending: int = 128,
+                 db_path: str | None = None):
         self.ttl_seconds, self.kiosk_ttl_seconds = ttl_seconds, kiosk_ttl_seconds
         self.sessions: dict[str, HotelOrchestrator] = {}
         self.last_active: dict[str, float] = {}
         self.session_ttls: dict[str, int] = {}
         self.lock = threading.RLock()
-        self.shared_pms = deepcopy(PMS_ROOMS)
-        self.shared_tickets: list[dict[str, Any]] = []
-        self.shared_checkout_requests: list[dict[str, Any]] = []
-        self.shared_voucher_ledger: list[dict[str, Any]] = []
+        configured_db = db_path or os.getenv("AEGIS_DB_PATH")
+        self.store = SQLiteStateStore(configured_db) if configured_db else None
+        persisted = self.store.load_business() if self.store else None
+        self.shared_pms = deepcopy((persisted or {}).get("pms_rooms") or PMS_ROOMS)
+        self.shared_tickets: list[dict[str, Any]] = deepcopy((persisted or {}).get("tickets") or [])
+        self.shared_checkout_requests: list[dict[str, Any]] = deepcopy((persisted or {}).get("checkout_requests") or [])
+        self.shared_voucher_ledger: list[dict[str, Any]] = deepcopy((persisted or {}).get("voucher_ledger") or [])
         self.housekeeping = HousekeepingAgent()
-        self.current_date = "2026-10-01"
+        persisted_inventory = (persisted or {}).get("inventory") or {}
+        if persisted_inventory:
+            self.housekeeping.inventory.update(persisted_inventory)
+        self.current_date = (persisted or {}).get("current_date") or "2026-10-01"
         self._executor = ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="aegis-agent")
         self._runs: dict[str, TaskRun] = {}
         self._active: dict[str, str] = {}
@@ -92,6 +100,44 @@ class SessionManager:
         self._requests: dict[tuple[str, str], str] = {}
         self._outstanding, self.max_pending = 0, max_pending
         self._closed = False
+
+    _PERSISTED_SESSION_FIELDS = (
+        "messages", "room_no", "intent", "sentiment", "active_agent", "request_detail",
+        "last_trace", "model_mode", "guest_profile", "pending", "late_checkout",
+        "current_date", "borrowed_items", "audit_logs", "rolling_summary", "tasks",
+        "agent_conflicts",
+    )
+
+    def _business_payload(self) -> dict[str, Any]:
+        return {
+            "pms_rooms": self.shared_pms,
+            "tickets": self.shared_tickets,
+            "checkout_requests": self.shared_checkout_requests,
+            "voucher_ledger": self.shared_voucher_ledger,
+            "inventory": self.housekeeping.inventory,
+            "current_date": self.current_date,
+        }
+
+    def _session_payload(self, flow: HotelOrchestrator) -> dict[str, Any]:
+        payload = {name: deepcopy(getattr(flow.state, name)) for name in self._PERSISTED_SESSION_FIELDS}
+        # A process restart cannot safely resume an in-flight worker.
+        for task in payload["tasks"].values():
+            if task.get("status") in {"running", "queued"}:
+                task.update(status="interrupted", reason="服务进程重启，需重新提交")
+        return payload
+
+    def persist(self, session_id: str | None = None) -> None:
+        """Flush the current business state and optional session to SQLite."""
+        if not self.store:
+            return
+        with self.lock:
+            self.store.save_business(self._business_payload())
+            if session_id and session_id in self.sessions:
+                flow = self.sessions[session_id]
+                self.store.save_session(session_id, self._session_payload(flow), "guest", self.session_ttls.get(session_id, self.ttl_seconds))
+
+    def persistence_enabled(self) -> bool:
+        return self.store is not None
 
     def _cleanup_expired(self) -> None:
         now = time.time()
@@ -110,14 +156,24 @@ class SessionManager:
         with self.lock:
             self._cleanup_expired()
             if session_id not in self.sessions:
+                restored = self.store.load_session(session_id) if self.store else None
                 state = HotelState(pms_rooms=self.shared_pms, tickets=self.shared_tickets,
                                    checkout_requests=self.shared_checkout_requests,
                                    voucher_ledger=self.shared_voucher_ledger, current_date=self.current_date)
+                if restored:
+                    for name in self._PERSISTED_SESSION_FIELDS:
+                        if name in restored:
+                            setattr(state, name, restored[name])
+                    state.pms_rooms = self.shared_pms
+                    state.tickets = self.shared_tickets
+                    state.checkout_requests = self.shared_checkout_requests
+                    state.voucher_ledger = self.shared_voucher_ledger
+                    state.current_date = self.current_date
                 flow = HotelOrchestrator(state, force_rules=force_rules)
                 flow.housekeeping = self.housekeeping
                 flow.vertical_agents[flow.housekeeping.name] = self.housekeeping
                 self.sessions[session_id] = flow
-                self.session_ttls[session_id] = self.kiosk_ttl_seconds if client_type.lower() == "kiosk" else self.ttl_seconds
+                self.session_ttls[session_id] = int((restored or {}).get("ttl_seconds") or (self.kiosk_ttl_seconds if client_type.lower() == "kiosk" else self.ttl_seconds))
                 self._queues[session_id] = deque()
             self.last_active[session_id] = time.time()
             return self.sessions[session_id]
@@ -127,10 +183,29 @@ class SessionManager:
         with self.lock:
             if self.sessions:
                 raise ValueError("仅空执行器可以接管已有演示状态")
+            restored = self.store.load_session(session_id) if self.store else None
+            flow.state.pms_rooms = self.shared_pms
+            flow.state.tickets = self.shared_tickets
+            flow.state.checkout_requests = self.shared_checkout_requests
+            flow.state.voucher_ledger = self.shared_voucher_ledger
+            flow.state.current_date = self.current_date
+            if restored:
+                for name in self._PERSISTED_SESSION_FIELDS:
+                    if name in restored:
+                        setattr(flow.state, name, restored[name])
+                flow.state.pms_rooms = self.shared_pms
+                flow.state.tickets = self.shared_tickets
+                flow.state.checkout_requests = self.shared_checkout_requests
+                flow.state.voucher_ledger = self.shared_voucher_ledger
+                flow.state.current_date = self.current_date
             self.shared_pms, self.shared_tickets = flow.state.pms_rooms, flow.state.tickets
             self.shared_checkout_requests = flow.state.checkout_requests
             self.shared_voucher_ledger = flow.state.voucher_ledger
-            self.housekeeping = flow.housekeeping
+            if self.store:
+                flow.housekeeping = self.housekeeping
+                flow.vertical_agents[flow.housekeeping.name] = flow.housekeeping
+            else:
+                self.housekeeping = flow.housekeeping
             self.current_date = flow.state.current_date
             self.sessions[session_id] = flow
             self.last_active[session_id] = time.time()
@@ -241,6 +316,7 @@ class SessionManager:
             else:
                 self._start(run)
             self._prune(session_id)
+            self.persist(session_id)
             return run
 
     def _start(self, run: TaskRun) -> None:
@@ -340,6 +416,7 @@ class SessionManager:
         run.owner.model, run.owner.force_rules = worker.model, worker.force_rules
         run.owner.reception.model = run.owner.model
         run.owner.dispatcher.model = run.owner.model
+        self.persist(run.session_id)
 
     def _execute(self, run: TaskRun) -> None:
         try:
@@ -393,6 +470,7 @@ class SessionManager:
                     if not run.result.done():
                         run.result.set_result(RunOutcome(self._snapshot(run.owner), reply, run.run_id,
                                                         run.task_id, run.version, run.status))
+                    self.persist(run.session_id)
                     break
         except TaskInterrupted:
             with self.lock:
@@ -405,6 +483,7 @@ class SessionManager:
                     reply = "任务处理未完成，暂未提交本次操作，请稍后重试或联系前台。"
                     run.owner.state.messages.append({"role": "assistant", "content": reply, "run_id": run.run_id})
                     run.owner.compact_messages()
+                    self.persist(run.session_id)
                     run.result.set_result(RunOutcome(self._snapshot(run.owner), reply, run.run_id,
                                                     run.task_id, run.version, run.status))
                 else:
@@ -465,6 +544,7 @@ class SessionManager:
             if ticket.get("delivery_status") not in {"待派送", "配送中"}:
                 raise ValueError("当前送物状态不允许派送")
             ticket.update(delivery_status="配送中", dispatched_at=datetime.now().isoformat(timespec="seconds"))
+            self.persist()
             return deepcopy(ticket)
 
     def confirm_delivery_change(self, ticket_id: str, approved: bool, returned: bool = False) -> dict[str, Any]:
@@ -481,6 +561,7 @@ class SessionManager:
                 change["status"] = "已拒绝"
                 reply = "保洁确认原物品无法撤回或更换，原工单继续按实际进度处理。"
                 self._notify_change(ticket, reply)
+                self.persist()
                 return {"ticket": deepcopy(ticket), "reply": reply}
             if (ticket.get("delivery_status") == "已送达" or ticket["status"] == "已结单") and not returned:
                 raise ValueError("已送达物品需先确认取回，不能直接释放库存或宣称取消")
@@ -503,6 +584,7 @@ class SessionManager:
             ticket.clear()
             ticket.update(staged)
             self._notify_change(ticket, reply)
+            self.persist()
             return {"ticket": deepcopy(ticket), "reply": reply}
 
     def _notify_change(self, ticket: dict[str, Any], reply: str) -> None:
@@ -544,7 +626,11 @@ class SessionManager:
             for run_id, run in list(self._runs.items()):
                 if run.session_id == session_id and run.worker_finished:
                     self._runs.pop(run_id, None)
-            return self.sessions.pop(session_id, None) is not None
+            removed = self.sessions.pop(session_id, None) is not None
+            if removed and self.store:
+                self.store.delete_session(session_id)
+                self.store.save_business(self._business_payload())
+            return removed
 
     def reset_all(self) -> None:
         with self.lock:
@@ -557,6 +643,8 @@ class SessionManager:
             self.shared_voucher_ledger.clear()
             self.housekeeping = HousekeepingAgent()
             self.current_date = "2026-10-01"
+            if self.store:
+                self.store.save_business(self._business_payload())
 
     def _prune(self, session_id: str) -> None:
         finished = [r for r in self._runs.values() if r.session_id == session_id and r.worker_finished]
@@ -568,8 +656,23 @@ class SessionManager:
     def close(self) -> None:
         with self.lock:
             self._closed = True
-            self.reset_all()
-        self._executor.shutdown(wait=False, cancel_futures=True)
+            for run in list(self._runs.values()):
+                if not run.result.done():
+                    self._supersede(run, "cancelled")
+        # Let cooperative workers finish before closing the SQLite connection.
+        self._executor.shutdown(wait=True, cancel_futures=True)
+        if self.store:
+            with self.lock:
+                for session_id in self.sessions:
+                    self.store.save_session(
+                        session_id,
+                        self._session_payload(self.sessions[session_id]),
+                        "guest",
+                        self.session_ttls.get(session_id, self.ttl_seconds),
+                    )
+                self.store.save_business(self._business_payload())
+        if self.store:
+            self.store.close()
 
     @property
     def active_session_count(self) -> int:

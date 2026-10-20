@@ -1,0 +1,29 @@
+services:
+  api:
+    build: .
+    restart: unless-stopped
+    command: uvicorn server:app --host 0.0.0.0 --port 8000 --workers 1
+    env_file: .env
+    environment:
+      AEGIS_DB_PATH: /data/aegisstay.sqlite3
+    volumes:
+      - aegis_data:/data
+    ports:
+      - "8000:8000"
+
+  web:
+    build: .
+    restart: unless-stopped
+    command: streamlit run app.py --server.address 0.0.0.0 --server.port 8501 --server.headless true
+    env_file: .env
+    environment:
+      AEGIS_DB_PATH: /data/aegisstay.sqlite3
+    volumes:
+      - aegis_data:/data
+    depends_on:
+      - api
+    ports:
+      - "8501:8501"
+
+volumes:
+  aegis_data:

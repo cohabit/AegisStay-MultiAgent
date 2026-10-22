@@ -331,7 +331,8 @@ class TaskRuntimeTests(unittest.TestCase):
             self.manager.confirm_delivery_change(ticket["ticket_id"], approved=True)
         self.assertEqual(self.manager.housekeeping.inventory["毛巾"], 22)
         self.manager.confirm_delivery_change(ticket["ticket_id"], approved=True, returned=True)
-        self.assertEqual(self.manager.housekeeping.inventory["毛巾"], 24)
+        self.assertEqual(self.manager.housekeeping.inventory["毛巾"], 22)
+        self.assertEqual(self.manager.quarantine["毛巾"], 2)
 
     def test_staff_confirmation_updates_borrowed_record_and_notifies_guest(self):
         self.chat("1128 送一把雨伞")

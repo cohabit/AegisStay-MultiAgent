@@ -1,5 +1,7 @@
 # AegisStay 多智能体系统验收标准与证据规范 (acceptance_criteria.md)
 
+适用范围：本文固定 20 条数据、商业会员权益和早餐时间用于 `AEGIS_SITE_PROFILE=standard` 的历史规则回归。学校学术酒店部署使用 `academic`，延退必须经前台核验，不自动授予商业会员免费权益，未审核的学校政策不编造。学术接待、鉴权、事务与 API 工作台新增验收见 [2026-10-23 记录](release_verification_2026-10-23.md)。
+
 ## 1. 量化验收指标 (Quantitative Metrics)
 
 系统在接受交付或版本迭代时，必须严格满足以下量化指标。**所有数值均为硬性门槛，未达标直接判定为验收不通过**：

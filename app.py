@@ -76,7 +76,7 @@ def _runtime_for_ui(orchestrator: HotelOrchestrator) -> SessionManager:
     if runtime is None or runtime.sessions.get(GUEST_SESSION) is not orchestrator:
         if runtime is not None:
             runtime.close()
-        runtime = SessionManager()
+        runtime = SessionManager(db_path="")
         runtime.adopt(GUEST_SESSION, orchestrator)
         st.session_state.agent_runtime = runtime
     return runtime
@@ -502,6 +502,13 @@ def _render_evolution(orchestrator: HotelOrchestrator) -> None:
 
 def main() -> None:
     st.set_page_config(page_title="AegisStay · Hotel Operations", page_icon=":material/hotel:", layout="wide", initial_sidebar_state="collapsed")
+    if os.getenv("AEGIS_API_URL"):
+        from deployed_ui import main as deployed_main
+        deployed_main()
+        return
+    if os.getenv("AEGIS_DEPLOYED") == "1":
+        st.error("部署模式必须配置 AEGIS_API_URL；工作台不能直接打开数据库。")
+        st.stop()
     _style()
     if "orchestrator" not in st.session_state:
         st.session_state.orchestrator = HotelOrchestrator()

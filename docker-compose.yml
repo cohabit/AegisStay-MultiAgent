@@ -3,27 +3,33 @@ services:
     build: .
     restart: unless-stopped
     command: uvicorn server:app --host 0.0.0.0 --port 8000 --workers 1
-    env_file: .env
+    env_file: deploy.env
     environment:
       AEGIS_DB_PATH: /data/aegisstay.sqlite3
+      AEGIS_DEPLOYED: "1"
+      AEGIS_AUTH_ENABLED: "1"
     volumes:
       - aegis_data:/data
     ports:
-      - "8000:8000"
+      - "127.0.0.1:8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/ready', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
 
   web:
     build: .
     restart: unless-stopped
     command: streamlit run app.py --server.address 0.0.0.0 --server.port 8501 --server.headless true
-    env_file: .env
     environment:
-      AEGIS_DB_PATH: /data/aegisstay.sqlite3
-    volumes:
-      - aegis_data:/data
+      AEGIS_API_URL: http://api:8000
+      AEGIS_DEPLOYED: "1"
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     ports:
-      - "8501:8501"
+      - "127.0.0.1:8501:8501"
 
 volumes:
   aegis_data:

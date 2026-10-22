@@ -9,6 +9,8 @@ COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 COPY . .
 RUN mkdir -p /data
+RUN useradd --uid 10001 --create-home aegis && chown -R aegis:aegis /app /data
+USER aegis
 
 EXPOSE 8000 8501
 

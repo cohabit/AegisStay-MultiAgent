@@ -1,0 +1,20 @@
+name: Offline acceptance
+on: [push, pull_request]
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    env:
+      AEGIS_FORCE_RULES: "1"
+      AEGIS_AUTH_ENABLED: "0"
+      AEGIS_SITE_PROFILE: standard
+      AEGIS_DB_PATH: ""
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python -m unittest discover -s tests -p 'test_*.py'
+      - run: python -m harness.eval_runner
+      - run: docker build -t aegisstay:test .

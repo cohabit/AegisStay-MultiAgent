@@ -14,3 +14,9 @@ config.json
 tests
 spec
 agents.md
+deploy.env
+var
+backups
+*.sqlite3-wal
+*.sqlite3-shm
+*.writer.lock

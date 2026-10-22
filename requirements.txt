@@ -1,4 +1,4 @@
-streamlit>=1.57,<2
+streamlit>=1.66,<2
 pyarrow>=14,<26
 openai>=1.40
 pandas>=2.0

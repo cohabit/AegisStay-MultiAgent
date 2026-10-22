@@ -19,7 +19,16 @@ ROOT = Path(__file__).resolve().parent
 DEPARTMENTS = {"送物": "楼层保洁", "工程报修": "工程部", "客诉紧急": "大堂经理", "续住申请": "前台接待", "票券服务": "礼宾部"}
 SERVICE_INTENTS = set(DEPARTMENTS) | {"延迟退房"}
 def _load_pms_rooms() -> dict[str, dict[str, str]]:
-    pms_file = ROOT / "data" / "pms_rooms_240.json"
+    configured = os.getenv("AEGIS_PMS_FILE")
+    pms_file = Path(configured) if configured else ROOT / "data" / "pms_rooms_240.json"
+    if configured:
+        rooms = json.loads(pms_file.read_text(encoding="utf-8"))
+        if not isinstance(rooms, dict) or not rooms or any(
+            not isinstance(r, dict) or r.get("room_no") != number or not re.fullmatch(r"\d{3,4}", number)
+            or "room_status" not in r or "checkout_time" not in r for number, r in rooms.items()
+        ):
+            raise ValueError("PMS 初始数据字段不完整或房号不合法")
+        return rooms
     if pms_file.exists():
         try:
             return json.loads(pms_file.read_text(encoding="utf-8"))
@@ -53,8 +62,25 @@ def _format_greeting(name: str | None, reply: str) -> str:
 class HotelKnowledge:
     """Synonym/phrase retrieval with a rejection threshold, supporting multi-topic matching."""
     def __init__(self, path: Path | None = None) -> None:
-        self.source = path or ROOT / "data" / "hotel_knowledge.json"
+        academic = os.getenv("AEGIS_SITE_PROFILE") == "academic"
+        configured = os.getenv("AEGIS_KNOWLEDGE_FILE")
+        self.source = path or (Path(configured) if configured else ROOT / "data" / (
+            "academic_hotel_knowledge.json" if academic else "hotel_knowledge.json"))
         payload = json.loads(self.source.read_text(encoding="utf-8"))
+        if (not isinstance(payload, dict) or not isinstance(payload.get("fallback"), str)
+                or not isinstance(payload.get("entries"), list) or not payload["entries"]):
+            raise ValueError("酒店知识文件需要 fallback 与非空 entries")
+        identifiers = set()
+        for entry in payload["entries"]:
+            if (not isinstance(entry, dict) or not isinstance(entry.get("id"), str) or not entry["id"]
+                    or entry["id"] in identifiers or not isinstance(entry.get("answer"), str)
+                    or not isinstance(entry.get("keywords"), list) or not entry["keywords"]
+                    or any(not isinstance(word, str) or not word for word in entry["keywords"])
+                    or not isinstance(entry.get("specificity", 0), (int, float))
+                    or not isinstance(entry.get("semantic_phrases", []), list)
+                    or any(not isinstance(phrase, str) for phrase in entry.get("semantic_phrases", []))):
+                raise ValueError("酒店知识条目需要唯一 id、回答和有效关键词")
+            identifiers.add(entry["id"])
         self.entries = payload["entries"]
         self.fallback = payload["fallback"]
 
@@ -112,6 +138,9 @@ class HotelState:
     rolling_summary: str | None = None
     tasks: dict[str, dict[str, Any]] = field(default_factory=dict)
     agent_conflicts: list[dict[str, Any]] = field(default_factory=list)
+    authorized_room: str | None = None
+    stay_id: str | None = None
+    session_id: str | None = None
 
 
 def _load_env_or_config() -> None:
@@ -506,6 +535,8 @@ def apply_late_checkout(room_no: str, requested_time: str, profile: dict[str, st
     if requested_time <= "12:00":
         raise ValueError("延迟退房时间应晚于 12:00")
     reason = "会员等级不满足自动审批，需前台核实费用"
+    if os.getenv("AEGIS_SITE_PROFILE") == "academic":
+        reason = "学术接待延退需由前台核对接待订单与会务排期"
     approved = False
     if not profile or profile.get("room_no") != room_no or profile.get("room_status") != "在住":
         reason = "未找到有效在住档案，请前台核实"
@@ -516,6 +547,9 @@ def apply_late_checkout(room_no: str, requested_time: str, profile: dict[str, st
     elif profile.get("next_booking") and profile["next_booking"].get("expected_checkin", "15:00") < "15:00" and requested_time >= "14:00":
         reason = f"次日新客预计 {profile['next_booking']['expected_checkin']} 到店，为预留消杀保洁排期需前台人工核准"
     elif profile.get("member_level") == "携程黑金会员":
+        if os.getenv("AEGIS_SITE_PROFILE") == "academic":
+            return {"room_no": room_no, "requested_time": requested_time, "status": "需前台审核",
+                    "checkout_time": profile["checkout_time"], "reason": "学术接待按订单与会务排期核验，不自动套用商业会员权益", "updated_pms": False}
         profile["checkout_time"] = max(profile["checkout_time"], requested_time)
         approved, reason = True, "黑金会员且房态充裕，权益内免费延迟退房"
     return {"room_no": room_no, "requested_time": requested_time, "status": "已批准" if approved else "需前台审核", "checkout_time": profile["checkout_time"] if profile else None, "reason": reason, "updated_pms": approved}
@@ -621,6 +655,7 @@ class HousekeepingAgent:
                 return "物品数量需要大于零，暂未修改原工单。"
             if ticket.get("delivery_status") in {"配送中", "已送达"} or ticket.get("status") == "已结单":
                 ticket["change_request"] = {
+                    "change_id": "CHANGE-" + uuid.uuid4().hex,
                     "action": command.action, "item": command.item, "quantity": desired_quantity,
                     "status": "待部门确认",
                 }
@@ -691,6 +726,12 @@ class ConciergeAgent:
 
     def issue_breakfast_vouchers(self, room_no: str, quantity: int, profile: dict[str, str] | None, state: HotelState) -> dict[str, Any]:
         quantity = max(1, quantity)
+        if os.getenv("AEGIS_SITE_PROFILE") == "academic":
+            record = {"voucher_id": f"BV-{uuid.uuid4().hex[:8].upper()}", "room_no": room_no, "quantity": quantity,
+                      "status": "需前台核验", "agent": self.name,
+                      "reason": "学术接待是否含早以核验的接待订单为准，实际餐券由前台办理，不自动发放"}
+            state.voucher_ledger.append(record)
+            return record
         if not profile or profile.get("room_no") != room_no or profile.get("room_status") != "在住":
             record = {"voucher_id": f"BV-{uuid.uuid4().hex[:8].upper()}", "room_no": room_no, "quantity": quantity, "status": "需前台核验", "agent": self.name, "reason": "未找到有效在住档案"}
             state.voucher_ledger.append(record)
@@ -772,9 +813,13 @@ class HotelOrchestrator:
         self.dispatcher = DispatchAgent(self.model)
 
     def _bind_room(self, room_no: str) -> None:
+        if self.state.authorized_room and room_no != self.state.authorized_room:
+            raise ValueError("已认证住客不能切换到其他房间，请联系前台变更入住绑定")
         self.state.room_no = room_no
         self.state.guest_profile = self.state.pms_rooms.get(room_no)
-        self.state.late_checkout = next((r for r in reversed(self.state.checkout_requests) if r["room_no"] == room_no), None)
+        self.state.late_checkout = next((r for r in reversed(self.state.checkout_requests) if r["room_no"] == room_no
+                                         and (not self.state.stay_id or r.get("stay_id") == self.state.stay_id)
+                                         and (not self.state.session_id or r.get("owner_session_id") == self.state.session_id)), None)
 
     def _verified_department_ticket(self, intent: str, detail: str) -> dict[str, Any]:
         """Departments propose against copies; only a validated proposal changes this state."""
@@ -858,7 +903,9 @@ class HotelOrchestrator:
             return None, "您提到了多种物品，请分别说明要修改或取消哪一种；暂未修改工单。"
         if self.state.pending and self.state.pending.get("uncommitted_delivery"):
             return None, None
-        tickets = [t for t in self.state.tickets if t.get("room_no") == self.state.room_no and t.get("category") == "送物"]
+        tickets = [t for t in self.state.tickets if t.get("room_no") == self.state.room_no and t.get("category") == "送物"
+                   and (not self.state.authorized_room or t.get("stay_id") == self.state.stay_id
+                        and t.get("owner_session_id") == self.state.session_id)]
         active = [t for t in tickets if t["status"] == "处理中"]
         completed = [t for t in tickets if t["status"] == "已结单"]
         old_items = set(command.references) - {command.item}
@@ -1141,8 +1188,13 @@ class HotelOrchestrator:
                     except ValueError as exc:
                         service_reply = str(exc) + "，请重新提供时间。"
                     else:
-                        prior = next((r for r in state.checkout_requests if r["room_no"] == state.room_no and r["requested_time"] == target), None)
+                        stay_id = state.stay_id or (state.guest_profile or {}).get("stay_id")
+                        prior = next((r for r in reversed(state.checkout_requests) if r["room_no"] == state.room_no and r["requested_time"] == target
+                                      and r.get("stay_id") == stay_id
+                                      and (not state.session_id or r.get("owner_session_id") == state.session_id)), None)
                         if prior is None:
+                            result.update(request_id="LATE-" + uuid.uuid4().hex, stay_id=stay_id,
+                                          owner_session_id=state.session_id)
                             state.checkout_requests.append(result)
                         else:
                             prior.update(result)
@@ -1328,8 +1380,10 @@ class HotelOrchestrator:
         conflict = next(c for c in self.state.agent_conflicts if c["conflict_id"] == conflict_id)
         conflict.update(status="已核验", reviewed_at=datetime.now().isoformat(timespec="seconds"))
 
-    def review_checkout(self, room_no: str, requested_time: str, approved: bool | None) -> None:
-        result = next((r for r in self.state.checkout_requests if r["room_no"] == room_no and r["requested_time"] == requested_time), None)
+    def review_checkout(self, room_no: str, requested_time: str, approved: bool | None, request_id: str | None = None) -> None:
+        result = next((r for r in reversed(self.state.checkout_requests) if r["room_no"] == room_no and r["requested_time"] == requested_time
+                       and (not request_id or r.get("request_id") == request_id)
+                       and (not self.state.stay_id or r.get("stay_id") == self.state.stay_id)), None)
         if not result:
             return
         room = self.state.pms_rooms.get(room_no)
@@ -1338,7 +1392,8 @@ class HotelOrchestrator:
                 room["checkout_time"] = max(room.get("checkout_time", "12:00"), requested_time)
             result.update(status="已批准", updated_pms=True, checkout_time=room["checkout_time"] if room else requested_time, reason="前台人工审核完成")
             self.state.last_trace = [{"agent": "PMS", "event": "人工审批", "detail": f"房间 {room_no} / {requested_time} / 已批准"}]
-            msg = f"【前台通知】您的延迟退房申请已获批准！{room_no} 房退房时间已更新为 {requested_time}，无需额外费用。"
+            fee = "费用按接待订单及前台确认办理。" if os.getenv("AEGIS_SITE_PROFILE") == "academic" else "无需额外费用。"
+            msg = f"【前台通知】您的延迟退房申请已获批准！{room_no} 房退房时间已更新为 {requested_time}，{fee}"
             self.state.messages.append({"role": "assistant", "content": msg, "room_no": room_no})
         elif approved is False:
             result.update(status="未批准", updated_pms=False, checkout_time=room["checkout_time"] if room else "12:00", reason="前台房态受限，未予批准")

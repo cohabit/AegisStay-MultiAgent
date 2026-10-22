@@ -221,13 +221,14 @@ class EvolutionDeltaRunner:
 
         return {
             "timestamp": time.strftime("%Y-%m-%d %H:%M:%S"),
-            "cycle_status": "SUCCESS",
-            "baseline_pass_rate": f"{baseline_report['passed']}/{baseline_report['total']} (100.0%)",
+            "cycle_status": "SUCCESS" if baseline_report['passed'] == baseline_report['total'] and hard_case_passes == len(cases) else "FAILED",
+            "baseline_pass_rate": f"{baseline_report['passed']}/{baseline_report['total']} ({baseline_report['passed'] / max(1, baseline_report['total']):.1%})",
             "hard_cases_total": len(cases),
             "hard_cases_passed": hard_case_passes,
             "hard_cases_accuracy": f"{hard_case_passes / max(1, len(cases)):.1%}",
             "curated_exemplars_count": curated_count,
-            "evolution_delta": "+100% 边界泛化鲁棒性提升",
+            "evolution_delta": None,
+            "evaluation_scope": "固定基线和预置难例回归；没有前后对照实验",
             "diagnostics": diagnostics,
             "elapsed_seconds": round(elapsed, 3),
         }

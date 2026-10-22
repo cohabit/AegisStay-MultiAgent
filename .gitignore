@@ -5,4 +5,10 @@ __pycache__/
 config.json
 .streamlit/
 *.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.writer.lock
+deploy.env
+var/
+backups/
 .idea/

@@ -2,6 +2,12 @@
 from __future__ import annotations
 
 import os
+import base64
+import html
+import mimetypes
+from collections import defaultdict
+from pathlib import Path
+
 import streamlit as st
 
 from hotel_core import HotelOrchestrator
@@ -16,6 +22,51 @@ AGENT_BADGES = {
     "ConciergeAgent": ("🛎️", "礼宾接待管家"),
     "ManagerEscalationAgent": ("👔", "大堂经理危机响应"),
 }
+
+ASSET_DIR = Path(__file__).resolve().parent / "assets" / "hotel"
+
+
+@st.cache_data(max_entries=16)
+def _asset_data_uri(filename: str) -> str:
+    """Return a cached data URI for a local editorial image used by the UI."""
+    path = ASSET_DIR / filename
+    if not path.exists():
+        return ""
+    mime = mimetypes.guess_type(path.name)[0] or "image/jpeg"
+    encoded = base64.b64encode(path.read_bytes()).decode("ascii")
+    return f"data:{mime};base64,{encoded}"
+
+
+def _render_property_hero(mode_text: str) -> None:
+    """Render the campus-specific masthead once, before the workbench tabs."""
+    image_uri = _asset_data_uri("campus-lake.jpg")
+    image_html = (
+        f'<img src="{image_uri}" alt="校园湖畔与学术之家建筑" />'
+        if image_uri
+        else '<div class="property-hero-fallback"></div>'
+    )
+    st.markdown(
+        f"""
+        <section class="property-hero">
+            <div class="property-hero-media">{image_html}</div>
+            <div class="property-hero-shade"></div>
+            <div class="property-hero-copy">
+                <div class="hero-kicker">ACADEMIC HOUSE · CAMPUS HOSPITALITY</div>
+                <h1>学术之家 · 校园接待中枢</h1>
+                <p>把住客请求、房态、物资和部门协作放到同一条可追踪的服务链里。</p>
+                <div class="hero-pills">
+                    <span>校内学术酒店</span><span>单酒店运营</span><span>{html.escape(mode_text)}</span>
+                </div>
+            </div>
+            <div class="property-hero-stamp"><strong>AH</strong><span>ACADEMIC<br/>HOUSE</span></div>
+        </section>
+        <div class="property-intro">
+            <div><span class="section-label">THE PROPERTY</span><strong>一间服务学术交流的校园酒店</strong></div>
+            <p>前台、客房、工程、礼宾和经理共享一块可审计的业务黑板。</p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
 
 
 def _connect_cloud_model(api_key: str, base_url: str, model: str) -> tuple[HotelOrchestrator, dict]:
@@ -54,31 +105,113 @@ def _style() -> None:
         """
         <style>
         :root {
+            --as-ink: #102a43;
+            --as-navy: #102a43;
+            --as-teal: #0f766e;
+            --as-teal-soft: #dff4ef;
+            --as-sand: #ead9c2;
+            --as-paper: #fbfaf7;
             --as-card-bg: #ffffff;
             --as-card-border: #d9e2ec;
-            --as-text: #102a43;
             --as-muted: #627d98;
+            --as-shadow: 0 12px 28px rgba(16,42,67,0.08);
         }
+        .stApp { background: #f6f8f7; }
+        [data-testid="stAppViewContainer"] { background: #f6f8f7; }
+        [data-testid="stHeader"] { background: rgba(246,248,247,.84); }
+        [data-testid="stSidebar"] { border-right: 1px solid rgba(255,255,255,.12); }
+        .block-container { max-width: 1500px; padding-top: 1.35rem; }
         .hero { padding: .6rem 0 .35rem; }
-        .eyebrow { color:#0f766e; letter-spacing:.14em; font-size:.7rem; font-weight:800; }
+        .eyebrow { color: var(--as-teal); letter-spacing:.16em; font-size:.68rem; font-weight:800; }
         .muted { color: var(--as-muted); font-size:.85rem; }
+        .property-hero {
+            position: relative;
+            min-height: 320px;
+            overflow: hidden;
+            border-radius: 22px;
+            background: var(--as-navy);
+            box-shadow: 0 20px 44px rgba(16,42,67,.16);
+            isolation: isolate;
+        }
+        .property-hero-media, .property-hero-media img, .property-hero-fallback {
+            position: absolute; inset: 0; width: 100%; height: 100%;
+        }
+        .property-hero-media img { object-fit: cover; object-position: 50% 58%; }
+        .property-hero-fallback { background: #193b52; }
+        .property-hero-shade {
+            position: absolute; inset: 0;
+            background: linear-gradient(90deg, rgba(10,31,48,.92) 0%, rgba(10,31,48,.68) 42%, rgba(10,31,48,.12) 82%), linear-gradient(0deg, rgba(10,31,48,.36), transparent 48%);
+            z-index: 1;
+        }
+        .property-hero-copy { position: relative; z-index: 2; max-width: 650px; padding: 58px 54px 44px; color: #fff; }
+        .hero-kicker { color: #a5e3d7; letter-spacing: .18em; font-size: .68rem; font-weight: 800; }
+        .property-hero-copy h1 { margin: 14px 0 10px; color: #fff; font-size: clamp(2rem, 4vw, 3.6rem); letter-spacing: -.04em; line-height: 1.05; }
+        .property-hero-copy p { max-width: 510px; margin: 0; color: rgba(255,255,255,.84); font-size: 1rem; line-height: 1.8; }
+        .hero-pills { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 24px; }
+        .hero-pills span { padding: 6px 11px; border: 1px solid rgba(255,255,255,.28); border-radius: 999px; background: rgba(255,255,255,.1); color: #f7fbfa; font-size: .72rem; backdrop-filter: blur(8px); }
+        .property-hero-stamp { position: absolute; z-index: 2; right: 28px; bottom: 24px; display: flex; align-items: center; gap: 9px; color: rgba(255,255,255,.72); letter-spacing: .12em; font-size: .63rem; line-height: 1.3; text-align: right; }
+        .property-hero-stamp strong { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid rgba(255,255,255,.45); border-radius: 50%; color: #fff; font-family: Georgia, serif; font-size: 1.05rem; letter-spacing: 0; }
+        .property-intro { display: flex; justify-content: space-between; gap: 24px; align-items: end; padding: 17px 8px 26px; }
+        .property-intro > div { display: grid; gap: 5px; }
+        .property-intro strong { color: var(--as-ink); font-family: Georgia, 'Noto Serif SC', serif; font-size: 1.17rem; font-weight: 600; }
+        .property-intro p { margin: 0; color: var(--as-muted); font-size: .82rem; }
+        .stTabs [data-baseweb="tab-list"] { gap: 5px; border-bottom: 1px solid #dce7e5; }
+        .stTabs [data-baseweb="tab"] { padding: 12px 18px; color: #486581; font-weight: 700; }
+        .stTabs [aria-selected="true"] { color: var(--as-teal); }
         .room-card {
             background-color: var(--as-card-bg);
             border: 1px solid var(--as-card-border);
-            color: var(--as-text);
+            color: var(--as-ink);
             border-radius: 12px;
             padding: 10px 12px;
             margin: 4px 0;
-            box-shadow: 0 2px 7px rgba(16,42,67,0.06);
+            box-shadow: var(--as-shadow);
         }
         .room-card-occ { border-left: 5px solid #0f766e !important; }
         .room-card-clean { border-left: 5px solid #6b7280 !important; }
         .room-card-dirty { border-left: 5px solid #f59e0b !important; }
         .room-card-repair { border-left: 5px solid #ef4444 !important; }
+        .room-map-shell { padding: 17px; border: 1px solid #dce7e5; border-radius: 18px; background: #fff; box-shadow: var(--as-shadow); }
+        .map-toolbar { display:flex; justify-content:space-between; gap: 16px; align-items: center; margin-bottom: 13px; }
+        .map-toolbar strong { color: var(--as-ink); font-size: 1.02rem; }
+        .map-toolbar span { color: var(--as-muted); font-size: .76rem; }
+        .map-legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 16px; color: var(--as-muted); font-size: .75rem; }
+        .map-legend span { display: inline-flex; align-items: center; gap: 6px; }
+        .legend-dot, .room-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
+        .legend-occupied { background: #0f766e; }
+        .legend-clean { background: #64748b; }
+        .legend-dirty { background: #d97706; }
+        .legend-repair { background: #dc2626; }
+        .floor-row { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 12px; align-items: start; margin-bottom: 16px; }
+        .floor-badge { position: sticky; top: 8px; display:grid; place-items:center; min-height: 34px; border-radius: 10px; background: #edf4f3; color: var(--as-teal); font-size: .74rem; font-weight: 800; }
+        .room-map { display:grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; min-width: 0; }
+        .room-tile { position: relative; min-height: 88px; overflow: visible; padding: 10px 10px 9px; border: 1px solid #d8e3e3; border-bottom: 3px solid #64748b; border-radius: 9px; background: #fbfdfd; color: var(--as-ink); box-shadow: 0 3px 9px rgba(16,42,67,.045); cursor: default; transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; z-index: 0; }
+        .room-tile:hover, .room-tile:focus-within { z-index: 8; transform: translateY(-3px); border-color: currentColor; box-shadow: 0 14px 25px rgba(16,42,67,.18); }
+        .room-tile-top { display:flex; justify-content:space-between; align-items:center; color: #7b8794; font-size: .65rem; }
+        .room-tile-top .room-dot { background: currentColor; }
+        .room-number { margin-top: 6px; font-family: Georgia, 'Noto Serif SC', serif; font-size: 1.24rem; font-weight: 700; letter-spacing: .02em; }
+        .room-type { overflow: hidden; margin-top: 3px; color: #7b8794; font-size: .64rem; text-overflow: ellipsis; white-space: nowrap; }
+        .room-tile-guest { overflow: hidden; margin-top: 5px; color: #486581; font-size: .68rem; text-overflow: ellipsis; white-space: nowrap; }
+        .room-tile-occupied { color: #0f766e; border-bottom-color: #0f766e; background: #f2fbf9; }
+        .room-tile-clean { color: #64748b; border-bottom-color: #64748b; }
+        .room-tile-dirty { color: #b45309; border-bottom-color: #d97706; background: #fffaf1; }
+        .room-tile-repair { color: #b91c1c; border-bottom-color: #dc2626; background: #fff6f5; }
+        .room-tooltip { position:absolute; left: 50%; bottom: calc(100% + 9px); width: 228px; padding: 12px 13px; transform: translate(-50%, 5px); border: 1px solid rgba(16,42,67,.14); border-radius: 11px; background: #102a43; color: #f7fbfa; box-shadow: 0 15px 35px rgba(16,42,67,.27); opacity: 0; pointer-events: none; transition: opacity .16s ease, transform .16s ease; }
+        .room-tooltip::after { content: ''; position:absolute; left:50%; bottom:-6px; width:11px; height:11px; transform:translateX(-50%) rotate(45deg); background:#102a43; }
+        .room-tile:hover .room-tooltip, .room-tile:focus-within .room-tooltip { opacity: 1; transform: translate(-50%, 0); }
+        .room-tooltip strong { display:block; margin-bottom: 7px; color:#fff; font-size: .82rem; }
+        .room-tooltip span { display:block; color: rgba(255,255,255,.76); font-size: .7rem; line-height: 1.6; }
+        .room-tooltip b { color: #b8eee2; font-weight: 700; }
+        .photo-strip { display:grid; grid-template-columns: 1.25fr 1fr; gap: 10px; margin: 0 0 18px; }
+        .photo-card { position:relative; height: 148px; overflow:hidden; border-radius: 15px; background:#102a43; }
+        .photo-card img { width:100%; height:148px; object-fit:cover; opacity:.88; }
+        .photo-card-copy { position:absolute; inset:auto 14px 12px; color:#fff; text-shadow: 0 2px 7px rgba(0,0,0,.35); }
+        .photo-card-copy strong { display:block; font-family:Georgia, 'Noto Serif SC', serif; font-size: 1rem; }
+        .photo-card-copy span { font-size:.7rem; color:rgba(255,255,255,.82); }
         .ticket-card {
             background-color: var(--as-card-bg);
             border: 1px solid var(--as-card-border);
-            color: var(--as-text);
+            color: var(--as-ink);
             border-radius: 12px;
             padding: 12px;
             margin: 8px 0;
@@ -90,13 +223,25 @@ def _style() -> None:
         .agent-badge, .agent-monitor-card {
             background-color: var(--as-card-bg);
             border: 1px solid var(--as-card-border);
-            color: var(--as-text);
+            color: var(--as-ink);
             border-radius: 12px;
             padding: 10px 12px;
         }
         .agent-badge { display: inline-block; margin: 4px 0 12px; font-weight: 700; }
         .agent-monitor-card { min-height: 76px; }
-        .section-label { color:#486581; font-size:.78rem; font-weight:700; letter-spacing:.05em; text-transform:uppercase; }
+        .section-label { color:#486581; font-size:.7rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
+        [data-testid="stMetric"] { padding: 11px 13px; border: 1px solid #dce7e5; border-radius: 12px; background: rgba(255,255,255,.68); }
+        [data-testid="stMetricLabel"] { color: #627d98; }
+        @media (max-width: 800px) {
+            .property-hero-copy { padding: 38px 28px 34px; }
+            .property-hero-copy h1 { font-size: 2.15rem; }
+            .property-intro { display:block; }
+            .property-intro p { margin-top: 8px; }
+            .room-tooltip { left: 0; transform: translate(0, 5px); }
+            .room-tile:hover .room-tooltip, .room-tile:focus-within .room-tooltip { transform: translate(0, 0); }
+            .room-tooltip::after { left: 24px; }
+            .photo-strip { grid-template-columns: 1fr; }
+        }
         </style>
         """, unsafe_allow_html=True,
     )
@@ -119,6 +264,103 @@ def _staff_action(orchestrator: HotelOrchestrator, method: str, *args):
         result = getattr(orchestrator, method)(*args)
         runtime.persist(GUEST_SESSION)
         return result
+
+
+def _render_photo_strip() -> None:
+    """Keep the operations view grounded in the real property without crowding it."""
+    entrance = _asset_data_uri("academic-house-entrance.jpg")
+    room = _asset_data_uri("academic-house-room.jpg")
+    if not entrance and not room:
+        return
+    cards = []
+    if entrance:
+        cards.append(
+            f'<div class="photo-card"><img src="{entrance}" alt="学术之家入口" />'
+            '<div class="photo-card-copy"><strong>Academic House</strong><span>校内学术接待空间</span></div></div>'
+        )
+    if room:
+        cards.append(
+            f'<div class="photo-card"><img src="{room}" alt="学术之家客房" />'
+            '<div class="photo-card-copy"><strong>Room readiness</strong><span>房态与服务准备实时同步</span></div></div>'
+        )
+    st.markdown(f'<div class="photo-strip">{"".join(cards)}</div>', unsafe_allow_html=True)
+
+
+def _render_room_map(filtered_rooms: list[dict], tickets: list[dict]) -> None:
+    """Render a fixed-size, floor-grouped room map with CSS hover details."""
+    ticket_count_by_room: dict[str, int] = defaultdict(int)
+    for ticket in tickets:
+        if ticket.get("status") in {"处理中", "需人工核验"}:
+            ticket_count_by_room[str(ticket.get("room_no", ""))] += 1
+
+    status_class_map = {
+        "在住": "room-tile-occupied",
+        "空净房": "room-tile-clean",
+        "待清洁": "room-tile-dirty",
+        "维修中": "room-tile-repair",
+    }
+    status_dot_map = {
+        "在住": "legend-occupied",
+        "空净房": "legend-clean",
+        "待清洁": "legend-dirty",
+        "维修中": "legend-repair",
+    }
+    by_floor: dict[str, list[dict]] = defaultdict(list)
+    for room in sorted(filtered_rooms, key=lambda item: (int(str(item.get("floor", "0")) or 0), str(item.get("room_no", "")))):
+        by_floor[str(room.get("floor", "?"))].append(room)
+
+    st.markdown(
+        """
+        <div class="room-map-shell">
+          <div class="map-toolbar"><strong>房态地图 · Floor map</strong><span>每格代表 1 间客房 · 悬停查看住客与工单</span></div>
+          <div class="map-legend">
+            <span><i class="legend-dot legend-occupied"></i>在住</span>
+            <span><i class="legend-dot legend-clean"></i>空净房</span>
+            <span><i class="legend-dot legend-dirty"></i>待清洁</span>
+            <span><i class="legend-dot legend-repair"></i>维修中</span>
+          </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    if not by_floor:
+        st.markdown('<div class="muted">没有符合当前筛选条件的房间。</div></div>', unsafe_allow_html=True)
+        return
+
+    for floor, rooms in by_floor.items():
+        tiles = []
+        for room in rooms:
+            room_no = html.escape(str(room.get("room_no", "—")))
+            floor_text = html.escape(f"{floor}F")
+            room_type = html.escape(str(room.get("room_type", "客房")))
+            guest_name = html.escape(str(room.get("guest_name", "—")))
+            member_level = html.escape(str(room.get("member_level", "—")))
+            checkout = html.escape(str(room.get("checkout_time", "—")))
+            inventory = html.escape(str(room.get("inventory_status", "—")))
+            status = str(room.get("room_status", "未知"))
+            status_safe = html.escape(status)
+            ticket_count = ticket_count_by_room.get(str(room.get("room_no", "")), 0)
+            ticket_text = f"{ticket_count} 条处理中" if ticket_count else "无进行中工单"
+            cls = status_class_map.get(status, "room-tile-clean")
+            dot = status_dot_map.get(status, "legend-clean")
+            tiles.append(
+                f'<div class="room-tile {cls}" tabindex="0" aria-label="{room_no} {status_safe}" '
+                f'title="{room_no} · {status_safe} · {guest_name}">'
+                f'<div class="room-tile-top"><span class="room-dot {dot}"></span><span>{floor_text}</span></div>'
+                f'<div class="room-number">{room_no}</div><div class="room-type">{room_type}</div>'
+                f'<div class="room-tile-guest">{guest_name}</div><div class="room-tooltip">'
+                f'<strong>{room_no} · {room_type}</strong>'
+                f'<span><b>房态</b> {status_safe} · <b>库存</b> {inventory}</span>'
+                f'<span><b>住客</b> {guest_name} · <b>会员</b> {member_level}</span>'
+                f'<span><b>退房</b> {checkout} · <b>工单</b> {html.escape(ticket_text)}</span>'
+                f'</div></div>'
+            )
+        st.markdown(
+            f'<div class="floor-row"><div class="floor-badge">{html.escape(floor)}F</div>'
+            f'<div class="room-map">{"".join(tiles)}</div></div>',
+            unsafe_allow_html=True,
+        )
+    st.markdown("</div>", unsafe_allow_html=True)
 
 
 @st.fragment(run_every=0.5)
@@ -225,6 +467,7 @@ def _render_staff(orchestrator: HotelOrchestrator) -> None:
 
     st.markdown('<div class="eyebrow">OPERATIONS CONTROL CENTER</div>', unsafe_allow_html=True)
     st.subheader("酒店运营管理中枢")
+    _render_photo_strip()
 
     cur_date = getattr(state, "current_date", "2026-10-01")
     date_col1, date_col2 = st.columns([3, 1.2])
@@ -286,27 +529,8 @@ def _render_staff(orchestrator: HotelOrchestrator) -> None:
             target = kw.strip()
             filtered_rooms = [r for r in filtered_rooms if target in r["room_no"] or target in r.get("guest_name", "")]
 
-        st.caption(f"共筛选出 {len(filtered_rooms)} 间客房（点击可查看卡片）")
-
-        # Render the complete filtered inventory as a responsive room matrix.
-        # Floor and status filters keep the 240-card board easy to scan.
-        grid_cols = st.columns(6)
-        status_class_map = {
-            "在住": "room-card room-card-occ",
-            "空净房": "room-card room-card-clean",
-            "待清洁": "room-card room-card-dirty",
-            "维修中": "room-card room-card-repair",
-        }
-        for idx, room in enumerate(filtered_rooms):
-            col = grid_cols[idx % 6]
-            cls = status_class_map.get(room.get("room_status", "在住"), "room-card")
-            with col:
-                st.markdown(
-                    f"<div class='{cls}'><b>{room['room_no']} · {room.get('room_type', '客房')}</b><br>"
-                    f"<small>{room.get('guest_name', '—')} · {room.get('member_level', '—')}</small><br>"
-                    f"<small class='muted'>状态: {room.get('room_status')} | 退房: {room.get('checkout_time', '12:00')}</small></div>",
-                    unsafe_allow_html=True,
-                )
+        st.caption(f"共筛选出 {len(filtered_rooms)} 间客房 · 统一尺寸房间窗口 · 悬停查看详情")
+        _render_room_map(filtered_rooms, tickets)
 
     with right:
         # Late checkout approval workflow
@@ -547,14 +771,7 @@ def main() -> None:
     has_model = bool(orchestrator.model.client)
     mode_text = f"🟢 云端大模型实时驱动（{orchestrator.model.model}）" if has_model else "🟡 本地确定性规则保底（离线零成本模式）"
 
-    st.markdown(
-        f'<div class="hero"><div class="eyebrow">AEGISSTAY · HOTEL OPERATIONS</div>'
-        f'<h1>酒店服务运营中枢</h1>'
-        f'<div class="muted">住客服务、工单流转与房态管理，共享一条可追踪的业务链。'
-        f'&nbsp;&nbsp;<span style="background: #e6fffa; color: #0f766e; padding: 3px 9px; border-radius: 999px; font-weight: 700; font-size: 0.78rem;">{mode_text}</span>'
-        f'</div></div>',
-        unsafe_allow_html=True,
-    )
+    _render_property_hero(mode_text)
 
     # Sidebar Controls
     st.sidebar.title("AegisStay")
@@ -643,3 +860,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

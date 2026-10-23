@@ -40,14 +40,14 @@ academic 的“给我两张早餐券”“给房间发两张早餐券”“送�
 | REQ-12 | 部门回执同步、夜审日期保护、已送达回收待检 | [回执业务](design/business.md#部门回执与夜审) / AC-12 |
 | REQ-13 | 部署工作台仅调用 API，凭证/岗位决定 UI 和服务端能力 | [部署](design/architecture.md#部署与配置) / AC-13 |
 | REQ-14 | 随机配置不覆盖，非 root、单 worker、持久卷，校验备份/恢复及硅基流动连接预检边界 | [架构部署边界](design/architecture.md#部署与配置) / [部署与运维子规格](design/deployment.md) / AC-14；现场部分 partial |
-| REQ-15 | 固定 Harness/Few-Shot 范围明确，无对照不声称泛化或提升 | [评测](design/architecture.md#评测与证据) / AC-15 |
+| REQ-15 | 固定 Harness/Few-Shot 范围明确；H01–H20 兼容基线之外，产品质量验收使用分层扩展集，无独立对照不声称泛化或提升 | [评测](design/architecture.md#评测与证据) / [分层质量验收](quality_evaluation.md) / AC-15 |
 | REQ-16 | 原始测试 ID、日志、来源、JSON、状态/Trace 可复现，拒绝假通过 | [验收标准](acceptance_criteria.md) / AC-16 |
 
 ## 验收与交付
 
 统一入口 `python scripts/verify_release.py --output-dir .artifacts/verification/<新目录>` 在规则模式、合成数据与独立临时库中执行。门槛：原始 [127 个测试 ID](baseline_test_ids.json) 均实际通过，完整不少于 127、核心 `tests.test_app` 不少于 40、零跳过，固定 H01…H20 全过、四指标均 1.0，三组黑板场景及必要状态/Trace 断言全真，16 项要求的测试在本次完整运行真实成功。
 
-新增测试增加总量，不得替换旧测试凑数；文件契约和拒绝通过规则以 [验收标准](acceptance_criteria.md) 为准。本次 Task 1 餐券焦点日志位于已忽略的 `.artifacts/verification/task1-coupon/`，只证明其中方法和环境；完整发布证据由集成人员执行。旧 [2026-10-23 记录](release_verification_2026-10-23.md) 不证明新增代码通过，Docker/Compose 与现场演练仍按 [FIELD 方案](experiments.md) 验证。
+新增测试增加总量，不得替换旧测试凑数；文件契约和拒绝通过规则以 [验收标准](acceptance_criteria.md) 为准。H01–H20 只作为兼容基线，E01–E40 的分层质量门槛见[质量验收子规格](quality_evaluation.md)，两者结果必须分开报告。本次 Task 1 餐券焦点日志位于已忽略的 `.artifacts/verification/task1-coupon/`，只证明其中方法和环境；完整发布证据由集成人员执行。旧 [2026-10-23 记录](release_verification_2026-10-23.md) 不证明新增代码通过，Docker/Compose 与现场演练仍按 [FIELD 方案](experiments.md) 验证。
 
 本轮已执行的 169 项完整测试、40 项核心、20 条 Harness、21 项黑板断言及 120 个追溯方法的证据身份与边界见 [规格体系验收记录](specification_verification_2026-10-23.md)。
 
@@ -73,3 +73,4 @@ academic 的“给我两张早餐券”“给房间发两张早餐券”“送�
 | FUT-06 | 线上失败样本授权、脱敏、保留及独立前后对照 |
 
 扩展实施前需更新规格、实验和追溯；配置和模拟代码不能当作外部系统接通证据。
+

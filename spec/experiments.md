@@ -1,6 +1,6 @@
 # 可复现实验与现场验收方案
 
-本文件回答“如何执行、看什么原始数据、什么情况判失败、如何恢复”。编号 EXP-01…EXP-16 与 [工作计划](work_plan.md) 的 REQ-01…REQ-16、[验收标准](acceptance_criteria.md) 的 AC-01…AC-16 一一对应；测试的完整点名以 [traceability.json](traceability.json) 为机器输入。[主规格](specification.md) 定义业务范围，[追溯说明](traceability.md) 解释当前覆盖和缺口。REQ-14 细节见[部署与运维子规格](design/deployment.md)，FIELD-01～06 的现场执行协议见[现场验收协议](field_validation.md)，FUT-01～06 的外部契约见[未来集成规格](future_integrations.md)。
+本文件回答“如何执行、看什么原始数据、什么情况判失败、如何恢复”。编号 EXP-01…EXP-16 与 [工作计划](work_plan.md) 的 REQ-01…REQ-16、[验收标准](acceptance_criteria.md) 的 AC-01…AC-16 一一对应；测试的完整点名以 [traceability.json](traceability.json) 为机器输入。[主规格](specification.md) 定义业务范围，[追溯说明](traceability.md) 解释当前覆盖和缺口。[分层质量验收子规格](quality_evaluation.md)补充 EXP-15-Q 的 40 条扩展样本。REQ-14 细节见[部署与运维子规格](design/deployment.md)，FIELD-01～06 的现场执行协议见[现场验收协议](field_validation.md)，FUT-01～06 的外部契约见[未来集成规格](future_integrations.md)。
 
 ## 执行状态与结果口径
 
@@ -53,7 +53,7 @@ ENV-R 是外层发现环境；`DeploymentTests.setUp` 在用例内部临时切�
 | `manifest.json` | run_id、开始/结束 UTC、实际解释器/平台、命令/退出码/耗时、步骤状态、Git commit/dirty/改动清单、源文件 SHA-256、安全开关；scope 为 offline-code-baseline、field_readiness 为 NOT_VERIFIED |
 | `full-tests.log` / `full-tests.json` | 完整 unittest 原始 stdout/stderr、真实收集的测试 ID、执行计数和失败/错误/跳过计数；阈值 >=127 且全部成功、零跳过；[原始 127 个 ID](baseline_test_ids.json) 必须逐个保留并执行，新增 ID 不能替换旧 ID |
 | `core-tests.log` / `core-tests.json` | 核心 `tests.test_app` 原始输出与结构化计数；阈值 >=40 且全部成功、零跳过 |
-| `harness.log` / `harness-structured.log` / `harness.json` | CLI 和结构化运行的原始日志；固定 H01…H20 每条预期/实际/状态、四指标与规则耗时；恰好 20 个唯一案例、20/20、无额外行/缺 ID/重复、四项均 1.0 |
+| `harness.log` / `harness-structured.log` / `harness.json` | CLI 和结构化运行的原始日志；兼容基线固定 H01…H20，页面或 EXP-15-Q 另可生成 20+40 条分层报告、分组指标、Wilson 区间和 P95；统一发布硬门槛仍校验 H01…H20 恰20个唯一案例 |
 | `blackboard.log` / `blackboard.json` | 三个场景的实际快照、审批前后状态、Trace 与 21 项重算布尔断言；场景固定输入在 verify_blackboard.py，不能仅写 assertions=PASS |
 | `traceability.json` / `validation.log` | 从 spec 映射得到的本次校验结果、各条真实测试是否在完整套件中成功执行、失败原因；这个输出不是 spec 输入映射的替身 |
 
@@ -287,6 +287,12 @@ ENV-R 是外层发现环境；`DeploymentTests.setUp` 在用例内部临时切�
 
 **证据、失败与恢复**：`harness.log/json`、`full-tests.log/json`、输入文件哈希。缺/重复ID、FAIL行、某项不是1.0、改基线凑通过、虚构提升均失败；不更新难例/示例库，如执行中意外变更应判源数据漂移并重跑。
 
+### EXP-15-Q：分层质量扩展集（REQ-15 / AC-15）
+
+固定 H01–H20 仍按上面的兼容性契约执行；产品质量另运行 `harness/eval_extended.json` 的 E01–E40。扩展集分为 `delivery_and_replacement`、`repair_and_complaint`、`faq_and_compound`、`slot_checkout_identity`、`policy_safety_scope` 五组，每组 8 条。使用 `python -m unittest -v tests.test_quality_evaluation` 和 `python -m harness.eval_runner --extended`，报告总数、每组通过率、Wilson 95% 区间、四项业务指标、平均耗时和 P95。扩展集必须 40/40，通过率指标至少达到 95%/95%/98%/95%，安全组的未审核权益和多物品副作用为 0；不满足时记录 `QUALITY_FAIL`，不能用 H01–H20 的 20/20 抵消。
+
+**证据、失败与恢复**：保存扩展输入文件哈希和结构化 JSON；缺分组、低于 40 条、某组低于 8 条、只运行兼容基线却声称分层通过或把平均耗时解释成生产 SLA，均判失败或未运行。现场自然语言泛化、云模型对照和 RAG/Few-Shot 提升仍按 FIELD-06 另行验证。
+
 ## EXP-16：统一证据入口的反例试验（REQ-16 / AC-16）
 
 **环境、前置与控制变量**：ENV-R；新证据测试用临时目录和伪造报告注入验证器，只改变一个失败条件，保留其他合法字段；不污染正式证据目录。真实测试名以当前`tests/test_release_verification.py`和traceability映射为准。
@@ -387,3 +393,4 @@ docker compose -p aegis-acceptance up -d api
 **步骤/目标**：相同独立样本上分别跑无示例与有示例条件，每条至少3次，记录原始模型响应、解析与校验/最终业务状态/费用/端到端时延，故意注入模型超时、格式坏、虚假房号和降级风险提案。前后比较采用配对结果和95%置信区间；提升区间未支持正向改进则报告“未证明提升”，不预写百分比。所有安全边界仍须0越权/0未审权益/0重复扣库，模型失败回退率100%；启用的版本另须通过全部离线门槛。在线失败样例至少经脱敏、去重、人工审核、版本化、小流量验证和一键回退，再进入提示库，不能自动把住客逐字稿写入Few-Shot。
 
 **失败/清理**：数据泄漏、测试集污染、安全反例、无审批样例入库即FAIL。恢复上一提示/知识/模型配置，禁用外呼并确认规则路径可用；按审批制度删除临时敏感材料，只保留允许的脱敏统计和审计。
+

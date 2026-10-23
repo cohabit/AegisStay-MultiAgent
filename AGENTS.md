@@ -15,6 +15,7 @@
 | FUT-01…FUT-06 外部集成与模型治理 | [未来集成规格](spec/future_integrations.md) |
 | AC-01…AC-16 与证据硬门槛 | [验收标准](spec/acceptance_criteria.md) |
 | 真实测试点名与机器映射 | [追溯说明](spec/traceability.md)、[traceability.json](spec/traceability.json) |
+| 分层质量集与验收方法 | [质量验收子规格](spec/quality_evaluation.md) |
 | 旧专题及旧验收适用范围 | [历史索引](spec/legacy_specs.md) |
 | 安装、启动和值班操作 | [README](README.md)、[运维手册](docs/operations.md)、[部署子规格](spec/design/deployment.md) |
 | 实施边界与原始测试身份 | [工作计划](spec/work_plan.md)、[127 项基线 ID](spec/baseline_test_ids.json) |
@@ -34,6 +35,7 @@
 | `data/academic_hotel_knowledge.json` | 学校政策模板，未知时间/地点/权益要求核验 |
 | `data/hotel_knowledge.json` / `data/pms_rooms_240.json` | standard 知识与合成初始房态；不是外部真实 PMS |
 | `harness/eval_runner.py` / `eval_dataset.json` | 固定 H01…H20 规则回归、结构化四指标 |
+| `harness/eval_extended.json` / `tests/test_quality_evaluation.py` | 5 组、40 条分层质量集；不替换 H01…H20，报告分组指标与 Wilson 区间 |
 | `harness/self_evolution.py` / `hard_cases.json` / `dynamic_exemplars.json` | 难例与 Few-Shot 示例检索；不训练模型参数 |
 | `scripts/manage.py` | 随机配置初始化、SQLite 校验备份；恢复见运维手册 |
 | `scripts/verify_release.py` / `verify_blackboard.py` | 新目录证据、原始测试 ID、Harness、状态及 Trace 校验 |
@@ -64,3 +66,4 @@
 使用项目 `.venv` Python；隔离环境和完整命令见 [实验方案](spec/experiments.md)。统一入口为 `python scripts/verify_release.py --output-dir .artifacts/verification/<新目录>`。合格证据须同时满足原始 127 项、完整不少于 127、核心不少于 40、零跳过、H01…H20 全过及四指标为 1.0，并核验状态、Trace、来源和 REQ 映射。
 
 不要只凭退出 0、HTTP 200、旧截图或历史 Markdown 下结论。集成人员在文件稳定后执行完整发布验证；一次焦点回归不代表整次发布或现场已验收。
+

@@ -1,0 +1,454 @@
+[
+  {
+    "id": "E01",
+    "group": "delivery_and_replacement",
+    "name": "口语送浴巾",
+    "turns": [
+      "1106 能送一条浴巾吗"
+    ],
+    "expected_intent": "送物",
+    "expected_dept": "楼层保洁",
+    "should_create_ticket": true
+  },
+  {
+    "id": "E02",
+    "group": "delivery_and_replacement",
+    "name": "口语送毛巾",
+    "turns": [
+      "1208 可以给我两条毛巾吗"
+    ],
+    "expected_intent": "送物",
+    "expected_dept": "楼层保洁",
+    "should_create_ticket": true
+  },
+  {
+    "id": "E03",
+    "group": "delivery_and_replacement",
+    "name": "瓶装水别误判漏水",
+    "turns": [
+      "1506 想要一瓶矿泉水"
+    ],
+    "expected_intent": "送物",
+    "expected_dept": "楼层保洁",
+    "should_create_ticket": true
+  },
+  {
+    "id": "E04",
+    "group": "delivery_and_replacement",
+    "name": "借用吹风机",
+    "turns": [
+      "0818 房间给我拿个吹风机"
+    ],
+    "expected_intent": "送物",
+    "expected_dept": "楼层保洁",
+    "should_create_ticket": true
+  },
+  {
+    "id": "E05",
+    "group": "delivery_and_replacement",
+    "name": "缺房号后补送物",
+    "turns": [
+      "我需要两个枕头",
+      "1208"
+    ],
+    "expected_intent": "送物",
+    "expected_dept": "楼层保洁",
+    "should_create_ticket": true
+  },
+  {
+    "id": "E06",
+    "group": "delivery_and_replacement",
+    "name": "借用雨伞",
+    "turns": [
+      "请给1106送一把雨伞"
+    ],
+    "expected_intent": "送物",
+    "expected_dept": "楼层保洁",
+    "should_create_ticket": true
+  },
+  {
+    "id": "E07",
+    "group": "delivery_and_replacement",
+    "name": "借用充电器",
+    "turns": [
+      "1128 要一个充电器"
+    ],
+    "expected_intent": "送物",
+    "expected_dept": "楼层保洁",
+    "should_create_ticket": true
+  },
+  {
+    "id": "E08",
+    "group": "delivery_and_replacement",
+    "name": "送拖鞋",
+    "turns": [
+      "1208 请送一双拖鞋"
+    ],
+    "expected_intent": "送物",
+    "expected_dept": "楼层保洁",
+    "should_create_ticket": true
+  },
+  {
+    "id": "E09",
+    "group": "repair_and_complaint",
+    "name": "空调不制冷",
+    "turns": [
+      "1208 空调不制冷"
+    ],
+    "expected_intent": "工程报修",
+    "expected_dept": "工程部",
+    "should_create_ticket": true
+  },
+  {
+    "id": "E10",
+    "group": "repair_and_complaint",
+    "name": "浴室漏水",
+    "turns": [
+      "1506 浴室漏水"
+    ],
+    "expected_intent": "工程报修",
+    "expected_dept": "工程部",
+    "should_create_ticket": true
+  },
+  {
+    "id": "E11",
+    "group": "repair_and_complaint",
+    "name": "房灯不亮",
+    "turns": [
+      "0818 房间灯不亮"
+    ],
+    "expected_intent": "工程报修",
+    "expected_dept": "工程部",
+    "should_create_ticket": true
+  },
+  {
+    "id": "E12",
+    "group": "repair_and_complaint",
+    "name": "热水故障",
+    "turns": [
+      "1106 没有热水，帮我报修"
+    ],
+    "expected_intent": "工程报修",
+    "expected_dept": "工程部",
+    "should_create_ticket": true
+  },
+  {
+    "id": "E13",
+    "group": "repair_and_complaint",
+    "name": "门锁故障",
+    "turns": [
+      "1128 门锁坏了"
+    ],
+    "expected_intent": "工程报修",
+    "expected_dept": "工程部",
+    "should_create_ticket": true
+  },
+  {
+    "id": "E14",
+    "group": "repair_and_complaint",
+    "name": "普通噪音投诉",
+    "turns": [
+      "1208 我想投诉隔壁噪音"
+    ],
+    "expected_intent": "客诉紧急",
+    "expected_dept": "大堂经理",
+    "should_create_ticket": true
+  },
+  {
+    "id": "E15",
+    "group": "repair_and_complaint",
+    "name": "愤怒投诉",
+    "turns": [
+      "1506 我很生气，房间服务太差了"
+    ],
+    "expected_intent": "客诉紧急",
+    "expected_dept": "大堂经理",
+    "should_create_ticket": true
+  },
+  {
+    "id": "E16",
+    "group": "repair_and_complaint",
+    "name": "无法忍受噪音",
+    "turns": [
+      "我无法忍受隔壁太吵了",
+      "0818"
+    ],
+    "expected_intent": "客诉紧急",
+    "expected_dept": "大堂经理",
+    "should_create_ticket": true
+  },
+  {
+    "id": "E17",
+    "group": "faq_and_compound",
+    "name": "早餐问法变体",
+    "turns": [
+      "早餐什么时候开始"
+    ],
+    "expected_intent": "酒店咨询",
+    "expected_dept": null,
+    "should_create_ticket": false
+  },
+  {
+    "id": "E18",
+    "group": "faq_and_compound",
+    "name": "退房问法变体",
+    "turns": [
+      "我最晚几点退房"
+    ],
+    "expected_intent": "酒店咨询",
+    "expected_dept": null,
+    "should_create_ticket": false
+  },
+  {
+    "id": "E19",
+    "group": "faq_and_compound",
+    "name": "无线密码",
+    "turns": [
+      "Wi-Fi密码怎么找"
+    ],
+    "expected_intent": "酒店咨询",
+    "expected_dept": null,
+    "should_create_ticket": false
+  },
+  {
+    "id": "E20",
+    "group": "faq_and_compound",
+    "name": "健身房问法变体",
+    "turns": [
+      "健身房什么时候可以进去"
+    ],
+    "expected_intent": "酒店咨询",
+    "expected_dept": null,
+    "should_create_ticket": false
+  },
+  {
+    "id": "E21",
+    "group": "faq_and_compound",
+    "name": "押金问法变体",
+    "turns": [
+      "办理入住要交押金吗"
+    ],
+    "expected_intent": "酒店咨询",
+    "expected_dept": null,
+    "should_create_ticket": false
+  },
+  {
+    "id": "E22",
+    "group": "faq_and_compound",
+    "name": "发票问法变体",
+    "turns": [
+      "离店后能开票吗"
+    ],
+    "expected_intent": "酒店咨询",
+    "expected_dept": null,
+    "should_create_ticket": false
+  },
+  {
+    "id": "E23",
+    "group": "faq_and_compound",
+    "name": "停车问法变体",
+    "turns": [
+      "自驾过来有地方停车吗"
+    ],
+    "expected_intent": "酒店咨询",
+    "expected_dept": null,
+    "should_create_ticket": false
+  },
+  {
+    "id": "E24",
+    "group": "faq_and_compound",
+    "name": "复合送物与退房咨询",
+    "turns": [
+      "1128 送一条毛巾，顺便问下退房时间"
+    ],
+    "expected_intent": "送物",
+    "expected_dept": "楼层保洁",
+    "should_create_ticket": true
+  },
+  {
+    "id": "E25",
+    "group": "slot_checkout_identity",
+    "name": "送物补房号",
+    "turns": [
+      "我想要一条浴巾",
+      "1106"
+    ],
+    "expected_intent": "送物",
+    "expected_dept": "楼层保洁",
+    "should_create_ticket": true
+  },
+  {
+    "id": "E26",
+    "group": "slot_checkout_identity",
+    "name": "报修补房号",
+    "turns": [
+      "房间空调坏了",
+      "1208"
+    ],
+    "expected_intent": "工程报修",
+    "expected_dept": "工程部",
+    "should_create_ticket": true
+  },
+  {
+    "id": "E27",
+    "group": "slot_checkout_identity",
+    "name": "投诉补房号",
+    "turns": [
+      "我想投诉隔壁噪音",
+      "1506"
+    ],
+    "expected_intent": "客诉紧急",
+    "expected_dept": "大堂经理",
+    "should_create_ticket": true
+  },
+  {
+    "id": "E28",
+    "group": "slot_checkout_identity",
+    "name": "延退指定时间",
+    "turns": [
+      "1128 想延迟到两点退房"
+    ],
+    "expected_intent": "延迟退房",
+    "expected_dept": null,
+    "should_create_ticket": false
+  },
+  {
+    "id": "E29",
+    "group": "slot_checkout_identity",
+    "name": "延退先补时间",
+    "turns": [
+      "我想延迟退房",
+      "1106",
+      "下午两点"
+    ],
+    "expected_intent": "延迟退房",
+    "expected_dept": null,
+    "should_create_ticket": false
+  },
+  {
+    "id": "E30",
+    "group": "slot_checkout_identity",
+    "name": "续住申请补房号",
+    "turns": [
+      "我想多住一晚",
+      "1106"
+    ],
+    "expected_intent": "续住申请",
+    "expected_dept": "前台接待",
+    "should_create_ticket": true
+  },
+  {
+    "id": "E31",
+    "group": "slot_checkout_identity",
+    "name": "有效住客房号送物",
+    "turns": [
+      "1128 送一条毛巾"
+    ],
+    "expected_intent": "送物",
+    "expected_dept": "楼层保洁",
+    "should_create_ticket": true
+  },
+  {
+    "id": "E32",
+    "group": "slot_checkout_identity",
+    "name": "未知房号延退转前台",
+    "turns": [
+      "9999 申请延迟退房"
+    ],
+    "expected_intent": "延迟退房",
+    "expected_dept": null,
+    "should_create_ticket": false
+  },
+  {
+    "id": "E33",
+    "group": "policy_safety_scope",
+    "name": "早餐券需核验",
+    "turns": [
+      "1128 给我两张早餐券"
+    ],
+    "expected_intent": "票券服务",
+    "expected_dept": null,
+    "should_create_ticket": false,
+    "profile": "academic"
+  },
+  {
+    "id": "E34",
+    "group": "policy_safety_scope",
+    "name": "房间发餐券需核验",
+    "turns": [
+      "给1128发两张早餐券"
+    ],
+    "expected_intent": "票券服务",
+    "expected_dept": null,
+    "should_create_ticket": false,
+    "profile": "academic"
+  },
+  {
+    "id": "E35",
+    "group": "policy_safety_scope",
+    "name": "泛话题诗歌",
+    "turns": [
+      "帮我写一首关于三亚的诗"
+    ],
+    "expected_intent": "其他",
+    "expected_dept": null,
+    "should_create_ticket": false
+  },
+  {
+    "id": "E36",
+    "group": "policy_safety_scope",
+    "name": "泛话题天气",
+    "turns": [
+      "明天北京天气怎么样"
+    ],
+    "expected_intent": "其他",
+    "expected_dept": null,
+    "should_create_ticket": false
+  },
+  {
+    "id": "E37",
+    "group": "policy_safety_scope",
+    "name": "复合物品需澄清",
+    "turns": [
+      "1128 毛巾和浴巾都送一点"
+    ],
+    "expected_intent": "送物",
+    "expected_dept": "楼层保洁",
+    "should_create_ticket": false
+  },
+  {
+    "id": "E38",
+    "group": "policy_safety_scope",
+    "name": "未提及房号不臆造",
+    "turns": [
+      "帮我送一条毛巾"
+    ],
+    "expected_intent": "送物",
+    "expected_dept": "楼层保洁",
+    "should_create_ticket": false
+  },
+  {
+    "id": "E39",
+    "group": "policy_safety_scope",
+    "name": "票券别名需核验",
+    "turns": [
+      "1506 送两张餐券"
+    ],
+    "expected_intent": "票券服务",
+    "expected_dept": null,
+    "should_create_ticket": false,
+    "profile": "academic"
+  },
+  {
+    "id": "E40",
+    "group": "policy_safety_scope",
+    "name": "超范围写诗不派单",
+    "turns": [
+      "帮我写一首关于海边的诗"
+    ],
+    "expected_intent": "其他",
+    "expected_dept": null,
+    "should_create_ticket": false
+  }
+]
+

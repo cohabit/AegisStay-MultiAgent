@@ -10,7 +10,7 @@
 
 ## 产品界面
 
-截图来自当前版本页面，统一使用浅色主题和 1280 × 720 浏览器视口。数据为仓库内置的初始酒店数据，图片展示完整业务上下文，不包含密钥或真实住客信息。
+截图来自当前版本页面，默认护眼主题，也支持夜间和日间模式；采集使用 1280 × 720 浏览器视口。数据为仓库内置的初始酒店数据，图片展示完整业务上下文，不包含密钥或真实住客信息。
 
 ### 运营总览
 
@@ -138,7 +138,7 @@ docker compose up -d --build
 
 ## 模型与质量控制
 
-没有模型密钥或调用失败时，系统使用本地规则继续提供确定性业务处理。动态 Few-Shot 只改变本次模型输入，不会更新模型参数。当前质量底座包括 20 条固定回归、预置难例和运行时示例检索；它不把评测通过率当成真实模型泛化率，也不把示例更新称为微调。
+没有模型密钥或调用失败时，系统使用本地规则继续提供确定性业务处理。动态 Few-Shot 只改变本次模型输入，不会更新模型参数。当前质量底座保留 20 条 H01–H20 固定兼容回归，并增加 5 组、40 条 E01–E40 分层质量集；页面可以分别查看基线或运行 60 条分层报告，显示分组指标、Wilson 95% 区间和 P95 耗时。它不把评测通过率当成真实模型泛化率，也不把示例更新称为微调。详细门槛见 [分层质量验收子规格](spec/quality_evaluation.md)。
 
 连接硅基流动时，在侧栏选择对应服务商，填写 `https://api.siliconflow.cn/v1`、准确的模型 ID 和 API Key，点击“保存并连接云端大模型”。工作台会先执行只读 `/v1/models` 预检，确认选定模型存在后才显示云端在线；`AEGIS_FORCE_RULES=1` 只在明确点击云端连接时解除。当前虚拟环境没有 `openai` SDK 时，若已安装 `httpx` 会自动使用兼容 HTTP 传输；两者都不可用或探测失败会显示错误码，不会伪装成连接成功。部署验收还要求连续 3 次 HTTP 200、模型命中、每次不超过 12 秒、成功率 100%，详见 [MODEL-CONN-01](spec/design/deployment.md#33-硅基流动openai-兼容连接预检)。
 
@@ -164,6 +164,7 @@ Remove-Item Env:AEGIS_API_URL -ErrorAction SilentlyContinue
 .\.venv\Scripts\python.exe -B -X utf8 -m unittest discover -s tests -p 'test_*.py'
 .\.venv\Scripts\python.exe -B -X utf8 -m unittest tests/test_app.py
 .\.venv\Scripts\python.exe -B -X utf8 -m harness.eval_runner
+.\.venv\Scripts\python.exe -B -X utf8 -m harness.eval_runner --extended
 ~~~
 
 当前版本新增了入住凭证、岗位隔离、同库多写入防护、写入失败回滚、重启幂等和 API 工作台等验收。完整结果见 [2026-10-23 验收记录](spec/release_verification_2026-10-23.md)。原版记录保留为历史证据。这是离线规则和本地状态验证，不是生产容量或真实 PMS 回执证明。
@@ -195,3 +196,4 @@ docker-compose.yml     单酒店部署编排
 3. 配置备份、恢复演练和监控；需要多实例部署时再迁移数据库并设计多副本一致性。
 4. 建立真实 bad case 审核、独立测试集、发布审批和回滚流程。
 5. 在酒店现场用脱敏数据验证取消、撤回、延退、客诉升级和夜审规则。
+

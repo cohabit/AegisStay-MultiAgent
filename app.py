@@ -5,7 +5,7 @@ import os
 import base64
 import html
 import mimetypes
-from collections import defaultdict
+from collections import Counter, defaultdict
 from pathlib import Path
 
 import streamlit as st
@@ -21,6 +21,45 @@ AGENT_BADGES = {
     "EngineeringAgent": ("🔧", "工程安防工程师"),
     "ConciergeAgent": ("🛎️", "礼宾接待管家"),
     "ManagerEscalationAgent": ("👔", "大堂经理危机响应"),
+}
+
+THEME_OPTIONS = ("护眼", "夜间", "日间")
+THEME_HINTS = {
+    "护眼": "低亮度米绿色背景，适合长时间值班。",
+    "夜间": "深色背景，适合夜审和低光环境。",
+    "日间": "明亮纸张风格，适合白天演示。",
+}
+THEME_PALETTES = {
+    "日间": {
+        "bg": "#f6f8f7", "surface": "#ffffff", "surface_soft": "#f1f6f4",
+        "text": "#102a43", "muted": "#627d98", "border": "#d9e2ec",
+        "accent": "#0f766e", "accent_soft": "#dff4ef", "metric": "rgba(255,255,255,.72)",
+        "occ_bg": "#f2fbf9", "clean_bg": "#fbfdfd", "dirty_bg": "#fffaf1", "repair_bg": "#fff6f5",
+    },
+    "护眼": {
+        "bg": "#eaf0e7", "surface": "#f5f8f0", "surface_soft": "#e2ebdf",
+        "text": "#2d3b32", "muted": "#617267", "border": "#cbd8c9",
+        "accent": "#52796f", "accent_soft": "#dbe8d9", "metric": "rgba(245,248,240,.86)",
+        "occ_bg": "#e6f1e9", "clean_bg": "#f5f8f0", "dirty_bg": "#f8f1dc", "repair_bg": "#f8e8e4",
+    },
+    "夜间": {
+        "bg": "#0f1720", "surface": "#182630", "surface_soft": "#203440",
+        "text": "#e6f0ed", "muted": "#a7bcb8", "border": "#314955",
+        "accent": "#4fd1c5", "accent_soft": "#1b4143", "metric": "rgba(24,38,48,.92)",
+        "occ_bg": "#173633", "clean_bg": "#1c2b35", "dirty_bg": "#3c321f", "repair_bg": "#3c2529",
+    },
+}
+
+INVENTORY_GROUPS = {
+    "布草": ("浴巾", "毛巾", "枕头", "被子", "拖鞋"),
+    "客耗": ("矿泉水", "牙刷", "洗发水", "沐浴露", "梳子", "剃须刀"),
+    "借用设备": ("吹风机", "雨伞", "充电器"),
+    "餐饮": ("早餐券",),
+}
+INVENTORY_ICONS = {
+    "浴巾": "▤", "毛巾": "▥", "枕头": "◫", "被子": "▰", "拖鞋": "⌁",
+    "矿泉水": "◉", "牙刷": "✦", "洗发水": "◍", "沐浴露": "◌", "梳子": "≋", "剃须刀": "⌇",
+    "吹风机": "◒", "雨伞": "⌒", "充电器": "⌁", "早餐券": "▧",
 }
 
 ASSET_DIR = Path(__file__).resolve().parent / "assets" / "hotel"
@@ -100,33 +139,42 @@ def _connect_cloud_model(api_key: str, base_url: str, model: str) -> tuple[Hotel
     return orchestrator, probe
 
 
-def _style() -> None:
-    st.markdown(
-        """
+def _style(theme: str = "护眼") -> None:
+    palette = THEME_PALETTES.get(theme, THEME_PALETTES["护眼"])
+    theme_vars = "\n".join(
+        f"            --as-{name.replace('_', '-')}: {value};"
+        for name, value in palette.items()
+    )
+    css = """
         <style>
         :root {
-            --as-ink: #102a43;
+__THEME_VARS__
+            --as-ink: var(--as-text);
             --as-navy: #102a43;
-            --as-teal: #0f766e;
-            --as-teal-soft: #dff4ef;
+            --as-teal: var(--as-accent);
+            --as-teal-soft: var(--as-accent-soft);
             --as-sand: #ead9c2;
-            --as-paper: #fbfaf7;
-            --as-card-bg: #ffffff;
-            --as-card-border: #d9e2ec;
-            --as-muted: #627d98;
+            --as-paper: var(--as-surface-soft);
+            --as-card-bg: var(--as-surface);
+            --as-card-border: var(--as-border);
             --as-shadow: 0 12px 28px rgba(16,42,67,0.08);
         }
-        .stApp { background: #f6f8f7; }
-        [data-testid="stAppViewContainer"] { background: #f6f8f7; }
-        [data-testid="stHeader"] { background: rgba(246,248,247,.84); }
+        .stApp, [data-testid="stAppViewContainer"] { background: var(--as-bg); color: var(--as-text); transition: background-color .28s ease, color .28s ease; }
+        [data-testid="stHeader"] { background: color-mix(in srgb, var(--as-bg) 88%, transparent); }
         [data-testid="stSidebar"] { border-right: 1px solid rgba(255,255,255,.12); }
-        .block-container { max-width: 1500px; padding-top: 1.35rem; }
+        .block-container { max-width: 1500px; padding-top: 1rem; }
+        .stApp input, .stApp textarea, [data-baseweb="select"] > div { background: var(--as-surface) !important; color: var(--as-text) !important; border-color: var(--as-border) !important; }
+        .stApp input::placeholder, .stApp textarea::placeholder { color: var(--as-muted) !important; opacity: 1; }
+        [data-testid="stFormSubmitButton"] button, [data-testid="stFormSubmitButton"] button *, .stButton button[kind="primary"] { color: #fff !important; -webkit-text-fill-color: #fff !important; background: var(--as-accent) !important; border-color: var(--as-accent) !important; }
+        .stApp label, [data-testid="stMarkdownContainer"], [data-testid="stCaptionContainer"] { color: var(--as-text); }
+        [data-testid="stAlert"], [data-testid="stExpander"] { border-color: var(--as-border); }
+        [data-testid="stMetric"] { color: var(--as-text); }
         .hero { padding: .6rem 0 .35rem; }
         .eyebrow { color: var(--as-teal); letter-spacing:.16em; font-size:.68rem; font-weight:800; }
         .muted { color: var(--as-muted); font-size:.85rem; }
         .property-hero {
             position: relative;
-            min-height: 320px;
+            min-height: 252px;
             overflow: hidden;
             border-radius: 22px;
             background: var(--as-navy);
@@ -143,7 +191,7 @@ def _style() -> None:
             background: linear-gradient(90deg, rgba(10,31,48,.92) 0%, rgba(10,31,48,.68) 42%, rgba(10,31,48,.12) 82%), linear-gradient(0deg, rgba(10,31,48,.36), transparent 48%);
             z-index: 1;
         }
-        .property-hero-copy { position: relative; z-index: 2; max-width: 650px; padding: 58px 54px 44px; color: #fff; }
+        .property-hero-copy { position: relative; z-index: 2; max-width: 650px; padding: 42px 48px 34px; color: #fff; }
         .hero-kicker { color: #a5e3d7; letter-spacing: .18em; font-size: .68rem; font-weight: 800; }
         .property-hero-copy h1 { margin: 14px 0 10px; color: #fff; font-size: clamp(2rem, 4vw, 3.6rem); letter-spacing: -.04em; line-height: 1.05; }
         .property-hero-copy p { max-width: 510px; margin: 0; color: rgba(255,255,255,.84); font-size: 1rem; line-height: 1.8; }
@@ -151,13 +199,24 @@ def _style() -> None:
         .hero-pills span { padding: 6px 11px; border: 1px solid rgba(255,255,255,.28); border-radius: 999px; background: rgba(255,255,255,.1); color: #f7fbfa; font-size: .72rem; backdrop-filter: blur(8px); }
         .property-hero-stamp { position: absolute; z-index: 2; right: 28px; bottom: 24px; display: flex; align-items: center; gap: 9px; color: rgba(255,255,255,.72); letter-spacing: .12em; font-size: .63rem; line-height: 1.3; text-align: right; }
         .property-hero-stamp strong { display: grid; place-items: center; width: 40px; height: 40px; border: 1px solid rgba(255,255,255,.45); border-radius: 50%; color: #fff; font-family: Georgia, serif; font-size: 1.05rem; letter-spacing: 0; }
-        .property-intro { display: flex; justify-content: space-between; gap: 24px; align-items: end; padding: 17px 8px 26px; }
+        .property-intro { display: flex; justify-content: space-between; gap: 24px; align-items: end; padding: 13px 8px 18px; }
         .property-intro > div { display: grid; gap: 5px; }
-        .property-intro strong { color: var(--as-ink); font-family: Georgia, 'Noto Serif SC', serif; font-size: 1.17rem; font-weight: 600; }
+        .property-intro strong { color: var(--as-text); font-family: Georgia, 'Noto Serif SC', serif; font-size: 1.17rem; font-weight: 600; }
         .property-intro p { margin: 0; color: var(--as-muted); font-size: .82rem; }
-        .stTabs [data-baseweb="tab-list"] { gap: 5px; border-bottom: 1px solid #dce7e5; }
-        .stTabs [data-baseweb="tab"] { padding: 12px 18px; color: #486581; font-weight: 700; }
+        .stTabs [data-baseweb="tab-list"] { gap: 5px; border-bottom: 1px solid var(--as-border); }
+        .stTabs [data-baseweb="tab"] { padding: 10px 18px; color: var(--as-muted); font-weight: 700; }
         .stTabs [aria-selected="true"] { color: var(--as-teal); }
+        .conversation-dock { position: relative; overflow: hidden; margin: 0 0 18px; padding: 20px 22px 16px; border: 1px solid var(--as-border); border-radius: 18px; background: var(--as-surface); box-shadow: var(--as-shadow); animation: as-rise .55s ease both; }
+        .conversation-dock::after { content: ''; position: absolute; right: -38px; top: -58px; width: 160px; height: 160px; border: 1px solid var(--as-accent); border-radius: 50%; opacity: .15; box-shadow: 0 0 0 22px color-mix(in srgb, var(--as-accent) 8%, transparent), 0 0 0 44px color-mix(in srgb, var(--as-accent) 5%, transparent); }
+        .conversation-dock-head { display:flex; align-items:center; gap:8px; color: var(--as-accent); font-size:.72rem; font-weight:800; letter-spacing:.12em; }
+        .conversation-live-dot { width:8px; height:8px; border-radius:50%; background:var(--as-accent); box-shadow:0 0 0 0 color-mix(in srgb, var(--as-accent) 45%, transparent); animation: as-pulse 1.8s infinite; }
+        .conversation-dock h2 { position:relative; z-index:1; margin: 10px 0 3px; color:var(--as-text); font-family:Georgia, 'Noto Serif SC', serif; font-size:1.35rem; font-weight:600; }
+        .conversation-dock p { position:relative; z-index:1; margin:0; color:var(--as-muted); font-size:.8rem; }
+        .conversation-quick { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
+        .conversation-quick span { padding:5px 9px; border:1px solid var(--as-border); border-radius:999px; color:var(--as-muted); background:var(--as-surface-soft); font-size:.68rem; }
+        @keyframes as-rise { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes as-pulse { 0%, 100% { box-shadow:0 0 0 0 color-mix(in srgb, var(--as-accent) 0%, transparent); } 50% { box-shadow:0 0 0 6px color-mix(in srgb, var(--as-accent) 24%, transparent); } }
+        @media (prefers-reduced-motion: reduce) { .conversation-dock, .conversation-live-dot { animation:none; } }
         .room-card {
             background-color: var(--as-card-bg);
             border: 1px solid var(--as-card-border);
@@ -171,10 +230,12 @@ def _style() -> None:
         .room-card-clean { border-left: 5px solid #6b7280 !important; }
         .room-card-dirty { border-left: 5px solid #f59e0b !important; }
         .room-card-repair { border-left: 5px solid #ef4444 !important; }
-        .room-map-shell { padding: 17px; border: 1px solid #dce7e5; border-radius: 18px; background: #fff; box-shadow: var(--as-shadow); }
+        .room-map-shell { padding: 17px; border: 1px solid var(--as-border); border-radius: 18px; background: var(--as-surface); box-shadow: var(--as-shadow); }
         .map-toolbar { display:flex; justify-content:space-between; gap: 16px; align-items: center; margin-bottom: 13px; }
         .map-toolbar strong { color: var(--as-ink); font-size: 1.02rem; }
         .map-toolbar span { color: var(--as-muted); font-size: .76rem; }
+        .map-summary { display:flex; flex-wrap:wrap; gap:12px; margin:-5px 0 12px; color:var(--as-muted); font-size:.72rem; }
+        .map-summary b { color:var(--as-text); font-weight:800; }
         .map-legend { display: flex; flex-wrap: wrap; gap: 12px; margin: 0 0 16px; color: var(--as-muted); font-size: .75rem; }
         .map-legend span { display: inline-flex; align-items: center; gap: 6px; }
         .legend-dot, .room-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; }
@@ -183,19 +244,21 @@ def _style() -> None:
         .legend-dirty { background: #d97706; }
         .legend-repair { background: #dc2626; }
         .floor-row { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 12px; align-items: start; margin-bottom: 16px; }
-        .floor-badge { position: sticky; top: 8px; display:grid; place-items:center; min-height: 34px; border-radius: 10px; background: #edf4f3; color: var(--as-teal); font-size: .74rem; font-weight: 800; }
+        .floor-badge { position: sticky; top: 8px; display:grid; place-items:center; min-height: 34px; border-radius: 10px; background: var(--as-accent-soft); color: var(--as-teal); font-size: .74rem; font-weight: 800; }
         .room-map { display:grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; min-width: 0; }
-        .room-tile { position: relative; min-height: 88px; overflow: visible; padding: 10px 10px 9px; border: 1px solid #d8e3e3; border-bottom: 3px solid #64748b; border-radius: 9px; background: #fbfdfd; color: var(--as-ink); box-shadow: 0 3px 9px rgba(16,42,67,.045); cursor: default; transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; z-index: 0; }
+        .room-tile { position: relative; min-height: 88px; overflow: visible; padding: 10px 10px 9px; border: 1px solid var(--as-border); border-bottom: 3px solid #64748b; border-radius: 9px; background: var(--as-surface); color: var(--as-ink); box-shadow: 0 3px 9px rgba(16,42,67,.045); cursor: default; transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; z-index: 0; }
         .room-tile:hover, .room-tile:focus-within { z-index: 8; transform: translateY(-3px); border-color: currentColor; box-shadow: 0 14px 25px rgba(16,42,67,.18); }
         .room-tile-top { display:flex; justify-content:space-between; align-items:center; color: #7b8794; font-size: .65rem; }
         .room-tile-top .room-dot { background: currentColor; }
         .room-number { margin-top: 6px; font-family: Georgia, 'Noto Serif SC', serif; font-size: 1.24rem; font-weight: 700; letter-spacing: .02em; }
         .room-type { overflow: hidden; margin-top: 3px; color: #7b8794; font-size: .64rem; text-overflow: ellipsis; white-space: nowrap; }
-        .room-tile-guest { overflow: hidden; margin-top: 5px; color: #486581; font-size: .68rem; text-overflow: ellipsis; white-space: nowrap; }
-        .room-tile-occupied { color: #0f766e; border-bottom-color: #0f766e; background: #f2fbf9; }
-        .room-tile-clean { color: #64748b; border-bottom-color: #64748b; }
-        .room-tile-dirty { color: #b45309; border-bottom-color: #d97706; background: #fffaf1; }
-        .room-tile-repair { color: #b91c1c; border-bottom-color: #dc2626; background: #fff6f5; }
+        .room-tile-guest { overflow: hidden; margin-top: 5px; color: var(--as-muted); font-size: .68rem; text-overflow: ellipsis; white-space: nowrap; }
+        .room-tile-status { display:flex; justify-content:space-between; gap:5px; margin-top:6px; color:var(--as-muted); font-size:.61rem; }
+        .room-ticket-count { color:var(--as-accent); font-weight:800; }
+        .room-tile-occupied { color: #0f766e; border-bottom-color: #0f766e; background: var(--as-occ-bg); }
+        .room-tile-clean { color: #64748b; border-bottom-color: #64748b; background: var(--as-clean-bg); }
+        .room-tile-dirty { color: #b45309; border-bottom-color: #d97706; background: var(--as-dirty-bg); }
+        .room-tile-repair { color: #b91c1c; border-bottom-color: #dc2626; background: var(--as-repair-bg); }
         .room-tooltip { position:absolute; left: 50%; bottom: calc(100% + 9px); width: 228px; padding: 12px 13px; transform: translate(-50%, 5px); border: 1px solid rgba(16,42,67,.14); border-radius: 11px; background: #102a43; color: #f7fbfa; box-shadow: 0 15px 35px rgba(16,42,67,.27); opacity: 0; pointer-events: none; transition: opacity .16s ease, transform .16s ease; }
         .room-tooltip::after { content: ''; position:absolute; left:50%; bottom:-6px; width:11px; height:11px; transform:translateX(-50%) rotate(45deg); background:#102a43; }
         .room-tile:hover .room-tooltip, .room-tile:focus-within .room-tooltip { opacity: 1; transform: translate(-50%, 0); }
@@ -203,7 +266,7 @@ def _style() -> None:
         .room-tooltip span { display:block; color: rgba(255,255,255,.76); font-size: .7rem; line-height: 1.6; }
         .room-tooltip b { color: #b8eee2; font-weight: 700; }
         .photo-strip { display:grid; grid-template-columns: 1.25fr 1fr; gap: 10px; margin: 0 0 18px; }
-        .photo-card { position:relative; height: 148px; overflow:hidden; border-radius: 15px; background:#102a43; }
+        .photo-card { position:relative; height: 148px; overflow:hidden; border-radius: 15px; background:var(--as-navy); }
         .photo-card img { width:100%; height:148px; object-fit:cover; opacity:.88; }
         .photo-card-copy { position:absolute; inset:auto 14px 12px; color:#fff; text-shadow: 0 2px 7px rgba(0,0,0,.35); }
         .photo-card-copy strong { display:block; font-family:Georgia, 'Noto Serif SC', serif; font-size: 1rem; }
@@ -230,10 +293,27 @@ def _style() -> None:
         .agent-badge { display: inline-block; margin: 4px 0 12px; font-weight: 700; }
         .agent-monitor-card { min-height: 76px; }
         .section-label { color:#486581; font-size:.7rem; font-weight:800; letter-spacing:.12em; text-transform:uppercase; }
-        [data-testid="stMetric"] { padding: 11px 13px; border: 1px solid #dce7e5; border-radius: 12px; background: rgba(255,255,255,.68); }
-        [data-testid="stMetricLabel"] { color: #627d98; }
+        [data-testid="stMetric"] { padding: 11px 13px; border: 1px solid var(--as-border); border-radius: 12px; background: var(--as-metric); }
+        [data-testid="stMetricLabel"] { color: var(--as-muted); }
+        .inventory-board { display:grid; grid-template-columns:repeat(auto-fill, minmax(138px, 1fr)); gap:9px; margin: 5px 0 13px; }
+        .inventory-card { position:relative; min-height:126px; overflow:hidden; padding:12px; border:1px solid var(--as-border); border-radius:13px; background:var(--as-surface); box-shadow:0 6px 15px rgba(16,42,67,.06); }
+        .inventory-card::after { content:''; position:absolute; right:-23px; bottom:-30px; width:72px; height:72px; border:1px solid var(--as-accent); border-radius:50%; opacity:.14; }
+        .inventory-card-top { display:flex; justify-content:space-between; color:var(--as-muted); font-size:.68rem; }
+        .inventory-icon { display:grid; place-items:center; width:26px; height:26px; border-radius:8px; background:var(--as-accent-soft); color:var(--as-accent); font-size:1rem; }
+        .inventory-group { align-self:center; }
+        .inventory-item { margin-top:9px; color:var(--as-text); font-size:.8rem; font-weight:800; }
+        .inventory-number { display:inline-block; margin-top:3px; color:var(--as-text); font-family:Georgia,serif; font-size:1.8rem; font-weight:700; line-height:1; }
+        .inventory-unit { margin-left:4px; color:var(--as-muted); font-size:.66rem; }
+        .inventory-bar { height:5px; margin-top:11px; overflow:hidden; border-radius:999px; background:var(--as-surface-soft); }
+        .inventory-bar > span { display:block; height:100%; border-radius:inherit; background:var(--as-accent); }
+        .inventory-low .inventory-bar > span { background:#d97706; }
+        .inventory-critical .inventory-bar > span { background:#dc2626; }
+        .inventory-state { display:block; margin-top:5px; color:var(--as-muted); font-size:.62rem; }
+        .borrowed-board { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:8px; }
+        .borrowed-card { padding:10px 12px; border-left:3px solid var(--as-accent); border-radius:10px; background:var(--as-surface-soft); color:var(--as-text); font-size:.72rem; }
+        .borrowed-card strong { display:block; margin-bottom:4px; font-size:.8rem; }
         @media (max-width: 800px) {
-            .property-hero-copy { padding: 38px 28px 34px; }
+            .property-hero-copy { padding: 34px 28px 30px; }
             .property-hero-copy h1 { font-size: 2.15rem; }
             .property-intro { display:block; }
             .property-intro p { margin-top: 8px; }
@@ -243,8 +323,8 @@ def _style() -> None:
             .photo-strip { grid-template-columns: 1fr; }
         }
         </style>
-        """, unsafe_allow_html=True,
-    )
+        """
+    st.markdown(css.replace("__THEME_VARS__", theme_vars), unsafe_allow_html=True)
 
 
 def _runtime_for_ui(orchestrator: HotelOrchestrator) -> SessionManager:
@@ -264,6 +344,46 @@ def _staff_action(orchestrator: HotelOrchestrator, method: str, *args):
         result = getattr(orchestrator, method)(*args)
         runtime.persist(GUEST_SESSION)
         return result
+
+
+def _render_entry_conversation(orchestrator: HotelOrchestrator) -> None:
+    """Put a compact, always-visible front-desk composer before the tabbed views."""
+    runtime = _runtime_for_ui(orchestrator)
+    snapshot = runtime.snapshot(GUEST_SESSION)
+    state = snapshot.state
+    active = any(task.get("status") in {"running", "queued"} for task in state.tasks.values())
+    last_reply = next(
+        (message.get("content", "") for message in reversed(state.messages) if message.get("role") == "assistant"),
+        "欢迎来到学术之家，我可以帮你安排送物、报修、延迟退房和设施问答。",
+    )
+    if len(last_reply) > 92:
+        last_reply = last_reply[:92] + "…"
+    status_text = "前台正在处理上一条请求，你可以直接补充、修改或取消。" if active else last_reply
+    st.markdown(
+        f"""
+        <section class="conversation-dock">
+          <div class="conversation-dock-head"><span class="conversation-live-dot"></span> FRONT DESK · 即时对话</div>
+          <h2>你说需求，我来协调。</h2>
+          <p>{html.escape(status_text)}</p>
+          <div class="conversation-quick"><span>送物：毛巾 · 矿泉水</span><span>工程：空调 · 漏水</span><span>权益：延退 · 早餐</span></div>
+        </section>
+        """,
+        unsafe_allow_html=True,
+    )
+    with st.form("entry-conversation-form", clear_on_submit=True, border=False):
+        prompt = st.text_input(
+            "告诉前台你需要什么",
+            placeholder="例如：1128 送两条毛巾；也可以说‘水不用了’来取消矿泉水",
+            max_chars=240,
+            label_visibility="collapsed",
+        )
+        submitted = st.form_submit_button("发送给前台", type="primary", use_container_width=True)
+    if submitted and prompt.strip():
+        try:
+            runtime.submit(GUEST_SESSION, prompt.strip(), force_rules=orchestrator.force_rules)
+            st.rerun()
+        except (RuntimeBusy, ValueError) as error:
+            st.warning(str(error))
 
 
 def _render_photo_strip() -> None:
@@ -305,23 +425,29 @@ def _render_room_map(filtered_rooms: list[dict], tickets: list[dict]) -> None:
         "待清洁": "legend-dirty",
         "维修中": "legend-repair",
     }
+    status_counts = Counter(str(room.get("room_status", "未知")) for room in filtered_rooms)
+    room_total = len(filtered_rooms)
+    occupancy = status_counts.get("在住", 0) / room_total if room_total else 0
     by_floor: dict[str, list[dict]] = defaultdict(list)
     for room in sorted(filtered_rooms, key=lambda item: (int(str(item.get("floor", "0")) or 0), str(item.get("room_no", "")))):
         by_floor[str(room.get("floor", "?"))].append(room)
 
-    st.markdown(
-        """
+    map_intro = """
         <div class="room-map-shell">
           <div class="map-toolbar"><strong>房态地图 · Floor map</strong><span>每格代表 1 间客房 · 悬停查看住客与工单</span></div>
+          <div class="map-summary"><span>当前筛选 <b>__ROOM_TOTAL__</b> 间</span><span>入住率 <b>__OCCUPANCY__</b></span></div>
           <div class="map-legend">
-            <span><i class="legend-dot legend-occupied"></i>在住</span>
-            <span><i class="legend-dot legend-clean"></i>空净房</span>
-            <span><i class="legend-dot legend-dirty"></i>待清洁</span>
-            <span><i class="legend-dot legend-repair"></i>维修中</span>
+            <span><i class="legend-dot legend-occupied"></i>在住 <b>__OCCUPIED__</b></span>
+            <span><i class="legend-dot legend-clean"></i>空净房 <b>__CLEAN__</b></span>
+            <span><i class="legend-dot legend-dirty"></i>待清洁 <b>__DIRTY__</b></span>
+            <span><i class="legend-dot legend-repair"></i>维修中 <b>__REPAIR__</b></span>
           </div>
-        """,
-        unsafe_allow_html=True,
-    )
+        """.replace("__ROOM_TOTAL__", str(room_total)).replace("__OCCUPANCY__", f"{occupancy:.0%}")
+    map_intro = map_intro.replace("__OCCUPIED__", str(status_counts.get("在住", 0)))
+    map_intro = map_intro.replace("__CLEAN__", str(status_counts.get("空净房", 0)))
+    map_intro = map_intro.replace("__DIRTY__", str(status_counts.get("待清洁", 0)))
+    map_intro = map_intro.replace("__REPAIR__", str(status_counts.get("维修中", 0)))
+    st.markdown(map_intro, unsafe_allow_html=True)
 
     if not by_floor:
         st.markdown('<div class="muted">没有符合当前筛选条件的房间。</div></div>', unsafe_allow_html=True)
@@ -341,6 +467,7 @@ def _render_room_map(filtered_rooms: list[dict], tickets: list[dict]) -> None:
             status_safe = html.escape(status)
             ticket_count = ticket_count_by_room.get(str(room.get("room_no", "")), 0)
             ticket_text = f"{ticket_count} 条处理中" if ticket_count else "无进行中工单"
+            ticket_badge = f'<span class="room-ticket-count">{ticket_count} 单</span>' if ticket_count else ""
             cls = status_class_map.get(status, "room-tile-clean")
             dot = status_dot_map.get(status, "legend-clean")
             tiles.append(
@@ -348,7 +475,8 @@ def _render_room_map(filtered_rooms: list[dict], tickets: list[dict]) -> None:
                 f'title="{room_no} · {status_safe} · {guest_name}">'
                 f'<div class="room-tile-top"><span class="room-dot {dot}"></span><span>{floor_text}</span></div>'
                 f'<div class="room-number">{room_no}</div><div class="room-type">{room_type}</div>'
-                f'<div class="room-tile-guest">{guest_name}</div><div class="room-tooltip">'
+                f'<div class="room-tile-guest">{guest_name}</div><div class="room-tile-status"><span>{status_safe}</span>{ticket_badge}</div>'
+                f'<div class="room-tooltip">'
                 f'<strong>{room_no} · {room_type}</strong>'
                 f'<span><b>房态</b> {status_safe} · <b>库存</b> {inventory}</span>'
                 f'<span><b>住客</b> {guest_name} · <b>会员</b> {member_level}</span>'
@@ -361,6 +489,64 @@ def _render_room_map(filtered_rooms: list[dict], tickets: list[dict]) -> None:
             unsafe_allow_html=True,
         )
     st.markdown("</div>", unsafe_allow_html=True)
+
+
+def _inventory_group(item: str) -> str:
+    for group, items in INVENTORY_GROUPS.items():
+        if item in items:
+            return group
+    return "综合物料"
+
+
+def _render_inventory_board(orchestrator: HotelOrchestrator, state) -> None:
+    """Render operational stock as glanceable cards instead of a raw dictionary."""
+    inventory = dict(orchestrator.housekeeping.inventory)
+    if not inventory:
+        st.caption("当前没有可展示的物资库存。")
+        return
+
+    filters = ["全部", *INVENTORY_GROUPS.keys()]
+    selected = st.radio("物资分类", filters, horizontal=True, key="inventory-filter", label_visibility="collapsed")
+    visible = [item for item in inventory if selected == "全部" or _inventory_group(item) == selected]
+    cards = []
+    for item in visible:
+        quantity = max(0, int(inventory[item]))
+        group = _inventory_group(item)
+        if quantity <= 4:
+            level, label, card_class = "critical", "需要补充", "inventory-critical"
+        elif quantity <= 10:
+            level, label, card_class = "low", "库存偏低", "inventory-low"
+        else:
+            level, label, card_class = "healthy", "库存充足", ""
+        percent = min(100, max(8, round(quantity / 40 * 100)))
+        reserved = sum(
+            int(ticket.get("reserved_quantity", 0) or 0)
+            for ticket in state.tickets
+            if ticket.get("inventory_item") == item and ticket.get("status") == "处理中"
+        )
+        reserved_note = f" · 已预留 {reserved}" if reserved else ""
+        cards.append(
+            f'<div class="inventory-card {card_class}" title="{html.escape(item)}：{quantity} 件可用">'
+            f'<div class="inventory-card-top"><span class="inventory-icon">{INVENTORY_ICONS.get(item, "•")}</span>'
+            f'<span class="inventory-group">{html.escape(group)}</span></div>'
+            f'<div class="inventory-item">{html.escape(item)}</div>'
+            f'<div><span class="inventory-number">{quantity}</span><span class="inventory-unit">件可用</span></div>'
+            f'<div class="inventory-bar"><span style="width:{percent}%"></span></div>'
+            f'<span class="inventory-state">{label}{html.escape(reserved_note)}</span></div>'
+        )
+    st.markdown(f'<div class="inventory-board">{"".join(cards)}</div>', unsafe_allow_html=True)
+
+    borrowed = list(state.borrowed_items or [])
+    if borrowed:
+        st.caption("在房借用 · 归还后进入待检区")
+        borrowed_cards = []
+        for record in borrowed:
+            borrowed_cards.append(
+                f'<div class="borrowed-card"><strong>{html.escape(str(record.get("item", "物品")))} × {record.get("quantity", 1)}</strong>'
+                f'{html.escape(str(record.get("room_no", "—")))} 房 · {html.escape(str(record.get("status", "借用在房")))}<br>'
+                f'<span class="muted">{html.escape(str(record.get("ticket_id", "")))}</span></div>'
+            )
+        st.markdown(f'<div class="borrowed-board">{"".join(borrowed_cards)}</div>', unsafe_allow_html=True)
 
 
 @st.fragment(run_every=0.5)
@@ -626,11 +812,8 @@ def _render_staff(orchestrator: HotelOrchestrator) -> None:
         inv_c1, inv_c2 = st.columns(2)
         inv_c1.metric("送物队列排队深度", f"{active_deliveries} 单待送")
         inv_c2.metric("当前动态推导 ETA", f"{current_eta} 分钟", delta="根据拥堵自适应推导")
-        with st.expander("查看保洁部物资实时库存 (支持原子扣减防超卖)"):
-            st.write(orchestrator.housekeeping.inventory)
-            if state.borrowed_items:
-                st.markdown("**借出在房借还物资：**")
-                st.dataframe(state.borrowed_items, hide_index=True)
+        with st.expander("查看保洁部物资实时库存 (支持原子扣减防超卖)", expanded=True):
+            _render_inventory_board(orchestrator, state)
 
     with st.expander("🔍 查看 Blackboard 与 Agent 交接追踪（运营内部）"):
         st.json({
@@ -658,7 +841,14 @@ def _render_harness(orchestrator: HotelOrchestrator) -> None:
             index=1 if has_model else 0,
             horizontal=False,
         )
+        eval_scope = st.radio(
+            "选择评测样本范围",
+            ["分层质量集（基线 H01-H20 + 扩展 E01-E40）", "兼容基线（仅 H01-H20）"],
+            index=0,
+            horizontal=False,
+        )
     use_cloud = "云端大模型" in eval_engine
+    include_extended = "分层质量集" in eval_scope
     with col_status:
         if use_cloud:
             if has_model:
@@ -672,7 +862,8 @@ def _render_harness(orchestrator: HotelOrchestrator) -> None:
         st.session_state.harness_report = None
 
     btn_disabled = use_cloud and not has_model
-    btn_text = f"▶ 运行全量 20 组回归测试 ({'云端大模型' if use_cloud else '离线规则'})"
+    case_label = "60 组分层质量集" if include_extended else "20 组兼容基线"
+    btn_text = f"▶ 运行{case_label} ({'云端大模型' if use_cloud else '离线规则'})"
     if st.button(btn_text, type="primary", disabled=btn_disabled):
         from harness.eval_runner import run_evaluation
         bar = st.progress(0, text="准备运行 Harness 质检…")
@@ -680,7 +871,11 @@ def _render_harness(orchestrator: HotelOrchestrator) -> None:
         def progress(done: int, total: int, row: dict) -> None:
             bar.progress(done / total, text=f"正在评测 {done}/{total} · {row['id']} · {row['name']} → {row['status']} ({row['response_ms']} ms)")
 
-        st.session_state.harness_report = run_evaluation(progress_callback=progress, use_cloud_model=use_cloud)
+        st.session_state.harness_report = run_evaluation(
+            progress_callback=progress,
+            use_cloud_model=use_cloud,
+            include_extended=include_extended,
+        )
         bar.empty()
         st.rerun()
 
@@ -700,7 +895,10 @@ def _render_harness(orchestrator: HotelOrchestrator) -> None:
     b.metric("意图准确率", f"{report['intent_accuracy']:.1%}")
     c.metric("槽位召回率", f"{report['slot_filling_rate']:.1%}")
     d.metric("任务完成率", f"{report['ticket_recall']:.1%}")
-    st.caption(f"派单精准度 {report['ticket_precision']:.1%} · 平均单例耗时 {report['average_response_ms']:.2f} ms")
+    st.caption(f"派单精准度 {report['ticket_precision']:.1%} · 平均单例耗时 {report['average_response_ms']:.2f} ms · P95 {report.get('response_p95_ms', 0):.2f} ms")
+    if report.get("extended_total"):
+        st.caption(f"分层质量集：扩展 {report['extended_passed']}/{report['extended_total']} · 95% 通过率区间 {report.get('pass_rate_ci95')}")
+        st.dataframe(report.get("groups", []), width="stretch", hide_index=True)
     st.dataframe(report["rows"], width="stretch", hide_index=True)
 
 
@@ -764,7 +962,8 @@ def main() -> None:
     if os.getenv("AEGIS_DEPLOYED") == "1":
         st.error("部署模式必须配置 AEGIS_API_URL；工作台不能直接打开数据库。")
         st.stop()
-    _style()
+    active_theme = st.session_state.get("ui-theme-control", "护眼")
+    _style(active_theme)
     if "orchestrator" not in st.session_state:
         st.session_state.orchestrator = HotelOrchestrator()
     orchestrator: HotelOrchestrator = st.session_state.orchestrator
@@ -776,6 +975,8 @@ def main() -> None:
     # Sidebar Controls
     st.sidebar.title("AegisStay")
     st.sidebar.caption("单酒店运营工作台 · 240 间客房")
+    st.sidebar.radio("显示模式", THEME_OPTIONS, key="ui-theme-control", horizontal=True)
+    st.sidebar.caption(THEME_HINTS.get(st.session_state.get("ui-theme-control", active_theme), THEME_HINTS["护眼"]))
     if has_model:
         st.sidebar.success(f"🟢 **云端大模型在线**\n\n`{orchestrator.model.model}`", icon="⚡")
     else:
@@ -841,6 +1042,8 @@ def main() -> None:
 - 🌙 **PMS 跨日夜审 (Night Audit)**
   跨日到期房态流转 + 次日预订保洁冲突预检
 """)
+
+    _render_entry_conversation(orchestrator)
 
     guest, staff, harness, evolution = st.tabs([
         "住客服务",

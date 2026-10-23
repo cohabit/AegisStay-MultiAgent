@@ -47,6 +47,8 @@
 
 公开运行：[Offline acceptance #39917403332](https://github.com/cohabit/AegisStay-MultiAgent/actions/runs/39917403332)。`head_sha` 与提交完全一致，状态 `completed`、结论 `success`。作业 `tests` 的统一验收、证据上传和 `docker build -t aegisstay:test .` 三个关键步骤均成功；证据附件 `verification-c520075a2b3b7ec36bb3cbdd31620b066e1e5c03` 未过期，SHA-256 为 `14204237d3976a6a70fe5627f99d3546ee4b48b4be4f26468a914d3451620671`，保留至 2026-11-06 07:24 UTC。CI 证明的是提交树在 Ubuntu/Python 3.12 的离线验收和镜像构建，仍不改变下文的现场未验证边界。
 
+文档记录更新后的最终提交 `8aa1105a3c6cfb0ba2298cb9a6149ba3c88725e1` 也已通过 [Offline acceptance #39949980323](https://github.com/cohabit/AegisStay-MultiAgent/actions/runs/39949980323)；其证据附件 `verification-8aa1105a3c6cfb0ba2298cb9a6149ba3c88725e1` 未过期，SHA-256 为 `9f9c9cd7723ec9b7d354e788a7c1f3704ab07bb38571d3a02afc8a19071f6f93`，保留至 2026-11-06 11:59 UTC。两次运行均以对应 `head_sha` 验证，后一条是当前文档提交的最终 CI 结果。
+
 ## 可复查的原始文件
 
 同一已忽略目录 `.artifacts/verification/spec-map-final-001/` 包含 12 个交付文件：

@@ -256,18 +256,20 @@ ENV-R 是外层发现环境；`DeploymentTests.setUp` 在用例内部临时切�
 
 ## EXP-14：配置、备份与容器静态约束（REQ-14 / AC-14）
 
-**环境、前置与控制变量**：ENV-A，所有配置和备份文件放临时目录；使用仓库manage.initialize/backup，不打印随机值。当前源码的Dockerfile/Compose只静态审阅；ec6331f的历史CI镜像构建不证明当前改动已构建，新构建尚未执行。
+**环境、前置与控制变量**：ENV-A，所有配置和备份文件放临时目录；使用仓库manage.initialize/backup，不打印随机值。模型连接只使用批准的测试 Key、`https://api.siliconflow.cn/v1` 和合成模型配置，日志不得记录 Key。当前源码的Dockerfile/Compose只静态审阅；ec6331f的历史CI镜像构建不证明当前改动已构建，新构建尚未执行。
 
 ```powershell
-& $py -B -X utf8 -m unittest -v tests.test_deployment.DeploymentTests.test_secret_generation_never_overwrites_deployment tests.test_deployment.DeploymentTests.test_deployed_mode_rejects_missing_credentials tests.test_deployment.DeploymentTests.test_invalid_staff_mapping_fails_configuration_validation tests.test_deployment.DeploymentTests.test_validated_backup_includes_latest_committed_order
+& $py -B -X utf8 -m unittest -v tests.test_deployment.DeploymentTests.test_secret_generation_never_overwrites_deployment tests.test_deployment.DeploymentTests.test_deployed_mode_rejects_missing_credentials tests.test_deployment.DeploymentTests.test_invalid_staff_mapping_fails_configuration_validation tests.test_deployment.DeploymentTests.test_validated_backup_includes_latest_committed_order tests.test_model_connection.ModelConnectionTests.test_explicit_cloud_connection_clears_offline_switch_and_probes_model tests.test_model_connection.ModelConnectionTests.test_missing_openai_sdk_is_reported_instead_of_silent_fallback tests.test_model_connection.ModelConnectionTests.test_missing_openai_sdk_uses_http_compatibility_transport tests.test_model_connection.ModelConnectionTests.test_probe_rejects_a_model_that_is_not_listed
 ```
 
 1. initialize写新deploy.env，再次同路径抛FileExistsError且原字节不变；不把生成文件写进公共日志。
 2. deployed=1时替换弱管理员令牌，应拒绝；非法JSON/短token/非法岗位映射均拒绝。另静态检查auth.validate_configuration中鉴权、DB路径、签名与员工密钥最小32字符且不同的约束，未执行分支不能声称均有独立覆盖。
 3. 已提交2毛巾后SQLite online backup到新路径，backup内部integrity_check=ok；用备份路径开新manager，工单1、库存22。此证明一致性备份恢复本机夹具，未测断电恢复或学校备份介质。
 4. Dockerfile静态断言USER aegis、UID10001、/data归属；Compose API workers=1、命名卷/data、ready健康检查、web经API、端口仅绑定127.0.0.1。静态存在不等于镜像构建、权限挂载和重启已成功，REQ-14保持partial。
+5. 连接测试先确认显式云端配置会清除本进程 `AEGIS_FORCE_RULES`，再调用只读 `/v1/models` 探测；缺少 `openai` SDK 时若 `httpx` 可用则使用兼容传输，两者均缺失时必须给出 `openai_sdk_missing`，模型未列出必须阻断。
+6. 真实/现场 MODEL-CONN-01 需独立执行连续 3 次预检：每次 HTTP 200、选定模型命中、≤12 秒，成功率 100%，保存脱敏 `model-probe.json`；若要开放完整云端推理，另做 1 次合成 `chat/completions` canary（`max_tokens≤8`），失败时保持规则模式。
 
-**证据、失败与恢复**：`full-tests.log/json`和`manifest.json`的相关源文件哈希。覆盖配置、备份丢最新单、共享双writer或静态缺非root约束均失败。关闭备份manager后清理临时文件；容器交付必须另外完成FIELD-01/03，禁止通过删卷“恢复”。
+**证据、失败与恢复**：`full-tests.log/json`、`manifest.json`和脱敏 `model-probe.json`。覆盖配置、备份丢最新单、共享双writer、模型连接失败、静默降级或静态缺非root约束均失败。连接失败时保留原规则模式和错误码，不重试提交业务；关闭备份manager后清理临时文件；容器交付必须另外完成FIELD-01/03，禁止通过删卷“恢复”。
 
 ## EXP-15：固定 Harness 与 Few-Shot 的证据边界（REQ-15 / AC-15）
 

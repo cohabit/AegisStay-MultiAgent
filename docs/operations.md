@@ -21,6 +21,8 @@ docker compose up -d --build
 
 默认规则模式无模型消费；需要模型时只在 API 的部署配置中设置兼容地址、Key 和模型名，并把 `AEGIS_FORCE_RULES` 改为 `0`。前端页面不能修改全局 Key 或模型接口。
 
+本地工作台也支持在侧栏明确点击“保存并连接云端大模型”：先填写 `https://api.siliconflow.cn/v1`、有效模型 ID 和 Key，系统会先调用只读 `/v1/models`，模型命中后才切换在线状态。若 SDK 缺失但 `httpx` 可用，使用兼容 HTTP 传输；探测失败会显示错误码并保留规则模式。部署门槛见 [MODEL-CONN-01](../spec/design/deployment.md#33-硅基流动openai-兼容连接预检)。
+
 Compose 端口绑定回环地址：工作台 8501、API 8000。提供给酒店网络前，使用 HTTPS 反向代理，设置域名对应的允许来源、访问日志脱敏、请求体上限和网络访问策略。不要把开发模式 `AEGIS_AUTH_ENABLED=0` 暴露给住客网络。部署模式缺少鉴权、持久化或强密钥时启动失败。
 
 ## 3. 工作流程

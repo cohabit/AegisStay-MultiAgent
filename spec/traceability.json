@@ -306,7 +306,11 @@
         "tests.test_deployment.DeploymentTests.test_secret_generation_never_overwrites_deployment",
         "tests.test_deployment.DeploymentTests.test_deployed_mode_rejects_missing_credentials",
         "tests.test_deployment.DeploymentTests.test_invalid_staff_mapping_fails_configuration_validation",
-        "tests.test_deployment.DeploymentTests.test_validated_backup_includes_latest_committed_order"
+        "tests.test_deployment.DeploymentTests.test_validated_backup_includes_latest_committed_order",
+        "tests.test_model_connection.ModelConnectionTests.test_explicit_cloud_connection_clears_offline_switch_and_probes_model",
+        "tests.test_model_connection.ModelConnectionTests.test_missing_openai_sdk_is_reported_instead_of_silent_fallback",
+        "tests.test_model_connection.ModelConnectionTests.test_missing_openai_sdk_uses_http_compatibility_transport",
+        "tests.test_model_connection.ModelConnectionTests.test_probe_rejects_a_model_that_is_not_listed"
       ],
       "experiment_ids": [
         "EXP-14"

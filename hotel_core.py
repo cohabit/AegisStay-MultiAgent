@@ -5,12 +5,14 @@ import json
 import os
 import re
 import threading
+import time
 import uuid
 from copy import copy, deepcopy
 from dataclasses import dataclass, field
 from datetime import datetime
 from difflib import SequenceMatcher
 from pathlib import Path
+from types import SimpleNamespace
 from typing import Any, Callable
 
 from agent_protocol import AgentConflict, TaskInterrupted, parse_delivery_command, validate_department_ticket
@@ -177,12 +179,75 @@ def _load_env_or_config() -> None:
 _load_env_or_config()
 
 
+class _HttpxOpenAICompatClient:
+    """Small OpenAI-compatible transport used when the optional SDK is unavailable."""
+
+    def __init__(self, *, api_key: str, base_url: str, timeout: float = 12.0) -> None:
+        import httpx
+
+        self._httpx = httpx
+        self._headers = {"Authorization": f"Bearer {api_key}", "Accept": "application/json"}
+        self._base_url = base_url.rstrip("/")
+        self._timeout = timeout
+        self.models = SimpleNamespace(list=self._list_models)
+        self.chat = SimpleNamespace(completions=SimpleNamespace(create=self._create_completion))
+
+    def _request(self, method: str, path: str, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+        request = self._httpx.get if method == "GET" else self._httpx.post
+        kwargs: dict[str, Any] = {"headers": self._headers, "timeout": self._timeout}
+        if payload is not None:
+            kwargs["json"] = payload
+        response = request(f"{self._base_url}{path}", **kwargs)
+        response.raise_for_status()
+        data = response.json()
+        if not isinstance(data, dict):
+            raise ValueError("model_response_not_object")
+        return data
+
+    def _list_models(self) -> SimpleNamespace:
+        payload = self._request("GET", "/models")
+        rows = payload.get("data", [])
+        if not isinstance(rows, list):
+            rows = []
+        return SimpleNamespace(data=[SimpleNamespace(id=str(row.get("id", ""))) for row in rows if isinstance(row, dict)])
+
+    def _create_completion(self, **kwargs: Any) -> SimpleNamespace:
+        payload = {key: value for key, value in kwargs.items() if value is not None}
+        response = self._request("POST", "/chat/completions", payload)
+        choices: list[SimpleNamespace] = []
+        for raw_choice in response.get("choices", []) if isinstance(response.get("choices", []), list) else []:
+            if not isinstance(raw_choice, dict):
+                continue
+            raw_message = raw_choice.get("message", {})
+            if not isinstance(raw_message, dict):
+                raw_message = {}
+            raw_calls = raw_message.get("tool_calls", [])
+            calls: list[SimpleNamespace] = []
+            for raw_call in raw_calls if isinstance(raw_calls, list) else []:
+                if not isinstance(raw_call, dict):
+                    continue
+                function = raw_call.get("function", {})
+                if not isinstance(function, dict):
+                    function = {}
+                calls.append(SimpleNamespace(function=SimpleNamespace(
+                    name=function.get("name"), arguments=function.get("arguments", "")
+                )))
+            choices.append(SimpleNamespace(message=SimpleNamespace(
+                content=raw_message.get("content"), tool_calls=calls
+            )))
+        return SimpleNamespace(choices=choices)
+
+
 class OpenAICompatibleClient:
     def __init__(self, *, disabled: bool = False) -> None:
         self.client: Any = None
+        self.initialization_error: str | None = None
+        self.last_probe: dict[str, Any] | None = None
+        self.transport: str | None = None
         self.disabled = disabled or os.getenv("AEGIS_FORCE_RULES", "").lower() in {"1", "true", "yes"}
         if self.disabled:
             self.model = "offline_rules"
+            self.transport = "offline"
             return
         _load_env_or_config()
         key = os.getenv("OPENAI_API_KEY") or os.getenv("SILICONFLOW_API_KEY")
@@ -194,8 +259,64 @@ class OpenAICompatibleClient:
             try:
                 from openai import OpenAI
                 self.client = OpenAI(api_key=key, base_url=base, timeout=12.0, max_retries=0)
-            except (ImportError, ValueError):
-                pass
+                self.transport = "openai"
+            except ImportError:
+                try:
+                    self.client = _HttpxOpenAICompatClient(api_key=key, base_url=base, timeout=12.0)
+                    self.transport = "httpx"
+                except ImportError:
+                    self.initialization_error = "openai_sdk_missing"
+            except ValueError:
+                self.initialization_error = "invalid_client_config"
+            except Exception as error:
+                self.initialization_error = self._error_code(error)
+        else:
+            self.initialization_error = "api_key_missing"
+
+    @staticmethod
+    def _error_code(error: Exception) -> str:
+        status_code = getattr(error, "status_code", None)
+        response = getattr(error, "response", None)
+        if status_code is None and response is not None:
+            status_code = getattr(response, "status_code", None)
+        if isinstance(status_code, int):
+            return f"http_{status_code}"
+        if isinstance(error, (TimeoutError,)) or error.__class__.__name__.lower().endswith("timeout"):
+            return "timeout"
+        return error.__class__.__name__.lower()
+
+    def probe(self) -> dict[str, Any]:
+        """Check credentials and selected model without sending a chat completion."""
+        started = time.perf_counter()
+
+        def finish(ok: bool, code: str, *, model_listed: bool | None = None) -> dict[str, Any]:
+            result = {
+                "ok": ok,
+                "code": code,
+                "model": self.model,
+                "model_listed": model_listed,
+                "elapsed_ms": round((time.perf_counter() - started) * 1000, 1),
+            }
+            self.last_probe = result
+            return result
+
+        if self.disabled:
+            return finish(False, "offline_rules")
+        if self.initialization_error:
+            return finish(False, self.initialization_error)
+        if not self.client:
+            return finish(False, "client_unavailable")
+        try:
+            response = self.client.models.list()
+            rows = getattr(response, "data", []) or []
+            model_ids = {str(getattr(row, "id", "")) for row in rows}
+            if not model_ids:
+                return finish(False, "model_list_empty", model_listed=False)
+            if self.model not in model_ids:
+                return finish(False, "model_not_listed", model_listed=False)
+            return finish(True, "ok", model_listed=True)
+        except Exception as error:
+            return finish(False, self._error_code(error))
 
     def json_extract(self, system: str, user: str) -> dict[str, Any] | None:
         if self.disabled or not self.client:

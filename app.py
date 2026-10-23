@@ -18,6 +18,37 @@ AGENT_BADGES = {
 }
 
 
+def _connect_cloud_model(api_key: str, base_url: str, model: str) -> tuple[HotelOrchestrator, dict]:
+    """Configure and verify an OpenAI-compatible provider before switching the UI."""
+    if not api_key.strip():
+        raise ValueError("请先填写 API Key。")
+    if not base_url.strip():
+        raise ValueError("请先填写 Base URL。")
+    if not model.strip():
+        raise ValueError("请先填写模型名称。")
+
+    previous_force_rules = os.environ.get("AEGIS_FORCE_RULES")
+    os.environ.pop("AEGIS_FORCE_RULES", None)
+    os.environ["OPENAI_API_KEY"] = api_key.strip()
+    os.environ["OPENAI_BASE_URL"] = base_url.strip()
+    os.environ["OPENAI_MODEL"] = model.strip()
+    orchestrator = HotelOrchestrator(force_rules=False)
+    probe = orchestrator.model.probe()
+    if not probe["ok"]:
+        if previous_force_rules is not None:
+            os.environ["AEGIS_FORCE_RULES"] = previous_force_rules
+        messages = {
+            "openai_sdk_missing": "当前虚拟环境未安装 openai SDK，请运行：.\\.venv\\Scripts\\python.exe -m pip install -r requirements.txt",
+            "api_key_missing": "没有读取到 API Key。",
+            "model_not_listed": f"模型 {probe['model']} 不在服务端可用模型列表中，请从硅基流动模型广场复制准确的 Model ID。",
+            "offline_rules": "当前仍是离线规则模式，请重新点击云端连接。",
+            "timeout": "连接超时，请检查网络、代理和 Base URL。",
+        }
+        detail = messages.get(probe["code"], f"服务端探测失败（{probe['code']}）。")
+        raise ValueError(f"硅基流动连接失败：{detail} 探测耗时 {probe['elapsed_ms']} ms。")
+    return orchestrator, probe
+
+
 def _style() -> None:
     st.markdown(
         """
@@ -564,15 +595,14 @@ def main() -> None:
             model_input = st.text_input("模型名称", value=os.getenv("OPENAI_MODEL") or default_model)
 
             if st.button("保存并连接云端大模型", type="primary"):
-                if key_input.strip():
-                    os.environ["OPENAI_API_KEY"] = key_input.strip()
-                    os.environ["OPENAI_BASE_URL"] = base_input.strip()
-                    os.environ["OPENAI_MODEL"] = model_input.strip()
-                    st.session_state.orchestrator = HotelOrchestrator()
-                    st.success("已成功加载大模型配置！")
+                try:
+                    orchestrator, probe = _connect_cloud_model(key_input, base_input, model_input)
+                    st.session_state.orchestrator = orchestrator
+                    st.session_state.model_probe = probe
+                    st.success(f"已连接云端大模型，探测耗时 {probe['elapsed_ms']} ms。")
                     st.rerun()
-                else:
-                    st.warning("请填入有效的 API Key")
+                except ValueError as error:
+                    st.error(str(error))
 
     if st.sidebar.button("🔄 清空会话与刷新系统"):
         st.session_state.orchestrator = HotelOrchestrator()

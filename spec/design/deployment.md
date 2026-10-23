@@ -38,6 +38,7 @@
 | --- | --- | --- | --- |
 | 随机配置和不可覆盖 | `manage.initialize` 生成随机管理员、签名和岗位 token，`O_EXCL` 创建且不打印；重复路径抛 `FileExistsError`、原字节不变 | EXP-14 四个点名测试；离线代码证据 | 每次验收保存 `deploy.env` 权限摘要，内容不得进入日志/Git |
 | 部署安全校验 | `AEGIS_DEPLOYED=1` 要求鉴权和 DB 路径；管理员/签名密钥至少 32 字符且不同；岗位 JSON 必须是合法 token→`role/subject` 映射 | `auth.validate_configuration` 与 AC-14 测试 | 缺鉴权、持久化、弱/重用密钥或非法岗位时启动失败，零容忍 |
+| 硅基流动/OpenAI 兼容连接预检 | 云端按钮清除本进程 `AEGIS_FORCE_RULES` 后创建客户端，优先 OpenAI SDK；SDK 不可用且 `httpx` 可用时走同一 `/models`、`/chat/completions` HTTP 契约；连接成功前不切换 UI 状态 | `tests.test_model_connection.ModelConnectionTests`；`MODEL-CONN-01` | 3 次 `/v1/models` 探测均 HTTP 200、选定模型在列表中、每次≤12 秒；成功率 100%；任何失败不得显示“云端在线”或静默降级 |
 | 非 root | Dockerfile 创建 `aegis` UID 10001、`USER aegis`，并将 `/app`、`/data` 归属该用户 | Dockerfile 静态审阅；CI 镜像构建 PASS | FIELD-01 两容器 UID 均为 10001 且非 0，`/data` 可写 |
 | API 单 worker | Dockerfile/Compose 均 `uvicorn ... --workers 1`；文件锁阻止同库第二 writer | Compose 静态审阅、`test_second_writer_is_rejected...` | FIELD-01 启动第二进程必须拒绝，不能覆盖或分叉状态 |
 | Compose 持久卷 | API 独占命名卷 `aegis_data:/data`；web 只有 `AEGIS_API_URL=http://api:8000` | Compose 静态审阅 | FIELD-01 删除/重建 web 不丢 API 状态；禁止用 `down -v` 作为恢复 |
@@ -70,6 +71,18 @@
 2. `AEGIS_STAFF_TOKEN` 仅管理员启动/管理使用；`AEGIS_SIGNING_KEY` 只用于住客凭证签名；两者必须不同。`AEGIS_STAFF_KEYS_JSON` 为每位员工的随机 token→岗位/subject 映射，岗位必须属于 `admin/frontdesk/housekeeping/engineering/manager`，token 至少 32 个 ASCII 字符，不能复用管理员或签名密钥。
 3. 通过受控密钥渠道分发个人岗位 token，禁止截图、公开群、镜像层、命令回显、日志和 Git。API 容器持有 `deploy.env`；web 容器不需要该文件，也不得挂载 `/data`。
 4. 轮换时先准备新配置并在维护窗口停 API，备份并校验数据库，替换密钥后重启并用合成凭证验证；旧岗位 token/住客 grant 失效范围应记录审计。泄露或无法确认时立即撤销相关凭据、停止外部访问并按回滚/恢复流程处理。
+
+### 3.3 硅基流动/OpenAI 兼容连接预检
+
+硅基流动的 OpenAI 兼容配置使用 `https://api.siliconflow.cn/v1` 形式的 Base URL、准确的模型 ID 和 Bearer API Key。应用启动时不发送模型请求；用户在工作台明确点击云端连接后，才临时清除本进程的 `AEGIS_FORCE_RULES`，创建客户端并执行只读 `GET /v1/models` 预检。预检验证 API Key、Base URL 可达、服务端返回合法模型列表且选定模型存在；成功前工作台保持规则模式。
+
+客户端优先使用 `openai` SDK；当前受限环境若 SDK 不可导入但已有 `httpx`，则使用仓库内的最小 HTTP 兼容传输，覆盖 `/models`、`/chat/completions` 和工具调用所需字段。两种传输的错误都转换为不含密钥的错误码（如 `openai_sdk_missing`、`http_401`、`http_429`、`model_not_listed`、`timeout`），不能吞掉异常后显示“已成功加载”。
+
+**MODEL-CONN-01 连接指标与阻断条件**：在批准的测试配置和合成环境中连续执行 3 次 `/v1/models` 预检；每次必须 HTTP 200、选定模型 ID 命中、端到端耗时 ≤12 秒，连接成功率为 `3/3=100%`，且日志/证据中不出现 API Key。任一失败、模型未列出、依赖缺失、超时或静默回退都阻断云端上线，并保持 `AEGIS_FORCE_RULES=1`/`NOT_VERIFIED`。若要承诺完整推理能力，另执行 1 次不含住客资料、`max_tokens≤8` 的合成 `chat/completions` canary；该 canary 失败不能用 `/models` 成功替代。
+
+证据只保存 `base_url`（去掉凭据）、模型 ID、传输方式、HTTP 状态、耗时、错误码和时间戳；禁止保存完整请求头、API Key、住客消息或模型响应中的敏感资料。连接探测不计入业务成功率，也不改变当前离线发布范围。
+
+本次断连根因、脱敏探测结果和代码回归见[硅基流动连接修复记录](../model_connection_verification_2026-10-24.md)。
 
 ## 4. Docker/Compose 拓扑与运行契约
 
@@ -144,7 +157,7 @@ python scripts/manage.py backup --database var/aegisstay.sqlite3 --output backup
 | 文件/记录 | 必须包含 | 当前解释 |
 | --- | --- | --- |
 | `full-tests.log`、`full-tests.json`、`manifest.json` | 本次完整命令、退出码、测试 ID/计数、源哈希、`scope=offline-code-baseline`、`field_readiness=NOT_VERIFIED` | 统一入口的新目录；本轮不重新声称全套代码测试 |
-| `spec/experiments.md` EXP-14 记录 | 四个配置/备份测试点名、静态 Docker/Compose 断言和失败边界 | 方案性证据；不得替代现场 |
+| `spec/experiments.md` EXP-14 记录 | 四个配置/备份测试点名、MODEL-CONN-01 连接测试、静态 Docker/Compose 断言和失败边界 | 方案性证据；不得替代现场或模型质量 |
 | `tests/test_deployment.py` | init 不覆盖、配置拒绝、备份完整性/最新工单、写故障就绪语义 | 当前仓库真实测试身份见 [AC-14](../acceptance_criteria.md#3-验收矩阵) |
 | `Dockerfile`、`docker-compose.yml`、`.dockerignore`、`.gitignore` | source SHA-256 在 manifest；Dockerfile UID/USER；Compose worker、卷、healthcheck、端口 | 静态审阅；CI 当前镜像构建 PASS 的链接见上文 |
 | `scripts/manage.py`、`auth.py`、`server.py`、`persistence.py` | 随机配置、验证、backup API、WAL/锁、`/health`/`/ready` 事实 | 源码证据，非运行服务证据 |
@@ -156,8 +169,12 @@ EXP-14 的四个精确配置/备份测试身份为：
 * `tests.test_deployment.DeploymentTests.test_deployed_mode_rejects_missing_credentials`
 * `tests.test_deployment.DeploymentTests.test_invalid_staff_mapping_fails_configuration_validation`
 * `tests.test_deployment.DeploymentTests.test_validated_backup_includes_latest_committed_order`
+* `tests.test_model_connection.ModelConnectionTests.test_explicit_cloud_connection_clears_offline_switch_and_probes_model`
+* `tests.test_model_connection.ModelConnectionTests.test_missing_openai_sdk_is_reported_instead_of_silent_fallback`
+* `tests.test_model_connection.ModelConnectionTests.test_missing_openai_sdk_uses_http_compatibility_transport`
+* `tests.test_model_connection.ModelConnectionTests.test_probe_rejects_a_model_that_is_not_listed`
 
-静态/离线门槛：EXP-14 四个测试全通过；备份 `integrity_check=ok` 且重开状态为 1 单/毛巾 22；Dockerfile 有 UID 10001、非 root、`/data` 归属；Compose 有单 worker、命名卷、`/ready` healthcheck、web→api、回环端口；CI 镜像构建退出 0。任何缺失、跳过、源哈希漂移或秘密泄露均拒收。
+静态/离线门槛：EXP-14 配置/备份四个测试和 MODEL-CONN-01 的 4 个代码测试全通过；备份 `integrity_check=ok` 且重开状态为 1 单/毛巾 22；Dockerfile 有 UID 10001、非 root、`/data` 归属；Compose 有单 worker、命名卷、`/ready` healthcheck、web→api、回环端口；CI 镜像构建退出 0。现场连接证据另须达到连续 3/3 探测、100% 成功率和每次≤12 秒；任何缺失、跳过、源哈希漂移、静默降级或秘密泄露均拒收。
 
 ### 7.2 运行/现场证据（FIELD-01/03，当前未验证）
 

@@ -39,7 +39,7 @@ academic 的“给我两张早餐券”“给房间发两张早餐券”“送�
 | REQ-11 | 学术延退和餐券人工核验；不自动免费承诺或绕过核验扣券库存 | [待遇业务](design/business.md#学术接待待遇与人工核验) / AC-11 |
 | REQ-12 | 部门回执同步、夜审日期保护、已送达回收待检 | [回执业务](design/business.md#部门回执与夜审) / AC-12 |
 | REQ-13 | 部署工作台仅调用 API，凭证/岗位决定 UI 和服务端能力 | [部署](design/architecture.md#部署与配置) / AC-13 |
-| REQ-14 | 随机配置不覆盖，非 root、单 worker、持久卷，校验备份与恢复边界 | [架构部署边界](design/architecture.md#部署与配置) / [部署与运维子规格](design/deployment.md) / AC-14；现场部分 partial |
+| REQ-14 | 随机配置不覆盖，非 root、单 worker、持久卷，校验备份/恢复及硅基流动连接预检边界 | [架构部署边界](design/architecture.md#部署与配置) / [部署与运维子规格](design/deployment.md) / AC-14；现场部分 partial |
 | REQ-15 | 固定 Harness/Few-Shot 范围明确，无对照不声称泛化或提升 | [评测](design/architecture.md#评测与证据) / AC-15 |
 | REQ-16 | 原始测试 ID、日志、来源、JSON、状态/Trace 可复现，拒绝假通过 | [验收标准](acceptance_criteria.md) / AC-16 |
 

@@ -21,7 +21,7 @@ JSON 顶层 `schema_version=1`；`requirements` 恰含REQ-01…REQ-16，每项�
 | REQ-11 / AC-11 / EXP-11 | 学术待遇人工核验与已知餐券保护 | `implemented` | 7 | 已知餐券表达、保洁直调/改券保护已实现；有4方法红绿和81项焦点回归。不是任意语言或真实发券证明。 |
 | REQ-12 / AC-12 / EXP-12 | 部门回执、夜审与回收待检 | `implemented` | 5 | 夜审日期、借用品通知和回收待检；不等价外部财务夜审。 |
 | REQ-13 / AC-13 / EXP-13 | API工作台与岗位视图 | `implemented` | 3 | AppTest经HotelApi/TestClient访问唯一临时API；两进程/容器仍须FIELD-01。 |
-| REQ-14 / AC-14 / EXP-14 | 配置、备份与部署边界 | `partial` | 4 | 本地配置/备份有测试；当前镜像、Compose、卷权限、现场恢复未执行。ec6331f历史CI构建不能替代当前构建。 |
+| REQ-14 / AC-14 / EXP-14 | 配置、备份、部署与硅基流动连接预检 | `partial` | 8 | 本地配置/备份和 MODEL-CONN-01 代码预检有测试；当前镜像、Compose、卷权限、连续现场探测、聊天 canary 与现场恢复未执行。 |
 | REQ-15 / AC-15 / EXP-15 | 固定Harness与Few-Shot证据边界 | `implemented` | 5 | 固定20条离线规则、字符相似度Few-Shot；没有模型泛化或提升结论。 |
 | REQ-16 / AC-16 / EXP-16 | 可复现证据与反假通过 | `implemented` | 38 | 包含额外Harness行（H21 SKIP、H100 ERROR、重复H01 SKIP）、子进程依赖回执和发布控制文件哈希反例；负向夹具不等价完整发布通过，最终须核验本次全部映射方法实际执行。 |
 
@@ -210,7 +210,7 @@ AppTest经HotelApi/TestClient访问唯一临时API；两进程/容器仍须FIELD
 
 ### REQ-14 / AC-14 / EXP-14
 
-本地配置/备份有测试；当前镜像、Compose、卷权限、现场恢复未执行。ec6331f历史CI构建不能替代当前构建。
+本地配置/备份和 MODEL-CONN-01 代码预检有测试；当前镜像、Compose、卷权限、连续现场探测、聊天 canary 与现场恢复未执行。ec6331f历史CI构建不能替代当前构建。连接门槛是连续 3 次 `/v1/models` HTTP 200、选定模型命中、每次≤12秒、100%成功率；失败不能静默降级成“云端在线”。
 
 本次证据：`full-tests.log`、`full-tests.json`、`manifest.json`。
 
@@ -218,6 +218,10 @@ AppTest经HotelApi/TestClient访问唯一临时API；两进程/容器仍须FIELD
 - `tests.test_deployment.DeploymentTests.test_deployed_mode_rejects_missing_credentials`
 - `tests.test_deployment.DeploymentTests.test_invalid_staff_mapping_fails_configuration_validation`
 - `tests.test_deployment.DeploymentTests.test_validated_backup_includes_latest_committed_order`
+- `tests.test_model_connection.ModelConnectionTests.test_explicit_cloud_connection_clears_offline_switch_and_probes_model`
+- `tests.test_model_connection.ModelConnectionTests.test_missing_openai_sdk_is_reported_instead_of_silent_fallback`
+- `tests.test_model_connection.ModelConnectionTests.test_missing_openai_sdk_uses_http_compatibility_transport`
+- `tests.test_model_connection.ModelConnectionTests.test_probe_rejects_a_model_that_is_not_listed`
 
 ### REQ-15 / AC-15 / EXP-15
 

@@ -6,7 +6,7 @@
 
 项目机制、业务边界与代码对应见 [项目剖析](docs/academic_hotel_analysis.md)，部署、备份和恢复见 [值班手册](docs/operations.md)。
 
-开发入口见 [AGENTS.md 仓库地图](AGENTS.md)。目标、交付清单和范围见 [主规格](spec/specification.md)，详细步骤见 [实验方案](spec/experiments.md)，判定门槛见 [验收标准](spec/acceptance_criteria.md)，每条要求对应的真实测试见 [追溯矩阵](spec/traceability.md)。旧专题按 [历史规格索引](spec/legacy_specs.md) 区分适用范围。
+开发入口见 [AGENTS.md 仓库地图](AGENTS.md)。目标、交付清单和范围见 [主规格](spec/specification.md)，REQ-14 见 [部署与运维子规格](spec/design/deployment.md)，FIELD-01～06 见 [现场验收协议](spec/field_validation.md)，FUT-01～06 见 [未来集成规格](spec/future_integrations.md)。剩余规格的静态验收见 [补全规格验收记录](spec/remaining_spec_verification_2026-10-23.md)。详细步骤见 [实验方案](spec/experiments.md)，判定门槛见 [验收标准](spec/acceptance_criteria.md)，每条要求对应的真实测试见 [追溯矩阵](spec/traceability.md)。旧专题按 [历史规格索引](spec/legacy_specs.md) 区分适用范围。
 
 ## 产品界面
 

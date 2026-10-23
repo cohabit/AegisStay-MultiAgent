@@ -9,11 +9,14 @@
 | 当前范围与 REQ-01…REQ-16 | [主规格](spec/specification.md) |
 | 角色、政策、业务时序与失败处理 | [详细业务规格](spec/design/business.md) |
 | 模块、数据、并发、存储与部署 | [详细架构规格](spec/design/architecture.md) |
+| REQ-14 部署、运维、备份与恢复 | [部署与运维子规格](spec/design/deployment.md) |
 | 可复现实验与现场目标 | [实验方案](spec/experiments.md) |
+| FIELD-01…FIELD-06 现场执行协议 | [现场验收协议](spec/field_validation.md) |
+| FUT-01…FUT-06 外部集成与模型治理 | [未来集成规格](spec/future_integrations.md) |
 | AC-01…AC-16 与证据硬门槛 | [验收标准](spec/acceptance_criteria.md) |
 | 真实测试点名与机器映射 | [追溯说明](spec/traceability.md)、[traceability.json](spec/traceability.json) |
 | 旧专题及旧验收适用范围 | [历史索引](spec/legacy_specs.md) |
-| 安装、启动和值班操作 | [README](README.md)、[运维手册](docs/operations.md) |
+| 安装、启动和值班操作 | [README](README.md)、[运维手册](docs/operations.md)、[部署子规格](spec/design/deployment.md) |
 | 实施边界与原始测试身份 | [工作计划](spec/work_plan.md)、[127 项基线 ID](spec/baseline_test_ids.json) |
 
 当前规格优先于历史专题。旧商业会员规则属于 `standard` 回归夹具，不能解释为学校待遇；代码实现状态与指定运行的证据状态分别记录。

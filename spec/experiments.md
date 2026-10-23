@@ -1,6 +1,6 @@
 # 可复现实验与现场验收方案
 
-本文件回答“如何执行、看什么原始数据、什么情况判失败、如何恢复”。编号 EXP-01…EXP-16 与 [工作计划](work_plan.md) 的 REQ-01…REQ-16、[验收标准](acceptance_criteria.md) 的 AC-01…AC-16 一一对应；测试的完整点名以 [traceability.json](traceability.json) 为机器输入。[主规格](specification.md) 定义业务范围，[追溯说明](traceability.md) 解释当前覆盖和缺口。
+本文件回答“如何执行、看什么原始数据、什么情况判失败、如何恢复”。编号 EXP-01…EXP-16 与 [工作计划](work_plan.md) 的 REQ-01…REQ-16、[验收标准](acceptance_criteria.md) 的 AC-01…AC-16 一一对应；测试的完整点名以 [traceability.json](traceability.json) 为机器输入。[主规格](specification.md) 定义业务范围，[追溯说明](traceability.md) 解释当前覆盖和缺口。REQ-14 细节见[部署与运维子规格](design/deployment.md)，FIELD-01～06 的现场执行协议见[现场验收协议](field_validation.md)，FUT-01～06 的外部契约见[未来集成规格](future_integrations.md)。
 
 ## 执行状态与结果口径
 

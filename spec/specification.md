@@ -39,7 +39,7 @@ academic 的“给我两张早餐券”“给房间发两张早餐券”“送�
 | REQ-11 | 学术延退和餐券人工核验；不自动免费承诺或绕过核验扣券库存 | [待遇业务](design/business.md#学术接待待遇与人工核验) / AC-11 |
 | REQ-12 | 部门回执同步、夜审日期保护、已送达回收待检 | [回执业务](design/business.md#部门回执与夜审) / AC-12 |
 | REQ-13 | 部署工作台仅调用 API，凭证/岗位决定 UI 和服务端能力 | [部署](design/architecture.md#部署与配置) / AC-13 |
-| REQ-14 | 随机配置不覆盖，非 root、单 worker、持久卷，校验备份与恢复边界 | [部署](design/architecture.md#部署与配置) / AC-14；现场部分 partial |
+| REQ-14 | 随机配置不覆盖，非 root、单 worker、持久卷，校验备份与恢复边界 | [架构部署边界](design/architecture.md#部署与配置) / [部署与运维子规格](design/deployment.md) / AC-14；现场部分 partial |
 | REQ-15 | 固定 Harness/Few-Shot 范围明确，无对照不声称泛化或提升 | [评测](design/architecture.md#评测与证据) / AC-15 |
 | REQ-16 | 原始测试 ID、日志、来源、JSON、状态/Trace 可复现，拒绝假通过 | [验收标准](acceptance_criteria.md) / AC-16 |
 
@@ -50,6 +50,16 @@ academic 的“给我两张早餐券”“给房间发两张早餐券”“送�
 新增测试增加总量，不得替换旧测试凑数；文件契约和拒绝通过规则以 [验收标准](acceptance_criteria.md) 为准。本次 Task 1 餐券焦点日志位于已忽略的 `.artifacts/verification/task1-coupon/`，只证明其中方法和环境；完整发布证据由集成人员执行。旧 [2026-10-23 记录](release_verification_2026-10-23.md) 不证明新增代码通过，Docker/Compose 与现场演练仍按 [FIELD 方案](experiments.md) 验证。
 
 本轮已执行的 169 项完整测试、40 项核心、20 条 Harness、21 项黑板断言及 120 个追溯方法的证据身份与边界见 [规格体系验收记录](specification_verification_2026-10-23.md)。
+
+## 剩余范围的权威子规格
+
+主规格中的当前实现、现场目标和未来扩展分别由以下文档展开；子规格完成表示契约、步骤和判定方法完整，不改变当前实现状态：
+
+- [REQ-14 部署与运维](design/deployment.md)：配置、密钥、容器、单写入者、备份、恢复、升级、回滚和上线预检；现场卷权限、重启和恢复仍未验证。
+- [FIELD-01～FIELD-06 现场验收](field_validation.md)：学校学术酒店现场执行协议、证据文件、量化门槛和回退流程；全部保持 `TARGET_NOT_RUN`。
+- [FUT-01～FUT-06 未来集成](future_integrations.md)：PMS、SSO、电子券、批准知识/RAG、容量恢复和样例治理；全部保持 `planned`，不得当作当前 API。
+
+本轮剩余规格的静态链接、字段和复核边界见[补全规格验收记录](remaining_spec_verification_2026-10-23.md)。
 
 ## 后续范围
 

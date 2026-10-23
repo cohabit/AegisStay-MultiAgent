@@ -1,6 +1,6 @@
 # 要求、验收、实验与真实测试追溯
 
-以 [主规格](specification.md) 为范围，[业务](design/business.md) / [架构](design/architecture.md) 为实现边界；[验收标准](acceptance_criteria.md) 定义门槛，[实验方案](experiments.md) 定义夹具、时序、数值、失败和清理。[traceability.json](traceability.json) 是 `scripts/verify_release.py::validate_traceability` 的机器输入。
+以 [主规格](specification.md) 为范围，[业务](design/business.md) / [架构](design/architecture.md) 为实现边界；REQ-14 由[部署与运维子规格](design/deployment.md)展开，[现场验收协议](field_validation.md)定义 FIELD-01～06，[未来集成规格](future_integrations.md)定义 FUT-01～06；[验收标准](acceptance_criteria.md) 定义门槛，[实验方案](experiments.md) 定义夹具、时序、数值、失败和清理。[traceability.json](traceability.json) 是 `scripts/verify_release.py::validate_traceability` 的机器输入。
 
 `implemented` 表示约定范围内的代码和测试存在，`partial` 表示有明确未执行/未交付范围；二者都不代表本次运行PASS。本文定义追溯方案，不嵌入可变成绩；每次执行前为 `PENDING_RUN`，完成后只认对应manifest和独立验收记录。由集成人员在源码稳定后运行统一入口。范围固定 `offline-code-baseline`，`field_readiness=NOT_VERIFIED`，FIELD-01…FIELD-06 均为 `TARGET_NOT_RUN`。
 

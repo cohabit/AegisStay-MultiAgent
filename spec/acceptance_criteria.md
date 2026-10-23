@@ -4,7 +4,7 @@
 
 ## 1. 验收对象与执行状态
 
-本文定义验收门槛，不嵌入持续变化的成绩。每次执行前为 `PENDING_RUN`，单次运行结论只认对应 `manifest.json` 和独立验收记录；完成后无需将本规范中的执行前状态改写为永久PASS。
+本文定义验收门槛，不嵌入持续变化的成绩。每次执行前为 `PENDING_RUN`，单次运行结论只认对应 `manifest.json` 和独立验收记录；完成后无需将本规范中的执行前状态改写为永久PASS。REQ-14 的部署门槛见[部署与运维子规格](design/deployment.md)，FIELD-01～06 的现场门槛见[现场验收协议](field_validation.md)，FUT-01～06 的未来门槛见[未来集成规格](future_integrations.md)。
 
 `academic` 是学校接待政策基线。`standard` 是商业会员、固定早餐时间等历史演示夹具，只用于兼容性回归。两种 profile 的结果分别标识，不能用 `standard` 的黑金自动延退、已发放餐券或固定设施信息证明学术住客享有相同权益。
 

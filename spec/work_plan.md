@@ -123,3 +123,27 @@
 - [x] 拒绝复用、错误 run_id、缺失 JSON、零测试、FAIL、跳过、坏 Trace、替换原始 ID 与假映射；失败留证并返回非零。
 - [x] 38 项焦点测试通过，保留原 31 项；补充未知状态行先红后绿，独立修复复核批准；完整入口仍由主代理运行。
 - [x] 报告及修复记录写入本计划 SDD 工作区 `task-3-report.md`，不提交推送。
+
+## Task 4: REQ-14 部署与运维子规格
+
+文件所有权：`spec/design/deployment.md`；设计与实施计划见 [`docs/superpowers/specs/2026-10-23-remaining-spec-completion-design.md`](../docs/superpowers/specs/2026-10-23-remaining-spec-completion-design.md) 和 [`docs/superpowers/plans/2026-10-23-remaining-spec-content.md`](../docs/superpowers/plans/2026-10-23-remaining-spec-content.md)。
+
+- [x] 写清当前配置、密钥、容器、单写入者、`/data`、SQLite WAL、备份、恢复、升级、回滚、监控和保留边界。
+- [x] 逐项区分静态/离线证据与 Compose/卷权限/重启/现场恢复证据；REQ-14 保持 `partial`。
+- [x] 给出 EXP-14/AC-14/FIELD-01/03 的精确测试、证据文件、量化门槛、预检和失败回退；独立复核报告见 SDD 工作区 `task-4-review.md`，两个措辞问题已修正。
+
+## Task 5: FIELD-01～FIELD-06 现场验收协议
+
+文件所有权：`spec/field_validation.md`。
+
+- [x] 每个 FIELD 有 owner/approval、前置条件、合成数据、命令/步骤、证据文件、量化阈值、失败、清理和回滚。
+- [x] 覆盖 20 会话/6000 请求/P95/P99、两故障点×10 轮/RPO/RTO、40+20 政策双审、PMS/SSO 各至少20场景、200+独立集×3/配对95%CI。
+- [x] 全部保持 `TARGET_NOT_RUN`，现场总体保持 `field_readiness=NOT_VERIFIED`；独立复核报告及五轮修复记录见 SDD 工作区 `task-5-review.md`、`task-5-fix-5-review.md`，上限后的两个最小文档修正已记入台账裁定。
+
+## Task 6: FUT-01～FUT-06 未来集成规格
+
+文件所有权：`spec/future_integrations.md`。
+
+- [x] 为 PMS、SSO、电子券、批准知识/RAG、容量恢复、失败样例治理分别定义契约、数据/隐私、幂等、超时、失败回退、审计、分阶段交付、量化验收和回滚。
+- [x] 明确当前关键词/字符相似度 Few-Shot 不是语义 RAG，Few-Shot 更新不等于微调；所有未来项目保持 `planned`。
+- [x] 独立复核报告见 SDD 工作区 `task-6-review.md`；FUT-03 的 FIELD-05 依赖和 FUT-06 的模型超时已补齐，集成链接与静态审计由主代理完成。

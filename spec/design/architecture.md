@@ -1,5 +1,7 @@
 # 学术酒店详细架构规格
 
+REQ-14 的部署、运维、备份、恢复和上线预检细节见[部署与运维子规格](deployment.md)；现场和未来扩展不改变本文的单 API 写入者与离线验证边界。
+
 上级：[主规格](../specification.md)。配套：[业务](business.md)、[实验](../experiments.md)、[验收](../acceptance_criteria.md)、[追溯](../traceability.md)。本文为当前实现，现场容量、外部 PMS、学校 SSO 和真实恢复不是已验收能力。
 
 ## 模块与依赖

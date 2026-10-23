@@ -33,6 +33,7 @@ class ModelConnectionTests(unittest.TestCase):
     def test_explicit_cloud_connection_clears_offline_switch_and_probes_model(self):
         fake_openai = types.ModuleType("openai")
         fake_openai.OpenAI = _FakeOpenAI
+        original_force_rules = os.environ.get("AEGIS_FORCE_RULES")
         with patch.dict(
             os.environ,
             {
@@ -46,8 +47,9 @@ class ModelConnectionTests(unittest.TestCase):
             orchestrator, probe = app._connect_cloud_model(
                 "new-key", "https://api.siliconflow.cn/v1", "Qwen/Qwen2.5-7B-Instruct"
             )
+            self.assertNotIn("AEGIS_FORCE_RULES", os.environ)
 
-        self.assertNotIn("AEGIS_FORCE_RULES", os.environ)
+        self.assertEqual(os.environ.get("AEGIS_FORCE_RULES"), original_force_rules)
         self.assertFalse(orchestrator.model.disabled)
         self.assertEqual(orchestrator.model.model, "Qwen/Qwen2.5-7B-Instruct")
         self.assertTrue(probe["ok"])

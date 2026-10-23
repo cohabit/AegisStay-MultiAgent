@@ -30,7 +30,7 @@
 | 清单 SHA-256 | `1334ce8ad3859cdebe013a149be2c6e779c3c048d3f7119b37788edfcff0f3e3` |
 | 临时资源清理 | `PASS` |
 
-本记录及文档导航是在上述运行后整理的；运行证据标识的是清单内的工作区字节，不能把旧 commit 单独当成该工作区身份。提交后的精确版本以 [CI 工作流](../.github/workflows/tests.yml) 实际运行与最终交付的 commit/CI URL 为准，不预造提交后的结果。
+本记录及文档导航是在上述运行后整理的；运行证据标识的是清单内的工作区字节，不能把旧 commit 单独当成该工作区身份。随后提交 `c520075a2b3b7ec36bb3cbdd31620b066e1e5c03` 已由 [CI 工作流](../.github/workflows/tests.yml) 实际运行并成功，精确的远程结果见下文。
 
 | 实际步骤 | 结果 | 必须核对的内容 |
 | --- | --- | --- |
@@ -42,6 +42,10 @@
 | traceability | 16/16，120/120，退出 0 | 映射的 120 个真实方法均在本次完整套件成功执行；REQ-14 仍为 partial |
 
 完整测试原始页脚为 `Ran 169 tests in 37.364s` / `OK`。日志保留既存 Starlette/httpx 弃用提示、Streamlit 测试上下文提示及负向夹具的诊断，不把它描述为零警告，也不凭全文出现 PASS/FAIL 字样判断。
+
+## 提交后的 CI 证据
+
+公开运行：[Offline acceptance #39917403332](https://github.com/cohabit/AegisStay-MultiAgent/actions/runs/39917403332)。`head_sha` 与提交完全一致，状态 `completed`、结论 `success`。作业 `tests` 的统一验收、证据上传和 `docker build -t aegisstay:test .` 三个关键步骤均成功；证据附件 `verification-c520075a2b3b7ec36bb3cbdd31620b066e1e5c03` 未过期，SHA-256 为 `14204237d3976a6a70fe5627f99d3546ee4b48b4be4f26468a914d3451620671`，保留至 2026-11-06 07:24 UTC。CI 证明的是提交树在 Ubuntu/Python 3.12 的离线验收和镜像构建，仍不改变下文的现场未验证边界。
 
 ## 可复查的原始文件
 

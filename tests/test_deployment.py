@@ -18,7 +18,8 @@ from api_client import HotelApi
 from auth import validate_configuration
 from persistence import StorageConflict
 from scripts.manage import backup, initialize
-from hotel_core import HotelKnowledge, HousekeepingAgent
+from hotel_core import HotelKnowledge, HotelState, HousekeepingAgent
+from agent_protocol import AgentConflict, parse_delivery_command
 
 ADMIN = "admin-test-" + "a" * 40
 SIGNING = "signing-test-" + "b" * 40
@@ -141,6 +142,56 @@ class DeploymentTests(unittest.TestCase):
         self.assertEqual(voucher["owner_session_id"], guest["session_id"])
         self.assertEqual(voucher["stay_id"], guest["stay_id"])
         self.assertNotIn("已发放", response.json()["reply"])
+
+    def test_academic_coupon_delivery_wording_requires_review_without_stock_reservation(self):
+        guest = self.grant()
+        for message in ("给房间发两张早餐券", "给1128发两张早餐券", "送两张早餐券到房间",
+                        "给我送来两张早饭券", "送两张餐券", "发两张体验券"):
+            with self.subTest(message=message):
+                before = len(self.manager.shared_voucher_ledger)
+                response = self.chat(guest, message)
+                self.assertEqual(response.status_code, 200, response.text)
+                self.assertIn("前台核验", response.json()["reply"])
+                self.assertEqual(self.manager.shared_tickets, [])
+                self.assertEqual(self.manager.housekeeping.inventory["早餐券"], 40)
+                self.assertEqual(len(self.manager.shared_voucher_ledger), before + 1)
+                voucher = self.manager.shared_voucher_ledger[-1]
+                self.assertEqual(voucher["status"], "需前台核验")
+                self.assertEqual(voucher["quantity"], 2)
+                self.assertEqual(voucher["owner_session_id"], guest["session_id"])
+                self.assertEqual(voucher["stay_id"], guest["stay_id"])
+                trace = self.manager.get_session(guest["session_id"]).state.last_trace
+                self.assertTrue(any(row["event"] == "issue_breakfast_vouchers" for row in trace))
+
+    def test_academic_housekeeping_cannot_dispatch_coupons_directly(self):
+        agent, state = HousekeepingAgent(), HotelState()
+        for detail in ("送两张早餐券", "送两张早饭券", "送两张餐券", "送两张体验券"):
+            with self.subTest(detail=detail):
+                with self.assertRaisesRegex(AgentConflict, "前台核验"):
+                    agent.dispatch("1128", detail, state)
+                self.assertEqual(agent.inventory["早餐券"], 40)
+                self.assertEqual(state.tickets, [])
+
+    def test_academic_housekeeping_cannot_replace_delivery_with_coupons(self):
+        agent, state = HousekeepingAgent(), HotelState()
+        ticket = agent.dispatch("1128", "送两条毛巾", state)
+        original = ticket.copy()
+        reply = agent.revise(ticket, parse_delivery_command("改成两张早餐券"))
+        self.assertIn("前台核验", reply)
+        self.assertEqual(ticket, original)
+        self.assertEqual(agent.inventory["早餐券"], 40)
+        self.assertEqual(agent.inventory["毛巾"], 22)
+
+    def test_academic_coupon_replacement_preserves_existing_delivery(self):
+        guest = self.grant()
+        self.chat(guest, "送两条毛巾")
+        original = self.manager.shared_tickets[0].copy()
+        response = self.chat(guest, "改成两张早餐券")
+        self.assertEqual(response.status_code, 200, response.text)
+        self.assertIn("前台核验", response.json()["reply"])
+        self.assertEqual(self.manager.shared_tickets, [original])
+        self.assertEqual(self.manager.housekeeping.inventory["早餐券"], 40)
+        self.assertEqual(self.manager.housekeeping.inventory["毛巾"], 22)
 
     def test_request_retry_survives_restart_without_second_order(self):
         guest = self.grant()

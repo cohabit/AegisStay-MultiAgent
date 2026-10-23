@@ -1,5 +1,7 @@
 # 2026-10-20 发布验收记录
 
+> 适用范围：历史验收记录，仅证明记录所指版本，不能作为新实现通过的证据。当前要求见 [主规格](specification.md)、[验收标准](acceptance_criteria.md)；适用范围见 [历史索引](legacy_specs.md)。
+
 对象：当前 AegisStay 服务。所有测试与运行截图使用 `AEGIS_FORCE_RULES=1`，未调用付费模型或真实酒店服务。页面截图临时启动了一个只监听本机的 Streamlit 实例。
 
 ## 环境与执行命令

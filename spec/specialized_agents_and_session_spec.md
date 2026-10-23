@@ -1,5 +1,7 @@
 # AegisStay 垂直部门多智能体与会话服务化规格说明书 (specialized_agents_and_session_spec.md)
 
+> 适用范围：历史专题设计／说明，保留当时描述，不作为当前发布规范或已实现能力证明。当前要求见 [主规格](specification.md)、[验收标准](acceptance_criteria.md)；适用范围见 [历史索引](legacy_specs.md)。
+
 ## 1. 目标与背景 (Objective & Background)
 
 针对当前多智能体协作中“子智能体存在感较弱、派单逻辑较为集中”以及“单客户端多住客并发串流”的业务痛点，本规范定义两大核心拓展模块：

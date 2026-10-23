@@ -299,6 +299,12 @@ def requested_extend_nights(text: str) -> int:
     return 1
 
 
+def _academic_voucher_request(text: str) -> bool:
+    return os.getenv("AEGIS_SITE_PROFILE") == "academic" and any(
+        word in text for word in ("早餐券", "早饭券", "餐券", "体验券")
+    )
+
+
 def _rules_extract(text: str, knowledge: HotelKnowledge) -> dict[str, Any]:
     compact = re.sub(r"\s+", "", text)
     resolution_phrases = (
@@ -376,7 +382,7 @@ def _rules_extract(text: str, knowledge: HotelKnowledge) -> dict[str, Any]:
         service_intent = "延迟退房"
     elif broken:
         service_intent = "工程报修"
-    elif voucher and not voucher_delivery:
+    elif voucher and (not voucher_delivery or _academic_voucher_request(text)):
         service_intent = "票券服务"
     elif delivery:
         service_intent = "送物"
@@ -605,6 +611,8 @@ class HousekeepingAgent:
         return item if item in self.inventory else "综合物料"
 
     def dispatch(self, room_no: str, detail: str, state: HotelState) -> dict[str, Any]:
+        if _academic_voucher_request(detail):
+            raise AgentConflict("学术接待餐券需前台核验，不能按普通送物派单")
         with self.lock:
             active = sum(
                 ticket.get("category") == "送物" and ticket.get("status") == "处理中"
@@ -649,6 +657,8 @@ class HousekeepingAgent:
 
     def revise(self, ticket: dict[str, Any], command: Any, quantity: int | None = None) -> str:
         """Amend a queued demo delivery; dispatched effects require staff acknowledgement."""
+        if command.action != "cancel" and _academic_voucher_request(command.item or ""):
+            return "早餐券需前台核验，暂未修改原送物工单，请联系前台办理餐券申请。"
         with self.lock:
             desired_quantity = command.quantity if command.quantity is not None else (quantity or ticket.get("quantity", 1))
             if command.action != "cancel" and desired_quantity <= 0:

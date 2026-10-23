@@ -6,6 +6,8 @@
 
 项目机制、业务边界与代码对应见 [项目剖析](docs/academic_hotel_analysis.md)，部署、备份和恢复见 [值班手册](docs/operations.md)。
 
+开发入口见 [AGENTS.md 仓库地图](AGENTS.md)。目标、交付清单和范围见 [主规格](spec/specification.md)，详细步骤见 [实验方案](spec/experiments.md)，判定门槛见 [验收标准](spec/acceptance_criteria.md)，每条要求对应的真实测试见 [追溯矩阵](spec/traceability.md)。旧专题按 [历史规格索引](spec/legacy_specs.md) 区分适用范围。
+
 ## 产品界面
 
 截图来自当前版本页面，统一使用浅色主题和 1280 × 720 浏览器视口。数据为仓库内置的初始酒店数据，图片展示完整业务上下文，不包含密钥或真实住客信息。
@@ -139,6 +141,16 @@ docker compose up -d --build
 没有模型密钥或调用失败时，系统使用本地规则继续提供确定性业务处理。动态 Few-Shot 只改变本次模型输入，不会更新模型参数。当前质量底座包括 20 条固定回归、预置难例和运行时示例检索；它不把评测通过率当成真实模型泛化率，也不把示例更新称为微调。
 
 固定回归与业务边界测试：
+
+统一证据入口会强制使用离线环境，在新建目录保存原始日志、退出码、源码指纹、结构化指标和黑板断言。失败、缺失证据或跳过用例均不能报告通过；产物默认保存在被 Git 忽略的 `.artifacts/`。GitHub CI 执行同一入口并归档证据。
+
+最近一次本机运行的来源、实测结果与适用边界见 [规格体系验收记录](spec/specification_verification_2026-10-23.md)。
+
+~~~powershell
+.\.venv\Scripts\python.exe -B -X utf8 scripts/verify_release.py --output-dir .artifacts/verification/local-001
+~~~
+
+需要单独定位时可执行以下命令；正式验收仍以统一入口的完整证据为准：
 
 ~~~powershell
 $env:AEGIS_FORCE_RULES='1'

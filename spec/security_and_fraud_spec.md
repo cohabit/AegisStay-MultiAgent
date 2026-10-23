@@ -1,5 +1,7 @@
 # AegisStay 安全风控、防越权核验与 API 运行可靠性规范 (security_and_fraud_spec.md)
 
+> 适用范围：历史专题设计／说明，保留当时描述，不作为当前发布规范或已实现能力证明。当前要求见 [主规格](specification.md)、[验收标准](acceptance_criteria.md)；适用范围见 [历史索引](legacy_specs.md)。
+
 ## 1. 核心安全痛点：防跨房越权与身份冒用 (Anti-Spoofing & Privilege Boundary)
 
 ### 1.1 漏洞场景分析（水平越权攻击）

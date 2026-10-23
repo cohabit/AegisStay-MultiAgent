@@ -15,6 +15,14 @@ jobs:
           python-version: "3.12"
           cache: pip
       - run: pip install -r requirements.txt
-      - run: python -m unittest discover -s tests -p 'test_*.py'
-      - run: python -m harness.eval_runner
+      - name: Verify release and capture evidence
+        run: python scripts/verify_release.py --output-dir .artifacts/ci
+      - name: Upload verification evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: verification-${{ github.sha }}
+          path: .artifacts/ci
+          if-no-files-found: error
+          retention-days: 14
       - run: docker build -t aegisstay:test .

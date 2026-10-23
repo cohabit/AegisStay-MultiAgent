@@ -1,5 +1,7 @@
 # AegisStay 智能体工单消单闭环与 Harness 意图防幻觉 Spec
 
+> 适用范围：历史专题设计／说明，保留当时描述，不作为当前发布规范或已实现能力证明。当前要求见 [主规格](specification.md)、[验收标准](acceptance_criteria.md)；适用范围见 [历史索引](legacy_specs.md)。
+
 ## 1. 背景与问题定位
 
 在云端大模型质检（Harness）与真实住客交互过程中，发现以下两个关键体验与准确率缺陷：

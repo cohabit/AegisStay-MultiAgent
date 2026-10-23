@@ -1,5 +1,7 @@
 # AegisStay 智能体拟人化、高情商闲聊软引流与体验修复 Spec
 
+> 适用范围：历史专题设计／说明，保留当时描述，不作为当前发布规范或已实现能力证明。当前要求见 [主规格](specification.md)、[验收标准](acceptance_criteria.md)；适用范围见 [历史索引](legacy_specs.md)。
+
 ## 1. 业务思考与 Token 成本控制哲学 (Cost vs. Delight Trade-off)
 
 在企业级 AI 产品设计中，“闲聊要不要回答”是一个经典的**体验 vs. 算力成本权衡**：

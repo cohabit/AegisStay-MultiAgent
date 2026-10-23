@@ -1,0 +1,442 @@
+{
+  "schema_version": 1,
+  "requirements": [
+    {
+      "id": "REQ-01",
+      "title": "入住凭证与入住/会话绑定",
+      "status": "implemented",
+      "acceptance_id": "AC-01",
+      "tests": [
+        "tests.test_deployment.DeploymentTests.test_guest_is_bound_to_own_session_room_and_stay",
+        "tests.test_deployment.DeploymentTests.test_revocation_and_expiry_invalidate_pass",
+        "tests.test_deployment.DeploymentTests.test_turnover_revokes_previous_occupant",
+        "tests.test_deployment.DeploymentTests.test_revoked_inflight_request_cannot_commit"
+      ],
+      "experiment_ids": [
+        "EXP-01"
+      ],
+      "evidence": [
+        "full-tests.log",
+        "full-tests.json",
+        "manifest.json"
+      ]
+    },
+    {
+      "id": "REQ-02",
+      "title": "岗位授权与必要字段",
+      "status": "implemented",
+      "acceptance_id": "AC-02",
+      "tests": [
+        "tests.test_deployment.DeploymentTests.test_missing_auth_and_shared_guest_token_cannot_access",
+        "tests.test_deployment.DeploymentTests.test_department_cannot_complete_other_department_ticket",
+        "tests.test_deployment.DeploymentTests.test_new_guest_does_not_read_previous_room_orders"
+      ],
+      "experiment_ids": [
+        "EXP-02"
+      ],
+      "evidence": [
+        "full-tests.log",
+        "full-tests.json",
+        "manifest.json"
+      ]
+    },
+    {
+      "id": "REQ-03",
+      "title": "复合FAQ与学校未知政策",
+      "status": "implemented",
+      "acceptance_id": "AC-03",
+      "tests": [
+        "tests.test_app.MultiAgentFlowTests.test_compound_intent_faq_and_late_checkout_with_room",
+        "tests.test_app.MultiAgentFlowTests.test_compound_intent_faq_and_late_checkout_multiturn",
+        "tests.test_app.MultiAgentFlowTests.test_complaint_with_explicit_breakfast_faq_answered",
+        "tests.test_deployment.DeploymentTests.test_academic_meeting_and_checkout_need_real_confirmation",
+        "tests.test_app.MultiAgentFlowTests.test_faq_does_not_create_ticket",
+        "tests.test_app.MultiAgentFlowTests.test_multi_topic_faq_and_delivery_compound_turn",
+        "tests.test_app.MultiAgentFlowTests.test_emergency_suppresses_facility_faq"
+      ],
+      "experiment_ids": [
+        "EXP-03"
+      ],
+      "evidence": [
+        "full-tests.log",
+        "full-tests.json",
+        "manifest.json",
+        "core-tests.log",
+        "core-tests.json",
+        "blackboard.log",
+        "blackboard.json"
+      ]
+    },
+    {
+      "id": "REQ-04",
+      "title": "补槽与房号边界",
+      "status": "implemented",
+      "acceptance_id": "AC-04",
+      "tests": [
+        "tests.test_app.MultiAgentFlowTests.test_reception_asks_for_room_before_dispatch",
+        "tests.test_app.MultiAgentFlowTests.test_second_turn_completes_pending_request",
+        "tests.test_app.MultiAgentFlowTests.test_room_correction_from_invalid_to_valid",
+        "tests.test_app.MultiAgentFlowTests.test_cloud_room_requires_pms_and_mentioned_number",
+        "tests.test_deployment.DeploymentTests.test_guest_is_bound_to_own_session_room_and_stay"
+      ],
+      "experiment_ids": [
+        "EXP-04"
+      ],
+      "evidence": [
+        "full-tests.log",
+        "full-tests.json",
+        "manifest.json",
+        "core-tests.log",
+        "core-tests.json"
+      ]
+    },
+    {
+      "id": "REQ-05",
+      "title": "异步版本、取消与并发",
+      "status": "implemented",
+      "acceptance_id": "AC-05",
+      "tests": [
+        "tests.test_task_runtime.TaskRuntimeTests.test_replace_running_delivery_commits_only_latest_version",
+        "tests.test_task_runtime.TaskRuntimeTests.test_cancel_running_delivery_never_creates_ticket_or_reserves_stock",
+        "tests.test_task_runtime.TaskRuntimeTests.test_three_rapid_versions_keep_quantity_and_only_publish_latest",
+        "tests.test_task_runtime.TaskRuntimeTests.test_other_guest_is_not_blocked_by_slow_department",
+        "tests.test_task_runtime.TaskRuntimeTests.test_concurrent_guests_cannot_oversell_shared_inventory",
+        "tests.test_task_runtime.TaskRuntimeTests.test_queued_capacity_has_backpressure",
+        "tests.test_api.FastAPISessionTests.test_async_submit_accepts_replacement_and_poll_enforces_session",
+        "tests.test_task_runtime.TaskRuntimeTests.test_unrelated_faq_queues_without_cancelling_delivery",
+        "tests.test_task_runtime.TaskRuntimeTests.test_explicit_delivery_cancel_does_not_discard_active_faq",
+        "tests.test_task_runtime.TaskRuntimeTests.test_task_polling_cannot_use_another_session"
+      ],
+      "experiment_ids": [
+        "EXP-05"
+      ],
+      "evidence": [
+        "full-tests.log",
+        "full-tests.json",
+        "manifest.json"
+      ]
+    },
+    {
+      "id": "REQ-06",
+      "title": "送物生命周期与目标定位",
+      "status": "implemented",
+      "acceptance_id": "AC-06",
+      "tests": [
+        "tests.test_task_runtime.TaskRuntimeTests.test_completed_compute_can_amend_unshipped_ticket_without_duplicate",
+        "tests.test_task_runtime.TaskRuntimeTests.test_dispatched_delivery_waits_for_staff_acknowledgement",
+        "tests.test_delivery_language.DeliveryLanguageTests.test_screenshot_followup_cancels_only_water_and_preserves_task_id",
+        "tests.test_delivery_language.DeliveryLanguageTests.test_alias_cancel_cannot_supersede_an_unrelated_running_delivery",
+        "tests.test_deployment.DeploymentTests.test_stale_change_confirmation_and_pending_completion_are_rejected",
+        "tests.test_api.FastAPISessionTests.test_cancelled_delivery_cannot_be_completed",
+        "tests.test_task_runtime.TaskRuntimeTests.test_cancel_existing_unshipped_ticket_releases_stock_once",
+        "tests.test_task_runtime.TaskRuntimeTests.test_ambiguous_cancel_does_not_cancel_arbitrary_ticket",
+        "tests.test_task_runtime.TaskRuntimeTests.test_dispatch_during_amendment_rechecks_actual_delivery_state",
+        "tests.test_delivery_language.DeliveryLanguageTests.test_unknown_water_reference_does_not_cancel_existing_drinking_water",
+        "tests.test_delivery_language.DeliveryLanguageTests.test_replacing_water_alias_updates_only_its_original_order",
+        "tests.test_api.FastAPISessionTests.test_dispatched_change_confirmation_is_idempotent"
+      ],
+      "experiment_ids": [
+        "EXP-06"
+      ],
+      "evidence": [
+        "full-tests.log",
+        "full-tests.json",
+        "manifest.json"
+      ]
+    },
+    {
+      "id": "REQ-07",
+      "title": "提案核验与风险升级",
+      "status": "implemented",
+      "acceptance_id": "AC-07",
+      "tests": [
+        "tests.test_task_runtime.TaskRuntimeTests.test_conflicting_child_item_is_rejected_without_stock_commit",
+        "tests.test_task_runtime.TaskRuntimeTests.test_supervisor_cannot_accept_invented_inventory",
+        "tests.test_task_runtime.TaskRuntimeTests.test_child_cannot_downgrade_safety_priority",
+        "tests.test_api.FastAPISessionTests.test_conflicting_child_is_visible_as_review_without_order",
+        "tests.test_streamlit.GuestInteractionTests.test_staff_can_review_conflict_without_bypassing_validation",
+        "tests.test_app.MultiAgentFlowTests.test_angry_ticket_gets_red_risk_alert"
+      ],
+      "experiment_ids": [
+        "EXP-07"
+      ],
+      "evidence": [
+        "full-tests.log",
+        "full-tests.json",
+        "manifest.json",
+        "core-tests.log",
+        "core-tests.json",
+        "blackboard.log",
+        "blackboard.json"
+      ]
+    },
+    {
+      "id": "REQ-08",
+      "title": "单写入、原子检查点与回滚",
+      "status": "implemented",
+      "acceptance_id": "AC-08",
+      "tests": [
+        "tests.test_deployment.DeploymentTests.test_second_writer_is_rejected_instead_of_overwriting",
+        "tests.test_deployment.DeploymentTests.test_write_failure_rolls_back_stock_and_does_not_ack_success",
+        "tests.test_deployment.DeploymentTests.test_atomic_checkpoint_rolls_back_if_session_write_fails",
+        "tests.test_deployment.DeploymentTests.test_staff_storage_failure_is_unavailable_and_rolls_back"
+      ],
+      "experiment_ids": [
+        "EXP-08"
+      ],
+      "evidence": [
+        "full-tests.log",
+        "full-tests.json",
+        "manifest.json"
+      ]
+    },
+    {
+      "id": "REQ-09",
+      "title": "持久幂等与重试",
+      "status": "implemented",
+      "acceptance_id": "AC-09",
+      "tests": [
+        "tests.test_task_runtime.TaskRuntimeTests.test_request_id_retry_does_not_duplicate_delivery",
+        "tests.test_deployment.DeploymentTests.test_request_retry_survives_restart_without_second_order",
+        "tests.test_deployment.DeploymentTests.test_pruned_run_keeps_durable_idempotency_record",
+        "tests.test_api.FastAPISessionTests.test_async_submit_accepts_replacement_and_poll_enforces_session"
+      ],
+      "experiment_ids": [
+        "EXP-09"
+      ],
+      "evidence": [
+        "full-tests.log",
+        "full-tests.json",
+        "manifest.json"
+      ]
+    },
+    {
+      "id": "REQ-10",
+      "title": "消息归档、日期恢复与隔离",
+      "status": "implemented",
+      "acceptance_id": "AC-10",
+      "tests": [
+        "tests.test_deployment.DeploymentTests.test_history_survives_window_compaction_and_can_be_paged",
+        "tests.test_deployment.DeploymentTests.test_initial_business_date_is_configurable_and_retained",
+        "tests.test_persistence.PersistenceTests.test_business_and_session_state_survive_process_restart",
+        "tests.test_persistence.PersistenceTests.test_restart_marks_inflight_task_as_interrupted",
+        "tests.test_deployment.DeploymentTests.test_department_cannot_complete_other_department_ticket",
+        "tests.test_api.FastAPISessionTests.test_multi_session_isolation",
+        "tests.test_deployment.DeploymentTests.test_new_guest_does_not_read_previous_room_orders",
+        "tests.test_evolution.SelfEvolutionAndMemoryTests.test_sliding_window_memory_summary"
+      ],
+      "experiment_ids": [
+        "EXP-10"
+      ],
+      "evidence": [
+        "full-tests.log",
+        "full-tests.json",
+        "manifest.json"
+      ]
+    },
+    {
+      "id": "REQ-11",
+      "title": "学术待遇人工核验与已知餐券保护",
+      "status": "implemented",
+      "acceptance_id": "AC-11",
+      "tests": [
+        "tests.test_deployment.DeploymentTests.test_academic_meeting_and_checkout_need_real_confirmation",
+        "tests.test_deployment.DeploymentTests.test_academic_breakfast_is_not_an_automatic_entitlement",
+        "tests.test_deployment.DeploymentTests.test_checkout_approval_is_bound_to_current_occupant_request",
+        "tests.test_deployment.DeploymentTests.test_academic_coupon_delivery_wording_requires_review_without_stock_reservation",
+        "tests.test_deployment.DeploymentTests.test_academic_housekeeping_cannot_dispatch_coupons_directly",
+        "tests.test_deployment.DeploymentTests.test_academic_housekeeping_cannot_replace_delivery_with_coupons",
+        "tests.test_deployment.DeploymentTests.test_academic_coupon_replacement_preserves_existing_delivery"
+      ],
+      "experiment_ids": [
+        "EXP-11"
+      ],
+      "evidence": [
+        "full-tests.log",
+        "full-tests.json",
+        "manifest.json"
+      ]
+    },
+    {
+      "id": "REQ-12",
+      "title": "部门回执、夜审与回收待检",
+      "status": "implemented",
+      "acceptance_id": "AC-12",
+      "tests": [
+        "tests.test_deployment.DeploymentTests.test_night_audit_cannot_be_repeated_with_stale_date",
+        "tests.test_task_runtime.TaskRuntimeTests.test_night_audit_cannot_be_overwritten_by_older_snapshot",
+        "tests.test_task_runtime.TaskRuntimeTests.test_delivered_item_cannot_be_restocked_without_return_confirmation",
+        "tests.test_task_runtime.TaskRuntimeTests.test_staff_confirmation_updates_borrowed_record_and_notifies_guest",
+        "tests.test_task_runtime.TaskRuntimeTests.test_rejected_change_keeps_stock_and_clears_waiting_status"
+      ],
+      "experiment_ids": [
+        "EXP-12"
+      ],
+      "evidence": [
+        "full-tests.log",
+        "full-tests.json",
+        "manifest.json"
+      ]
+    },
+    {
+      "id": "REQ-13",
+      "title": "API工作台与岗位视图",
+      "status": "implemented",
+      "acceptance_id": "AC-13",
+      "tests": [
+        "tests.test_deployment.DeployedUIBoundaryTests.test_no_credential_does_not_create_unprotected_business_ui",
+        "tests.test_deployment.DeployedUIBoundaryTests.test_guest_ui_only_receives_own_service_view",
+        "tests.test_deployment.DeployedUIBoundaryTests.test_staff_ui_shares_api_without_a_second_writer"
+      ],
+      "experiment_ids": [
+        "EXP-13"
+      ],
+      "evidence": [
+        "full-tests.log",
+        "full-tests.json",
+        "manifest.json"
+      ]
+    },
+    {
+      "id": "REQ-14",
+      "title": "配置、备份与部署边界",
+      "status": "partial",
+      "acceptance_id": "AC-14",
+      "tests": [
+        "tests.test_deployment.DeploymentTests.test_secret_generation_never_overwrites_deployment",
+        "tests.test_deployment.DeploymentTests.test_deployed_mode_rejects_missing_credentials",
+        "tests.test_deployment.DeploymentTests.test_invalid_staff_mapping_fails_configuration_validation",
+        "tests.test_deployment.DeploymentTests.test_validated_backup_includes_latest_committed_order"
+      ],
+      "experiment_ids": [
+        "EXP-14"
+      ],
+      "evidence": [
+        "full-tests.log",
+        "full-tests.json",
+        "manifest.json"
+      ]
+    },
+    {
+      "id": "REQ-15",
+      "title": "固定Harness与Few-Shot证据边界",
+      "status": "implemented",
+      "acceptance_id": "AC-15",
+      "tests": [
+        "tests.test_app.MultiAgentFlowTests.test_harness_dataset_regression_metrics",
+        "tests.test_app.MultiAgentFlowTests.test_harness_other_accepts_chitchat_alias",
+        "tests.test_evolution.SelfEvolutionAndMemoryTests.test_dynamic_exemplar_curator_retrieves_block",
+        "tests.test_evolution.SelfEvolutionAndMemoryTests.test_hard_case_miner_loads_default_cases",
+        "tests.test_evolution.SelfEvolutionAndMemoryTests.test_evolution_delta_runner_cycle"
+      ],
+      "experiment_ids": [
+        "EXP-15"
+      ],
+      "evidence": [
+        "full-tests.log",
+        "full-tests.json",
+        "manifest.json",
+        "core-tests.log",
+        "core-tests.json",
+        "harness.log",
+        "harness-structured.log",
+        "harness.json"
+      ]
+    },
+    {
+      "id": "REQ-16",
+      "title": "可复现证据与反假通过",
+      "status": "implemented",
+      "acceptance_id": "AC-16",
+      "tests": [
+        "tests.test_release_verification.ReleaseVerificationTests.test_blackboard_broken_trace_is_failure",
+        "tests.test_release_verification.ReleaseVerificationTests.test_blackboard_manual_change_requires_real_before_and_after_states",
+        "tests.test_release_verification.ReleaseVerificationTests.test_child_guard_marks_missing_dependency_without_fabricating_version",
+        "tests.test_release_verification.ReleaseVerificationTests.test_child_guard_records_actual_isolated_dependency_versions",
+        "tests.test_release_verification.ReleaseVerificationTests.test_core_suite_rejects_tests_from_another_module",
+        "tests.test_release_verification.ReleaseVerificationTests.test_existing_output_directory_is_rejected",
+        "tests.test_release_verification.ReleaseVerificationTests.test_failure_still_writes_manifest_and_returns_nonzero",
+        "tests.test_release_verification.ReleaseVerificationTests.test_harness_cli_exit_zero_does_not_mask_fail_rows",
+        "tests.test_release_verification.ReleaseVerificationTests.test_harness_cli_extra_passing_case_is_failure",
+        "tests.test_release_verification.ReleaseVerificationTests.test_harness_cli_missing_case_does_not_pass_on_pass_substrings",
+        "tests.test_release_verification.ReleaseVerificationTests.test_harness_cli_unknown_status_rows_are_not_ignored",
+        "tests.test_release_verification.ReleaseVerificationTests.test_harness_cloud_mode_is_not_offline_evidence",
+        "tests.test_release_verification.ReleaseVerificationTests.test_harness_duplicate_case_is_failure",
+        "tests.test_release_verification.ReleaseVerificationTests.test_harness_each_metric_is_required_and_exact",
+        "tests.test_release_verification.ReleaseVerificationTests.test_harness_extra_passing_case_is_failure",
+        "tests.test_release_verification.ReleaseVerificationTests.test_harness_failed_row_is_failure",
+        "tests.test_release_verification.ReleaseVerificationTests.test_harness_missing_baseline_case_is_failure",
+        "tests.test_release_verification.ReleaseVerificationTests.test_json_from_another_run_is_rejected",
+        "tests.test_release_verification.ReleaseVerificationTests.test_manifest_uses_child_versions_and_rejects_inconsistent_receipts",
+        "tests.test_release_verification.ReleaseVerificationTests.test_missing_json_is_failure",
+        "tests.test_release_verification.ReleaseVerificationTests.test_real_unittest_failure_preserves_nonzero_and_structured_failure",
+        "tests.test_release_verification.ReleaseVerificationTests.test_real_unittest_skip_exit_zero_is_rejected",
+        "tests.test_release_verification.ReleaseVerificationTests.test_real_unittest_zero_test_report_is_rejected",
+        "tests.test_release_verification.ReleaseVerificationTests.test_runner_preserves_raw_logs_and_exit_code_on_failure",
+        "tests.test_release_verification.ReleaseVerificationTests.test_safe_environment_removes_real_data_and_model_configuration",
+        "tests.test_release_verification.ReleaseVerificationTests.test_safety_guards_block_external_network_and_non_temporary_sqlite",
+        "tests.test_release_verification.ReleaseVerificationTests.test_same_test_count_cannot_replace_a_committed_baseline_identity",
+        "tests.test_release_verification.ReleaseVerificationTests.test_source_capture_hashes_release_control_files_and_detects_drift",
+        "tests.test_release_verification.ReleaseVerificationTests.test_stale_json_timestamp_is_rejected",
+        "tests.test_release_verification.ReleaseVerificationTests.test_traceability_accepts_partial_without_claiming_field_readiness",
+        "tests.test_release_verification.ReleaseVerificationTests.test_traceability_rejects_loadable_but_unexecuted_test",
+        "tests.test_release_verification.ReleaseVerificationTests.test_traceability_rejects_unloadable_test",
+        "tests.test_release_verification.ReleaseVerificationTests.test_traceability_requires_all_sixteen_requirements",
+        "tests.test_release_verification.ReleaseVerificationTests.test_unittest_exit_zero_cannot_mask_failed_result",
+        "tests.test_release_verification.ReleaseVerificationTests.test_unittest_expected_failure_is_not_a_full_pass",
+        "tests.test_release_verification.ReleaseVerificationTests.test_unittest_forged_count_cannot_replace_executed_identities",
+        "tests.test_release_verification.ReleaseVerificationTests.test_unittest_skips_are_failure",
+        "tests.test_release_verification.ReleaseVerificationTests.test_unittest_zero_tests_is_failure"
+      ],
+      "experiment_ids": [
+        "EXP-16"
+      ],
+      "evidence": [
+        "full-tests.log",
+        "full-tests.json",
+        "manifest.json",
+        "core-tests.log",
+        "core-tests.json",
+        "harness.log",
+        "harness-structured.log",
+        "harness.json",
+        "blackboard.log",
+        "blackboard.json",
+        "traceability.json",
+        "validation.log"
+      ]
+    }
+  ],
+  "future_requirements": [
+    {
+      "id": "FUT-01",
+      "title": "真实PMS双向适配",
+      "status": "planned"
+    },
+    {
+      "id": "FUT-02",
+      "title": "学校SSO",
+      "status": "planned"
+    },
+    {
+      "id": "FUT-03",
+      "title": "真实电子券发行/核销/撤回及订单对账",
+      "status": "planned"
+    },
+    {
+      "id": "FUT-04",
+      "title": "学校批准知识与语义检索审核",
+      "status": "planned"
+    },
+    {
+      "id": "FUT-05",
+      "title": "现场容量、告警及恢复演练",
+      "status": "planned"
+    },
+    {
+      "id": "FUT-06",
+      "title": "线上失败样例治理及独立对照",
+      "status": "planned"
+    }
+  ]
+}

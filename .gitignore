@@ -12,3 +12,4 @@ deploy.env
 var/
 backups/
 .idea/
+.artifacts/

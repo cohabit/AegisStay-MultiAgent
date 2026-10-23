@@ -1,5 +1,7 @@
 # 异步中断、送物改单与主子 Agent 结果校验
 
+> 适用范围：历史专题设计／说明，保留当时描述，不作为当前发布规范或已实现能力证明。当前要求见 [主规格](specification.md)、[验收标准](acceptance_criteria.md)；适用范围见 [历史索引](legacy_specs.md)。
+
 更新日期：2026-10-20。本文描述已落地的任务控制与业务仲裁功能。本版还补充了 [口语取消](colloquial_delivery_cancellation.md)；最新测试与截图见 [本版验收](release_verification_2026-10-20.md)。
 
 ## 1. 实际解决的问题

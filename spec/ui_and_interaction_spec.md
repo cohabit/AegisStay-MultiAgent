@@ -1,5 +1,7 @@
 # AegisStay 界面交互、黑夜模式与生命周期规范 (ui_and_interaction_spec.md)
 
+> 适用范围：历史专题设计／说明，保留当时描述，不作为当前发布规范或已实现能力证明。当前要求见 [主规格](specification.md)、[验收标准](acceptance_criteria.md)；适用范围见 [历史索引](legacy_specs.md)。
+
 ## 1. Streamlit 执行生命周期与对话延迟根治规范
 
 ### 1.1 缺陷复盘：为什么“输入第一句不显示，输入 1128 才显示上一句”？

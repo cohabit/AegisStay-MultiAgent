@@ -81,6 +81,21 @@ class DeploymentTests(unittest.TestCase):
         self.manager.shared_pms["1128"]["stay_id"] = "another-stay"
         self.assertEqual(self.client.get("/api/me", headers=token).status_code, 401)
 
+    def test_guest_response_and_task_poll_hide_backend_model_identity(self):
+        guest = self.grant()
+        headers = {"Authorization": "Bearer " + guest["access_token"]}
+        result = self.chat(guest, "你是什么模型？").json()
+        self.assertEqual(result["model_name"], "学术之家住客服务助手")
+        self.assertEqual(result["trace"], [])
+        task = self.client.get("/api/tasks/" + result["run_id"],
+                               params={"session_id": guest["session_id"]}, headers=headers)
+        self.assertEqual(task.status_code, 200)
+        self.assertEqual(task.json()["result"]["model_name"], "学术之家住客服务助手")
+        # Operator diagnostics remain available in the protected staff projection.
+        staff_task = self.client.get("/api/tasks/" + result["run_id"],
+                                     params={"session_id": guest["session_id"]}, headers=self.staff)
+        self.assertEqual(staff_task.json()["result"]["model_name"], "offline_rules")
+
     def test_revocation_and_expiry_invalidate_pass(self):
         guest = self.grant()
         token = {"Authorization": "Bearer " + guest["access_token"]}

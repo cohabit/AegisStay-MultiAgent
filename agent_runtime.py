@@ -22,7 +22,7 @@ from typing import Any
 from agent_protocol import DeliveryCommand, TaskInterrupted, parse_delivery_command
 from hotel_core import (
     HotelOrchestrator, HotelState, HousekeepingAgent, OpenAICompatibleClient,
-    PMS_ROOMS, _room_no, _rules_extract, run_pms_night_audit,
+    PMS_ROOMS, _room_no, _rules_extract, _security_boundary_kind, run_pms_night_audit,
 )
 from persistence import SQLiteStateStore
 
@@ -394,6 +394,7 @@ class SessionManager:
         message = message.strip()
         if not message:
             raise ValueError("消息不能为空")
+        boundary_kind = _security_boundary_kind(message)
         with self.lock:
             if self._closed:
                 raise RuntimeBusy("执行器已关闭")
@@ -407,14 +408,17 @@ class SessionManager:
                     self._restore_run(session_id, flow, record)
             if request_id and (session_id, request_id) in self._requests:
                 previous = self._runs[self._requests[(session_id, request_id)]]
-                if previous.message != message or previous.room_hint != (room_no or _room_no(message) or previous.room_hint):
+                if previous.message != message or (not boundary_kind and
+                        previous.room_hint != (room_no or _room_no(message) or previous.room_hint)):
                     raise ValueError("同一 request_id 不能用于不同请求")
                 return previous
             if self._outstanding >= self.max_pending:
                 raise RuntimeBusy("任务队列已满，请稍后重试")
             active = self._runs.get(self._active.get(session_id, ""))
             command = parse_delivery_command(message)
-            control = command.action in {"replace", "cancel"}
+            # A safety probe is a separate read-only turn, even if its wording
+            # contains a cancellation, replacement or another room number.
+            control = boundary_kind is None and command.action in {"replace", "cancel"}
             explicit_delivery = bool(command.references)
             old_items = set(command.references) - {command.item}
             active_item = parse_delivery_command(flow.state.tasks[active.task_id].get("goal_detail", active.message)).item if active else None
@@ -423,12 +427,13 @@ class SessionManager:
             ) else None
             origin = ""
             target_ticket = None
-            kind = _rules_extract(message, flow.knowledge)["intent"]
+            kind = "安全边界" if boundary_kind else _rules_extract(message, flow.knowledge)["intent"]
             if target_active:
                 kind = target_active.kind
                 previous = flow.state.tasks[target_active.task_id]
                 origin = previous.get("goal_detail", target_active.message)
-            room_hint = room_no or _room_no(message) or flow.state.room_no or (active.room_hint if active else None)
+            room_hint = (flow.state.room_no if boundary_kind else
+                         room_no or _room_no(message) or flow.state.room_no or (active.room_hint if active else None))
             if room_hint not in self.shared_pms:
                 room_hint = flow.state.room_no
             task_id = target_active.task_id if target_active else f"TASK-{uuid.uuid4().hex[:12]}"

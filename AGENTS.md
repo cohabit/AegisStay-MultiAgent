@@ -16,7 +16,8 @@
 | AC-01…AC-16 与证据硬门槛 | [验收标准](spec/acceptance_criteria.md) |
 | 真实测试点名与机器映射 | [追溯说明](spec/traceability.md)、[traceability.json](spec/traceability.json) |
 | 分层质量集与验收方法 | [质量验收子规格](spec/quality_evaluation.md) |
-| 当前界面视觉、对比度、双页签与空间仿真 | [界面视觉规格](spec/ui_visual_quality.md) |
+| 当前界面视觉、对比度、工作区与空间仿真 | [界面视觉规格](spec/ui_visual_quality.md) |
+| 住客公开身份、提示注入与调度/API 边界 | [对话安全规格](spec/security_prompt_injection.md) |
 | 旧专题及旧验收适用范围 | [历史索引](spec/legacy_specs.md) |
 | 安装、启动和值班操作 | [README](README.md)、[运维手册](docs/operations.md)、[部署子规格](spec/design/deployment.md) |
 | 实施边界与原始测试身份 | [工作计划](spec/work_plan.md)、[127 项基线 ID](spec/baseline_test_ids.json) |
@@ -54,6 +55,7 @@
 - `hotel_core.py` 不导入 Streamlit；部署 UI 不持有第二份可写业务状态。
 - academic 延退和餐券先核验，不自动承诺免费、发券或预留券库存；保洁直调和送物改券同样受限。真实电子券发行尚未实现。
 - 住客 `room_no`、`stay_id`、`session_id` 和 grant 共同约束写入。模型或住客自称不能授予岗位和跨房权限。
+- 住客对话与 API 仅公开服务助手身份；安全探询不外呼模型、不绑定攻击房号、不取消合法在途订单。正则检测不替代鉴权和提案校验。
 - FAQ 与服务分别处理再合成；缺槽可追问，已认证房间不能通过聊天切换。
 - 部门只提案；房号、部门、优先级、物品、数量、库存和借用变化校验后才提交。冲突进入人工核验。
 - 同库只有一个 API 写入者；员工与异步写入均保持原子持久化、回滚和幂等。禁止增加多 worker 掩盖容量问题。

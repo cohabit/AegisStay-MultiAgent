@@ -8,11 +8,19 @@
 
 工作台默认进入住客端，只显示当前入住会话的对话和服务进度；员工通过侧栏工作区进入运营中枢、质量验收或难例回归。住客端不展示房态、库存、酒店仿真和内部黑板，服务权限由入住凭证绑定 `room_no`、`stay_id` 与 `session_id`，不能靠聊天切换到其他房间。界面对比度、对话动画、全楼仿真和响应式房态布局见 [界面视觉规格](spec/ui_visual_quality.md)。
 
+住客对话以“学术之家住客服务助手”作为公开服务身份；已覆盖的内部提示、模型和权限探询在本地处理，不外呼模型或修改订单。入住授权、限定工具、提案核验和原子提交共同约束业务写入，安全边界见 [对话安全规格](spec/security_prompt_injection.md)。本地工作区选择器供开发和值班使用，不承担鉴权；公网住客入口必须使用受凭证保护的 API 工作台。
+
 开发入口见 [AGENTS.md 仓库地图](AGENTS.md)。目标、交付清单和范围见 [主规格](spec/specification.md)，REQ-14 见 [部署与运维子规格](spec/design/deployment.md)，FIELD-01～06 见 [现场验收协议](spec/field_validation.md)，FUT-01～06 见 [未来集成规格](spec/future_integrations.md)。剩余规格的静态验收见 [补全规格验收记录](spec/remaining_spec_verification_2026-10-23.md)。详细步骤见 [实验方案](spec/experiments.md)，判定门槛见 [验收标准](spec/acceptance_criteria.md)，每条要求对应的真实测试见 [追溯矩阵](spec/traceability.md)。旧专题按 [历史规格索引](spec/legacy_specs.md) 区分适用范围。
 
 ## 产品界面
 
-截图来自当前版本页面，默认护眼主题，也支持夜间和日间模式；采集使用 1280 × 720 浏览器视口。数据为仓库内置的初始酒店数据，图片展示完整业务上下文，不包含密钥或真实住客信息。
+住客首屏与夜间会话来自 2026-10-25 的本地界面复核；下方业务操作截图来自受鉴权 API 工作台。数据均为合成夹具，不包含密钥或真实住客信息，采集环境和日期见 [截图说明](docs/images/README.md)。
+
+### 住客入口与夜间对话
+
+![校园湖景与聚焦住客入口](docs/images/guest-home.jpg)
+
+![夜间住客对话与公开服务身份](docs/images/guest-night.jpg)
 
 ### 运营总览
 

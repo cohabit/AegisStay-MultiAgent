@@ -31,6 +31,11 @@ class VisualContractTests(unittest.TestCase):
                 self.assertGreaterEqual(_contrast(palette["muted"], palette["bg"]), 4.5)
             with self.subTest(theme=theme, field="accent_text"):
                 self.assertGreaterEqual(_contrast(palette["accent_text"], palette["accent"]), 4.5)
+            with self.subTest(theme=theme, field="surface_text"):
+                self.assertGreaterEqual(_contrast(palette["text"], palette["surface"]), 4.5)
+            for status in ("occ", "clean", "dirty", "repair"):
+                with self.subTest(theme=theme, field=status):
+                    self.assertGreaterEqual(_contrast(palette[f"{status}_text"], palette[f"{status}_bg"]), 4.5)
 
     def test_room_grid_and_placeholder_contract(self):
         self.assertIn("grid-template-columns: repeat(6, minmax(0, 1fr))", APP_SOURCE)
@@ -60,8 +65,15 @@ class VisualContractTests(unittest.TestCase):
         self.assertIn('height=300', APP_SOURCE)
         self.assertIn('guest-workspace-marker', APP_SOURCE)
         self.assertIn('guest-backdrop', APP_SOURCE)
+        self.assertIn('guest-campus-banner', APP_SOURCE)
+        self.assertIn('height:96px', APP_SOURCE)
+        self.assertIn('padding-top:4.5rem', APP_SOURCE)
+        self.assertIn('@media (max-height: 760px)', APP_SOURCE)
+        self.assertIn('flex:0 0 var(--as-chat-history-height)', APP_SOURCE)
         self.assertIn(':has(.guest-workspace-marker)', APP_SOURCE)
         self.assertIn('.stBottom { display: none !important; }', APP_SOURCE)
+        self.assertIn('[data-testid="stExpander"] details', APP_SOURCE)
+        self.assertIn('[data-testid="stRadio"]', APP_SOURCE)
         self.assertIn('client-composer', APP_SOURCE)
         self.assertIn('client-chat-stage-active', APP_SOURCE)
         self.assertIn('入住凭证', APP_SOURCE)
@@ -86,4 +98,3 @@ class VisualContractTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-

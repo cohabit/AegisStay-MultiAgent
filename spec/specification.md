@@ -51,7 +51,9 @@ academic 的“给我两张早餐券”“给房间发两张早餐券”“送�
 
 新增测试增加总量，不得替换旧测试凑数；文件契约和拒绝通过规则以 [验收标准](acceptance_criteria.md) 为准。H01–H20 只作为兼容基线，E01–E40 的分层质量门槛见[质量验收子规格](quality_evaluation.md)，两者结果必须分开报告。本次 Task 1 餐券焦点日志位于已忽略的 `.artifacts/verification/task1-coupon/`，只证明其中方法和环境；完整发布证据由集成人员执行。旧 [2026-10-23 记录](release_verification_2026-10-23.md) 不证明新增代码通过，Docker/Compose 与现场演练仍按 [FIELD 方案](experiments.md) 验证。
 
-界面交付还需满足 [UI-01～UI-06](ui_visual_quality.md)；它们由 `tests.test_visual_contract` 与 Streamlit AppTest 提供独立证据，并增加住客端聚焦对话和运营端克制布局的浏览器复核，不计入 REQ-01…REQ-16 的业务数量门槛。
+界面交付还需满足 [UI-01～UI-07](ui_visual_quality.md)；它们由 `tests.test_visual_contract` 与 Streamlit AppTest 提供独立证据，并增加住客端聚焦对话、运营端克制布局和夜间控件对比度的浏览器复核，不计入 REQ-01…REQ-16 的业务数量门槛。
+
+住客端公开身份、提示注入、云模型与工具护栏见[住客端公开身份与提示注入安全规格](security_prompt_injection.md)。住客不能通过对话获知底层模型或内部配置，也不能把提示词注入转化为房态、工单、库存或审批写操作；安全回归与业务回归分开报告。
 
 本轮已执行的 169 项完整测试、40 项核心、20 条 Harness、21 项黑板断言及 120 个追溯方法的证据身份与边界见 [规格体系验收记录](specification_verification_2026-10-23.md)。
 
@@ -77,4 +79,3 @@ academic 的“给我两张早餐券”“给房间发两张早餐券”“送�
 | FUT-06 | 线上失败样本授权、脱敏、保留及独立前后对照 |
 
 扩展实施前需更新规格、实验和追溯；配置和模拟代码不能当作外部系统接通证据。
-

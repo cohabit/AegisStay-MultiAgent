@@ -18,7 +18,7 @@ from pydantic import BaseModel, Field
 from agent_runtime import RunOutcome, RuntimeBusy, SessionManager
 from auth import (Principal, authenticate, enabled, issue_guest_pass, require_session,
                   require_staff, validate_configuration)
-from hotel_core import HotelOrchestrator, HotelState, _room_no
+from hotel_core import HotelOrchestrator, HotelState, PUBLIC_ASSISTANT_NAME, _room_no
 from persistence import StorageConflict
 
 session_manager = SessionManager()
@@ -128,8 +128,10 @@ def _chat_response(outcome: RunOutcome, principal: Principal) -> dict:
     return {"session_id": principal.session_id or "", "reply": outcome.reply,
             "active_agent": state.active_agent, "room_no": state.room_no,
             "guest_name": (state.guest_profile or {}).get("guest_name"),
-            "intent": state.intent, "sentiment": state.sentiment, "model_mode": state.model_mode,
-            "model_name": flow.model.model, "trace": state.last_trace if principal.staff else [],
+            "intent": state.intent, "sentiment": state.sentiment,
+            "model_mode": state.model_mode if principal.staff else "酒店服务助手",
+            "model_name": flow.model.model if principal.staff else PUBLIC_ASSISTANT_NAME,
+            "trace": state.last_trace if principal.staff else [],
             "progress_items": flow.guest_progress_items(), "run_id": outcome.run_id,
             "task_id": outcome.task_id, "version": outcome.version, "run_status": outcome.status}
 

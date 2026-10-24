@@ -16,6 +16,7 @@
 | AC-01…AC-16 与证据硬门槛 | [验收标准](spec/acceptance_criteria.md) |
 | 真实测试点名与机器映射 | [追溯说明](spec/traceability.md)、[traceability.json](spec/traceability.json) |
 | 分层质量集与验收方法 | [质量验收子规格](spec/quality_evaluation.md) |
+| 当前界面视觉、对比度、双页签与空间仿真 | [界面视觉规格](spec/ui_visual_quality.md) |
 | 旧专题及旧验收适用范围 | [历史索引](spec/legacy_specs.md) |
 | 安装、启动和值班操作 | [README](README.md)、[运维手册](docs/operations.md)、[部署子规格](spec/design/deployment.md) |
 | 实施边界与原始测试身份 | [工作计划](spec/work_plan.md)、[127 项基线 ID](spec/baseline_test_ids.json) |
@@ -43,7 +44,7 @@
 | `tests/test_deployment.py` | academic 身份、岗位、待遇核验、存储故障与部署工作台 |
 | `tests/test_api.py` / `test_task_runtime.py` | API、异步仲裁、冲突与受控竞态 |
 | `tests/test_delivery_language.py` / `test_persistence.py` | 口语送物生命周期、持久化和重启 |
-| `tests/test_evolution.py` / `test_streamlit.py` | 示例检索、记忆与本地界面回归 |
+| `tests/test_evolution.py` / `test_streamlit.py` / `test_visual_contract.py` | 示例检索、记忆与本地界面、主题对比度回归 |
 | `tests/test_release_verification.py` | 证据工具负向测试，拒绝假通过 |
 | `tests/stress_test.py` | 开发压测工具；不能对真实酒店执行全量重置或声称生产容量 |
 | `Dockerfile` / `docker-compose.yml` | 非 root、单 API worker、独立 Web 和持久卷配置；静态配置不等于实跑通过 |
@@ -66,4 +67,3 @@
 使用项目 `.venv` Python；隔离环境和完整命令见 [实验方案](spec/experiments.md)。统一入口为 `python scripts/verify_release.py --output-dir .artifacts/verification/<新目录>`。合格证据须同时满足原始 127 项、完整不少于 127、核心不少于 40、零跳过、H01…H20 全过及四指标为 1.0，并核验状态、Trace、来源和 REQ 映射。
 
 不要只凭退出 0、HTTP 200、旧截图或历史 Markdown 下结论。集成人员在文件稳定后执行完整发布验证；一次焦点回归不代表整次发布或现场已验收。
-

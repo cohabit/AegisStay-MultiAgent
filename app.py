@@ -32,20 +32,20 @@ THEME_HINTS = {
 THEME_PALETTES = {
     "日间": {
         "bg": "#f6f8f7", "surface": "#ffffff", "surface_soft": "#f1f6f4",
-        "text": "#102a43", "muted": "#627d98", "border": "#d9e2ec",
-        "accent": "#0f766e", "accent_soft": "#dff4ef", "metric": "rgba(255,255,255,.72)",
+        "text": "#102a43", "muted": "#536c83", "border": "#d9e2ec",
+        "accent": "#0f766e", "accent_text": "#ffffff", "accent_soft": "#dff4ef", "metric": "rgba(255,255,255,.72)",
         "occ_bg": "#f2fbf9", "clean_bg": "#fbfdfd", "dirty_bg": "#fffaf1", "repair_bg": "#fff6f5",
     },
     "护眼": {
         "bg": "#eaf0e7", "surface": "#f5f8f0", "surface_soft": "#e2ebdf",
-        "text": "#2d3b32", "muted": "#617267", "border": "#cbd8c9",
-        "accent": "#52796f", "accent_soft": "#dbe8d9", "metric": "rgba(245,248,240,.86)",
+        "text": "#2d3b32", "muted": "#52655b", "border": "#cbd8c9",
+        "accent": "#41675e", "accent_text": "#ffffff", "accent_soft": "#dbe8d9", "metric": "rgba(245,248,240,.86)",
         "occ_bg": "#e6f1e9", "clean_bg": "#f5f8f0", "dirty_bg": "#f8f1dc", "repair_bg": "#f8e8e4",
     },
     "夜间": {
         "bg": "#0f1720", "surface": "#182630", "surface_soft": "#203440",
         "text": "#e6f0ed", "muted": "#a7bcb8", "border": "#314955",
-        "accent": "#4fd1c5", "accent_soft": "#1b4143", "metric": "rgba(24,38,48,.92)",
+        "accent": "#4fd1c5", "accent_text": "#062b2a", "accent_soft": "#1b4143", "metric": "rgba(24,38,48,.92)",
         "occ_bg": "#173633", "clean_bg": "#1c2b35", "dirty_bg": "#3c321f", "repair_bg": "#3c2529",
     },
 }
@@ -161,11 +161,19 @@ __THEME_VARS__
         }
         .stApp, [data-testid="stAppViewContainer"] { background: var(--as-bg); color: var(--as-text); transition: background-color .28s ease, color .28s ease; }
         [data-testid="stHeader"] { background: color-mix(in srgb, var(--as-bg) 88%, transparent); }
-        [data-testid="stSidebar"] { border-right: 1px solid rgba(255,255,255,.12); }
+        [data-testid="stSidebar"] { background: var(--as-surface) !important; border-right: 1px solid var(--as-border); color: var(--as-text) !important; }
+        [data-testid="stSidebar"] *, [data-testid="stSidebar"] [data-testid="stMarkdownContainer"] p,
+        [data-testid="stSidebar"] [data-testid="stCaptionContainer"] { color: var(--as-text) !important; }
+        [data-testid="stSidebar"] [data-testid="stCaptionContainer"] { color: var(--as-muted) !important; }
+        [data-testid="stSidebar"] [data-baseweb="radio"] label { color: var(--as-text) !important; }
+        [data-testid="stSidebar"] .stButton button { color: var(--as-text) !important; -webkit-text-fill-color: var(--as-text) !important; background: var(--as-surface-soft) !important; border-color: var(--as-border) !important; }
         .block-container { max-width: 1500px; padding-top: 1rem; }
         .stApp input, .stApp textarea, [data-baseweb="select"] > div { background: var(--as-surface) !important; color: var(--as-text) !important; border-color: var(--as-border) !important; }
         .stApp input::placeholder, .stApp textarea::placeholder { color: var(--as-muted) !important; opacity: 1; }
-        [data-testid="stFormSubmitButton"] button, [data-testid="stFormSubmitButton"] button *, .stButton button[kind="primary"] { color: #fff !important; -webkit-text-fill-color: #fff !important; background: var(--as-accent) !important; border-color: var(--as-accent) !important; }
+        .stApp button { color: var(--as-text) !important; -webkit-text-fill-color: var(--as-text) !important; border-color: var(--as-border) !important; background: var(--as-surface) !important; }
+        [data-testid="stFormSubmitButton"] button, [data-testid="stFormSubmitButton"] button *, .stButton button[kind="primary"] { color: var(--as-accent-text) !important; -webkit-text-fill-color: var(--as-accent-text) !important; background: var(--as-accent) !important; border-color: var(--as-accent) !important; }
+        .stApp button:disabled, .stApp button:disabled * { color: var(--as-muted) !important; -webkit-text-fill-color: var(--as-muted) !important; background: var(--as-surface-soft) !important; border-color: var(--as-border) !important; opacity: 1 !important; }
+        [data-testid="stChatInput"] { display: none !important; }
         .stApp label, [data-testid="stMarkdownContainer"], [data-testid="stCaptionContainer"] { color: var(--as-text); }
         [data-testid="stAlert"], [data-testid="stExpander"] { border-color: var(--as-border); }
         [data-testid="stMetric"] { color: var(--as-text); }
@@ -205,7 +213,7 @@ __THEME_VARS__
         .property-intro p { margin: 0; color: var(--as-muted); font-size: .82rem; }
         .stTabs [data-baseweb="tab-list"] { gap: 5px; border-bottom: 1px solid var(--as-border); }
         .stTabs [data-baseweb="tab"] { padding: 10px 18px; color: var(--as-muted); font-weight: 700; }
-        .stTabs [aria-selected="true"] { color: var(--as-teal); }
+        .stTabs [aria-selected="true"] { color: var(--as-teal) !important; }
         .conversation-dock { position: relative; overflow: hidden; margin: 0 0 18px; padding: 20px 22px 16px; border: 1px solid var(--as-border); border-radius: 18px; background: var(--as-surface); box-shadow: var(--as-shadow); animation: as-rise .55s ease both; }
         .conversation-dock::after { content: ''; position: absolute; right: -38px; top: -58px; width: 160px; height: 160px; border: 1px solid var(--as-accent); border-radius: 50%; opacity: .15; box-shadow: 0 0 0 22px color-mix(in srgb, var(--as-accent) 8%, transparent), 0 0 0 44px color-mix(in srgb, var(--as-accent) 5%, transparent); }
         .conversation-dock-head { display:flex; align-items:center; gap:8px; color: var(--as-accent); font-size:.72rem; font-weight:800; letter-spacing:.12em; }
@@ -245,7 +253,7 @@ __THEME_VARS__
         .legend-repair { background: #dc2626; }
         .floor-row { display: grid; grid-template-columns: 42px minmax(0, 1fr); gap: 12px; align-items: start; margin-bottom: 16px; }
         .floor-badge { position: sticky; top: 8px; display:grid; place-items:center; min-height: 34px; border-radius: 10px; background: var(--as-accent-soft); color: var(--as-teal); font-size: .74rem; font-weight: 800; }
-        .room-map { display:grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 8px; min-width: 0; }
+        .room-map { display:grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; min-width: 0; }
         .room-tile { position: relative; min-height: 88px; overflow: visible; padding: 10px 10px 9px; border: 1px solid var(--as-border); border-bottom: 3px solid #64748b; border-radius: 9px; background: var(--as-surface); color: var(--as-ink); box-shadow: 0 3px 9px rgba(16,42,67,.045); cursor: default; transition: transform .16s ease, box-shadow .16s ease, border-color .16s ease; z-index: 0; }
         .room-tile:hover, .room-tile:focus-within { z-index: 8; transform: translateY(-3px); border-color: currentColor; box-shadow: 0 14px 25px rgba(16,42,67,.18); }
         .room-tile-top { display:flex; justify-content:space-between; align-items:center; color: #7b8794; font-size: .65rem; }
@@ -259,6 +267,8 @@ __THEME_VARS__
         .room-tile-clean { color: #64748b; border-bottom-color: #64748b; background: var(--as-clean-bg); }
         .room-tile-dirty { color: #b45309; border-bottom-color: #d97706; background: var(--as-dirty-bg); }
         .room-tile-repair { color: #b91c1c; border-bottom-color: #dc2626; background: var(--as-repair-bg); }
+        .room-tile-empty { display:grid; place-items:center; color:var(--as-border); background:transparent; border-style:dashed; box-shadow:none; opacity:.55; }
+        .room-tile-empty:hover { transform:none; border-color:var(--as-border); box-shadow:none; }
         .room-tooltip { position:absolute; left: 50%; bottom: calc(100% + 9px); width: 228px; padding: 12px 13px; transform: translate(-50%, 5px); border: 1px solid rgba(16,42,67,.14); border-radius: 11px; background: #102a43; color: #f7fbfa; box-shadow: 0 15px 35px rgba(16,42,67,.27); opacity: 0; pointer-events: none; transition: opacity .16s ease, transform .16s ease; }
         .room-tooltip::after { content: ''; position:absolute; left:50%; bottom:-6px; width:11px; height:11px; transform:translateX(-50%) rotate(45deg); background:#102a43; }
         .room-tile:hover .room-tooltip, .room-tile:focus-within .room-tooltip { opacity: 1; transform: translate(-50%, 0); }
@@ -312,6 +322,30 @@ __THEME_VARS__
         .borrowed-board { display:grid; grid-template-columns:repeat(auto-fit,minmax(180px,1fr)); gap:8px; }
         .borrowed-card { padding:10px 12px; border-left:3px solid var(--as-accent); border-radius:10px; background:var(--as-surface-soft); color:var(--as-text); font-size:.72rem; }
         .borrowed-card strong { display:block; margin-bottom:4px; font-size:.8rem; }
+        .hotel-sim-shell { overflow:hidden; border:1px solid var(--as-border); border-radius:18px; background:var(--as-surface); box-shadow:var(--as-shadow); }
+        .hotel-sim-header { display:flex; justify-content:space-between; gap:14px; align-items:end; padding:15px 17px 11px; }
+        .hotel-sim-header strong { color:var(--as-text); font-size:1rem; }
+        .hotel-sim-header span { color:var(--as-muted); font-size:.7rem; }
+        .hotel-sim-photo { position:relative; height:74px; overflow:hidden; background:var(--as-navy); }
+        .hotel-sim-photo img { width:100%; height:100%; object-fit:cover; opacity:.72; }
+        .hotel-sim-photo::after { content:''; position:absolute; inset:0; background:linear-gradient(90deg, rgba(16,42,67,.84), rgba(16,42,67,.14)); }
+        .hotel-sim-photo-label { position:absolute; z-index:1; left:16px; bottom:11px; color:#fff; font-family:Georgia,'Noto Serif SC',serif; font-size:1rem; }
+        .hotel-floor-plan { display:grid; grid-template-columns:minmax(0,1fr) 104px minmax(0,1fr); gap:10px; padding:15px; background:var(--as-surface-soft); }
+        .hotel-wing { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; align-content:center; }
+        .sim-room { display:grid; place-items:center; min-height:42px; border:1px solid var(--as-border); border-bottom:3px solid #64748b; border-radius:7px; background:var(--as-clean-bg); color:var(--as-text); font-size:.67rem; font-weight:800; }
+        .sim-room small { display:block; margin-top:2px; color:var(--as-muted); font-size:.51rem; font-weight:700; }
+        .sim-room-occupied { border-bottom-color:#0f766e; background:var(--as-occ-bg); color:#0f766e; }
+        .sim-room-dirty { border-bottom-color:#d97706; background:var(--as-dirty-bg); color:#b45309; }
+        .sim-room-repair { border-bottom-color:#dc2626; background:var(--as-repair-bg); color:#b91c1c; }
+        .sim-core { display:grid; gap:7px; align-content:center; }
+        .sim-facility { display:grid; place-items:center; min-height:39px; border:1px solid var(--as-border); border-radius:8px; background:var(--as-surface); color:var(--as-muted); font-size:.65rem; font-weight:800; text-align:center; }
+        .sim-facility-elevator { border-color:var(--as-accent); color:var(--as-accent); background:var(--as-accent-soft); }
+        .hotel-sim-legend { display:flex; flex-wrap:wrap; gap:10px; padding:0 15px 14px; color:var(--as-muted); font-size:.67rem; }
+        .hotel-sim-legend span { display:inline-flex; align-items:center; gap:5px; }
+        .hotel-sim-legend i { width:7px; height:7px; border-radius:50%; background:#64748b; }
+        .hotel-sim-legend .sim-dot-occ { background:#0f766e; }
+        .hotel-sim-legend .sim-dot-dirty { background:#d97706; }
+        .hotel-sim-legend .sim-dot-repair { background:#dc2626; }
         @media (max-width: 800px) {
             .property-hero-copy { padding: 34px 28px 30px; }
             .property-hero-copy h1 { font-size: 2.15rem; }
@@ -321,6 +355,9 @@ __THEME_VARS__
             .room-tile:hover .room-tooltip, .room-tile:focus-within .room-tooltip { transform: translate(0, 0); }
             .room-tooltip::after { left: 24px; }
             .photo-strip { grid-template-columns: 1fr; }
+            .room-map { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .hotel-floor-plan { grid-template-columns:minmax(0,1fr) 76px minmax(0,1fr); gap:6px; padding:10px; }
+            .hotel-wing { grid-template-columns:repeat(2,minmax(0,1fr)); }
         }
         </style>
         """
@@ -483,12 +520,93 @@ def _render_room_map(filtered_rooms: list[dict], tickets: list[dict]) -> None:
                 f'<span><b>退房</b> {checkout} · <b>工单</b> {html.escape(ticket_text)}</span>'
                 f'</div></div>'
             )
+        # Keep every floor visually aligned to six columns.  Filtered floors
+        # can contain fewer than six rooms, so use inert dashed slots instead
+        # of allowing the final row to collapse into an uneven strip.
+        remainder = len(tiles) % 6
+        if remainder:
+            tiles.extend(
+                '<div class="room-tile room-tile-empty" aria-hidden="true">—</div>'
+                for _ in range(6 - remainder)
+            )
         st.markdown(
             f'<div class="floor-row"><div class="floor-badge">{html.escape(floor)}F</div>'
             f'<div class="room-map">{"".join(tiles)}</div></div>',
             unsafe_allow_html=True,
         )
     st.markdown("</div>", unsafe_allow_html=True)
+
+
+def _render_hotel_simulation(pms: dict, tickets: list[dict], selected_floor: str | None = None) -> None:
+    """Render a compact floor-plan simulation with rooms and service core.
+
+    This is an operational orientation view, not a construction drawing.  It
+    deliberately reuses the current PMS room state so the visual model cannot
+    drift from the room matrix shown directly below it.
+    """
+    floors = sorted({str(room.get("floor", "")) for room in pms.values() if room.get("floor") is not None}, key=lambda value: int(value or 0))
+    target_floor = str(selected_floor or "").strip()
+    if target_floor not in floors:
+        # The overview opens on a representative full floor instead of the
+        # small VIP floor, so the building silhouette reads immediately.
+        target_floor = "8" if "8" in floors else (floors[-1] if floors else "8")
+    rooms = sorted(
+        [room for room in pms.values() if str(room.get("floor", "")) == target_floor],
+        key=lambda room: str(room.get("room_no", "")),
+    )
+    if not rooms:
+        rooms = sorted(list(pms.values()), key=lambda room: str(room.get("room_no", "")))[:24]
+
+    status_classes = {
+        "在住": "sim-room-occupied",
+        "待清洁": "sim-room-dirty",
+        "维修中": "sim-room-repair",
+    }
+    ticket_rooms = {
+        str(ticket.get("room_no"))
+        for ticket in tickets
+        if ticket.get("status") in {"处理中", "需人工核验"}
+    }
+
+    def room_markup(room: dict) -> str:
+        room_no = html.escape(str(room.get("room_no", "—")))
+        status = str(room.get("room_status", "空净房"))
+        css_class = status_classes.get(status, "")
+        marker = " · 工单" if str(room.get("room_no")) in ticket_rooms else ""
+        return (
+            f'<div class="sim-room {css_class}" title="{room_no} · {html.escape(status)}" '
+            f'aria-label="{room_no} {html.escape(status)}">{room_no}<small>{html.escape(status[:2])}{marker}</small></div>'
+        )
+
+    midpoint = max(1, (len(rooms) + 1) // 2)
+    left_rooms = "".join(room_markup(room) for room in rooms[:midpoint])
+    right_rooms = "".join(room_markup(room) for room in rooms[midpoint:])
+    image_uri = _asset_data_uri("academic-house-entrance.jpg")
+    image_html = f'<img src="{image_uri}" alt="学术之家建筑" />' if image_uri else ""
+    st.markdown(
+        f'''
+        <section class="hotel-sim-shell" aria-label="酒店楼层仿真图">
+          <div class="hotel-sim-header"><strong>酒店空间仿真 · {html.escape(target_floor)}F</strong><span>房间 · 电梯 · 楼梯 · 服务核心</span></div>
+          <div class="hotel-sim-photo">{image_html}<span class="hotel-sim-photo-label">ACADEMIC HOUSE · FLOOR ORIENTATION</span></div>
+          <div class="hotel-floor-plan">
+            <div class="hotel-wing" aria-label="左侧客房区">{left_rooms}</div>
+            <div class="sim-core" aria-label="公共服务核心">
+              <div class="sim-facility sim-facility-elevator">🛗<br>电梯 A</div>
+              <div class="sim-facility sim-facility-elevator">🛗<br>电梯 B</div>
+              <div class="sim-facility">↕<br>安全楼梯</div>
+              <div class="sim-facility">🧹<br>布草服务</div>
+            </div>
+            <div class="hotel-wing" aria-label="右侧客房区">{right_rooms}</div>
+          </div>
+          <div class="hotel-sim-legend">
+            <span><i></i>空净房</span><span><i class="sim-dot-occ"></i>在住</span>
+            <span><i class="sim-dot-dirty"></i>待清洁</span><span><i class="sim-dot-repair"></i>维修中</span>
+            <span>悬停房间查看状态</span>
+          </div>
+        </section>
+        ''',
+        unsafe_allow_html=True,
+    )
 
 
 def _inventory_group(item: str) -> str:
@@ -549,6 +667,55 @@ def _render_inventory_board(orchestrator: HotelOrchestrator, state) -> None:
         st.markdown(f'<div class="borrowed-board">{"".join(borrowed_cards)}</div>', unsafe_allow_html=True)
 
 
+def _render_guest_blackboard(orchestrator: HotelOrchestrator) -> None:
+    """Show the guest-facing session blackboard beside the conversation tab."""
+    runtime = _runtime_for_ui(orchestrator)
+    snapshot = runtime.snapshot(GUEST_SESSION)
+    state = snapshot.state
+    st.markdown('<div class="eyebrow">SESSION BLACKBOARD</div>', unsafe_allow_html=True)
+    st.subheader("会话黑板")
+    st.caption("这里展示当前住客会话的可解释状态；它与运营中枢的内部审计视图分开，避免把调试 JSON 直接暴露给住客。")
+
+    m_c1, m_c2, m_c3, m_c4 = st.columns(4)
+    with m_c1:
+        st.metric("短期消息", f"{len(state.messages)} 条")
+        st.caption("L1 · Sliding Window")
+    with m_c2:
+        st.metric("当前房间", state.room_no or "待补全")
+        st.caption("L2 · 绑定房号")
+    with m_c3:
+        st.metric("进行中工单", sum(1 for ticket in state.tickets if ticket.get("status") == "处理中"))
+        st.caption("L4 · 服务总线")
+    with m_c4:
+        st.metric("主控 Agent", state.active_agent.split(" · ", 1)[0])
+        st.caption("交接中的责任方")
+
+    board_left, board_right = st.columns([1.15, 1.0])
+    with board_left:
+        st.markdown("#### 当前工作上下文")
+        pending_intent = state.pending.get("intent") if state.pending else None
+        st.markdown(
+            f"- **待补信息**：{html.escape(str(pending_intent or '无'))}\n"
+            f"- **情绪 / 风险**：{html.escape(str(state.sentiment or '平稳'))}\n"
+            f"- **滚动摘要**：{html.escape(str(state.rolling_summary or '活跃窗口内，无需摘要'))}"
+        )
+    with board_right:
+        st.markdown("#### 住客档案快照")
+        profile = state.guest_profile or {}
+        st.markdown(
+            f"- **称呼**：{html.escape(str(profile.get('guest_name', '未绑定')))}\n"
+            f"- **会员**：{html.escape(str(profile.get('member_level', '普通')))}\n"
+            f"- **房态**：{html.escape(str(profile.get('room_status', '待查')))}"
+        )
+
+    with st.expander("查看最近交接 Trace", expanded=False):
+        trace = list(state.last_trace or [])[-8:]
+        if trace:
+            st.dataframe(trace, width="stretch", hide_index=True)
+        else:
+            st.caption("当前会话还没有 Agent 交接记录。")
+
+
 @st.fragment(run_every=0.5)
 def _render_guest(orchestrator: HotelOrchestrator) -> None:
     runtime = _runtime_for_ui(orchestrator)
@@ -599,33 +766,8 @@ def _render_guest(orchestrator: HotelOrchestrator) -> None:
             else:
                 st.info(item["label"], icon="🛎️")
 
-    with st.expander("查看会话与工作状态", expanded=False):
-        m_c1, m_c2, m_c3, m_c4 = st.columns(4)
-        with m_c1:
-            st.markdown("**1️⃣ 短期会话 (L1)**")
-            st.caption("Sliding Window 轮次")
-            st.write(f"- 消息数: `{len(state.messages)}` 条")
-            st.write(f"- 滚动摘要: `{state.rolling_summary or '活跃窗口内'}`")
-        with m_c2:
-            st.markdown("**2️⃣ 工作黑板 (L2)**")
-            st.caption("Blackboard 跨 Agent 共享")
-            st.write(f"- 绑定房号: `{state.room_no or '待补全'}`")
-            st.write(f"- 待办挂起: `{state.pending.get('intent') if state.pending else '无'}`")
-            st.write(f"- 主控 Agent: `{state.active_agent}`")
-        with m_c3:
-            st.markdown("**3️⃣ 模拟住客档案**")
-            st.caption("本地 PMS 档案与权益核准")
-            prof = state.guest_profile or {}
-            st.write(f"- 住客: `{prof.get('guest_name', '未绑定')}`")
-            st.write(f"- 会员: `{prof.get('member_level', '普通')}`")
-            st.write(f"- 房态: `{prof.get('room_status', '待查')}`")
-        with m_c4:
-            st.markdown("**4️⃣ 公共总线 (L4)**")
-            st.caption("全店 PMS & 物资总线")
-            st.write(f"- 系统日期: `{getattr(state, 'current_date', '2026-10-01')}`")
-            st.write(f"- 全局工单: `{len(state.tickets)}` 张")
-            st.write(f"- 借用物资: `{len(state.borrowed_items)}` 件")
-
+    # The hidden compatibility input keeps existing AppTest flows stable. The
+    # visible composer is rendered once in the client conversation tab above.
     prompt = st.chat_input("例如：1128 送两条毛巾；也可以继续输入修改", key="guest-prompt")
     if prompt:
         try:
@@ -716,6 +858,8 @@ def _render_staff(orchestrator: HotelOrchestrator) -> None:
             filtered_rooms = [r for r in filtered_rooms if target in r["room_no"] or target in r.get("guest_name", "")]
 
         st.caption(f"共筛选出 {len(filtered_rooms)} 间客房 · 统一尺寸房间窗口 · 悬停查看详情")
+        sim_floor = None if sel_floor == "全部楼层" else sel_floor.replace("F VIP", "").replace("F", "")
+        _render_hotel_simulation(pms, tickets, sim_floor)
         _render_room_map(filtered_rooms, tickets)
 
     with right:
@@ -1043,16 +1187,21 @@ def main() -> None:
   跨日到期房态流转 + 次日预订保洁冲突预检
 """)
 
-    _render_entry_conversation(orchestrator)
+    client_chat, client_board = st.tabs([
+        "💬 住客对话",
+        "🧠 会话黑板",
+    ])
+    with client_chat:
+        _render_entry_conversation(orchestrator)
+        _render_guest(orchestrator)
+    with client_board:
+        _render_guest_blackboard(orchestrator)
 
-    guest, staff, harness, evolution = st.tabs([
-        "住客服务",
+    staff, harness, evolution = st.tabs([
         "运营中枢",
         "质量验收",
         "难例回归",
     ])
-    with guest:
-        _render_guest(orchestrator)
     with staff:
         _render_staff(orchestrator)
     with harness:
@@ -1063,4 +1212,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

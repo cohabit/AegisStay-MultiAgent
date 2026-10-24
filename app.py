@@ -108,6 +108,23 @@ def _render_property_hero(mode_text: str) -> None:
     )
 
 
+def _render_workspace_header(kicker: str, title: str, mode_text: str) -> None:
+    """Render a compact staff-facing header without a decorative photo wall."""
+    st.markdown(
+        f'''
+        <header class="workspace-header">
+            <div class="workspace-header-copy">
+                <span class="eyebrow">{html.escape(kicker)}</span>
+                <strong>{html.escape(title)}</strong>
+                <small>房态、工单、库存和部门协作使用同一份实时业务状态。</small>
+            </div>
+            <span class="workspace-header-meta">{html.escape(mode_text)}</span>
+        </header>
+        ''',
+        unsafe_allow_html=True,
+    )
+
+
 def _connect_cloud_model(api_key: str, base_url: str, model: str) -> tuple[HotelOrchestrator, dict]:
     """Configure and verify an OpenAI-compatible provider before switching the UI."""
     if not api_key.strip():
@@ -174,6 +191,7 @@ __THEME_VARS__
         [data-testid="stFormSubmitButton"] button, [data-testid="stFormSubmitButton"] button *, .stButton button[kind="primary"] { color: var(--as-accent-text) !important; -webkit-text-fill-color: var(--as-accent-text) !important; background: var(--as-accent) !important; border-color: var(--as-accent) !important; }
         .stApp button:disabled, .stApp button:disabled * { color: var(--as-muted) !important; -webkit-text-fill-color: var(--as-muted) !important; background: var(--as-surface-soft) !important; border-color: var(--as-border) !important; opacity: 1 !important; }
         [data-testid="stChatInput"] { display: none !important; }
+        .stBottom { display: none !important; }
         .stApp label, [data-testid="stMarkdownContainer"], [data-testid="stCaptionContainer"] { color: var(--as-text); }
         [data-testid="stAlert"], [data-testid="stExpander"] { border-color: var(--as-border); }
         [data-testid="stMetric"] { color: var(--as-text); }
@@ -222,30 +240,52 @@ __THEME_VARS__
         .conversation-dock p { position:relative; z-index:1; margin:0; color:var(--as-muted); font-size:.8rem; }
         .conversation-quick { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
         .conversation-quick span { padding:5px 9px; border:1px solid var(--as-border); border-radius:999px; color:var(--as-muted); background:var(--as-surface-soft); font-size:.68rem; }
-        .client-brand { display:flex; justify-content:space-between; align-items:center; gap:18px; margin: 8px 0 22px; padding: 10px 2px; color:var(--as-muted); font-size:.72rem; letter-spacing:.08em; }
+        .client-brand { display:flex; justify-content:space-between; align-items:center; gap:18px; margin: 8px 0 22px; padding: 10px 12px; color:var(--as-muted); font-size:.72rem; letter-spacing:.08em; border:1px solid color-mix(in srgb, var(--as-border) 72%, transparent); border-radius:14px; background:color-mix(in srgb, var(--as-surface) 60%, transparent); backdrop-filter:blur(10px); }
         .client-brand strong { color:var(--as-text); font-family:Georgia,'Noto Serif SC',serif; font-size:1.1rem; letter-spacing:0; }
-        .client-chat-stage { max-width: 920px; margin: 7vh auto 0; }
-        .client-chat-stage-active { margin-top: 1.2rem; }
-        .client-welcome { padding: 46px 44px 38px; border:1px solid var(--as-border); border-radius:24px; background:var(--as-surface); box-shadow:var(--as-shadow); text-align:center; animation:client-enter .55s ease both; }
+        .guest-workspace-marker, .client-chat-stage, .client-chat-stage-active, .client-chat-history, .client-composer { display:block; width:0; height:0; overflow:hidden; }
+        .guest-backdrop { position:fixed; inset:0; z-index:0; overflow:hidden; pointer-events:none; background:var(--as-bg); }
+        .guest-backdrop::before { content:''; position:absolute; inset:-20px; background-image:var(--guest-photo); background-size:cover; background-position:center; filter:blur(16px); transform:scale(1.06); opacity:.44; }
+        .guest-backdrop::after { content:''; position:absolute; inset:0; background:linear-gradient(135deg, color-mix(in srgb, var(--as-bg) 72%, transparent), color-mix(in srgb, var(--as-bg) 44%, transparent) 52%, color-mix(in srgb, var(--as-accent-soft) 58%, transparent)); }
+        .block-container:has(.guest-workspace-marker) { position:relative; z-index:1; max-width:1080px; min-height:calc(100vh - 3rem); padding-top:.45rem; padding-bottom:.8rem; overflow:hidden; }
+        .block-container:has(.guest-workspace-marker) .client-brand { margin:4px 0 12px; color:var(--as-text) !important; background:color-mix(in srgb, var(--as-surface) 86%, transparent); }
+        .block-container:has(.guest-workspace-marker) .client-brand span { color:var(--as-muted); }
+        .block-container:has(.guest-workspace-marker) .client-brand strong { font-size:1rem; }
+        .client-chat-stage { max-width: 920px; margin: 0 auto; }
+        .client-chat-stage-active { margin-top: 0; }
+        .client-welcome { max-width:820px; margin: clamp(3rem, 12vh, 7rem) auto 0; padding: 42px 44px 30px; border:1px solid color-mix(in srgb, var(--as-border) 86%, white); border-radius:24px; background:color-mix(in srgb, var(--as-surface) 88%, transparent); box-shadow:0 22px 56px rgba(16,42,67,.16); text-align:center; backdrop-filter:blur(13px); animation:client-enter .55s ease both; }
         .client-welcome-kicker { color:var(--as-accent); letter-spacing:.16em; font-size:.68rem; font-weight:800; }
         .client-welcome h1 { margin:14px 0 10px; color:var(--as-text); font-family:Georgia,'Noto Serif SC',serif; font-size:clamp(2rem,4vw,3.2rem); font-weight:600; }
         .client-welcome p { max-width:580px; margin:0 auto; color:var(--as-muted); line-height:1.8; }
-        .client-composer { max-width:820px; margin:18px auto 0; animation:client-composer-in .55s .08s ease both; }
-        .client-composer-active { max-width:920px; margin-top:16px; }
+        .st-key-client-composer-panel { max-width:820px; margin:14px auto 0; padding:0; animation:client-composer-in .55s .08s ease both; }
+        .block-container:has(.client-chat-stage-active) .st-key-client-composer-panel { max-width:920px; margin-top:10px; }
+        .block-container:has(.guest-workspace-marker) .st-key-client-composer-panel [data-testid="stForm"] { padding:10px 12px 8px; border:1px solid color-mix(in srgb, var(--as-border) 88%, white); border-radius:17px; background:color-mix(in srgb, var(--as-surface) 91%, transparent); box-shadow:0 14px 35px rgba(16,42,67,.11); backdrop-filter:blur(11px); }
         .client-identity { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin:14px 0 0; color:var(--as-muted); font-size:.7rem; }
         .client-identity span { padding:5px 9px; border:1px solid var(--as-border); border-radius:999px; background:var(--as-surface-soft); }
-        .client-active-head { display:flex; justify-content:space-between; align-items:end; gap:16px; margin-bottom:10px; padding:0 4px; }
+        .client-active-head { display:flex; justify-content:space-between; align-items:end; gap:16px; max-width:920px; margin:0 auto 8px; padding:0 4px; }
         .client-active-head strong { color:var(--as-text); font-family:Georgia,'Noto Serif SC',serif; font-size:1.3rem; font-weight:600; }
         .client-active-head span { color:var(--as-muted); font-size:.7rem; }
-        .client-chat-history { min-height:460px; padding:16px 18px; border:1px solid var(--as-border); border-radius:20px; background:var(--as-surface); box-shadow:var(--as-shadow); animation:client-expand .62s cubic-bezier(.2,.75,.25,1) both; }
-        .client-chat-history [data-testid="stChatMessage"] { border-bottom:1px solid color-mix(in srgb, var(--as-border) 55%, transparent); padding:13px 4px; }
-        .client-chat-history [data-testid="stChatMessage"]:last-child { border-bottom:0; }
+        .st-key-client-history-panel { width:100%; height:min(300px, calc(100vh - 260px)) !important; min-height:210px; max-height:300px; overflow-y:auto !important; padding:9px 18px 12px; border:1px solid var(--as-border); border-radius:20px; background:color-mix(in srgb, var(--as-surface) 94%, transparent); box-shadow:0 18px 42px rgba(16,42,67,.14); backdrop-filter:blur(11px); animation:client-expand .48s cubic-bezier(.2,.75,.25,1) both; }
+        .st-key-client-history-panel [data-testid="stChatMessage"] { border-bottom:1px solid color-mix(in srgb, var(--as-border) 55%, transparent); padding:11px 4px; }
+        .st-key-client-history-panel [data-testid="stChatMessage"]:last-child { border-bottom:0; }
+        .block-container:has(.guest-workspace-marker) .st-key-client-history-panel [data-testid="stVerticalBlock"] { gap:0; }
         .client-progress { margin:12px 0 0; padding:10px 13px; border-left:3px solid var(--as-accent); border-radius:9px; background:var(--as-surface-soft); color:var(--as-muted); font-size:.76rem; }
         .client-progress strong { color:var(--as-text); }
+        .block-container:has(.guest-workspace-marker) [data-testid="stAlert"] { margin:8px auto 0; padding:8px 12px; max-width:920px; font-size:.76rem; line-height:1.35; }
         @keyframes client-enter { from { opacity:0; transform:translateY(12px) scale(.985); } to { opacity:1; transform:translateY(0) scale(1); } }
         @keyframes client-composer-in { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
         @keyframes client-expand { from { opacity:0; transform:translateY(26px) scale(.98); max-height:320px; } to { opacity:1; transform:translateY(0) scale(1); max-height:900px; } }
-        @media (prefers-reduced-motion: reduce) { .client-welcome, .client-composer, .client-chat-history { animation:none; } }
+        @media (prefers-reduced-motion: reduce) { .client-welcome, .st-key-client-composer-panel, .st-key-client-history-panel { animation:none; } }
+        @media (max-width: 800px) {
+            .block-container:has(.guest-workspace-marker) { min-height:calc(100vh - 1.2rem); padding-left:.75rem; padding-right:.75rem; }
+            .client-welcome { margin-top:clamp(2rem, 8vh, 4rem); padding:30px 22px 24px; }
+            .client-active-head { align-items:start; flex-direction:column; gap:4px; }
+            .st-key-client-history-panel { height:min(280px, calc(100vh - 300px)) !important; }
+        }
+        .workspace-header { display:flex; align-items:end; justify-content:space-between; gap:20px; margin:2px 0 18px; padding:4px 2px 14px; border-bottom:1px solid var(--as-border); }
+        .workspace-header-copy { display:grid; gap:5px; }
+        .workspace-header strong { color:var(--as-text); font-family:Georgia,'Noto Serif SC',serif; font-size:1.55rem; font-weight:600; }
+        .workspace-header small { color:var(--as-muted); font-size:.76rem; }
+        .workspace-header-meta { color:var(--as-muted); font-size:.7rem; letter-spacing:.08em; text-align:right; }
         @keyframes as-rise { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
         @keyframes as-pulse { 0%, 100% { box-shadow:0 0 0 0 color-mix(in srgb, var(--as-accent) 0%, transparent); } 50% { box-shadow:0 0 0 6px color-mix(in srgb, var(--as-accent) 24%, transparent); } }
         @media (prefers-reduced-motion: reduce) { .conversation-dock, .conversation-live-dot { animation:none; } }
@@ -421,8 +461,9 @@ def _staff_action(orchestrator: HotelOrchestrator, method: str, *args):
         return result
 
 
+@st.fragment(run_every=1.0)
 def _render_entry_conversation(orchestrator: HotelOrchestrator) -> None:
-    """Render the guest-only client with an empty-to-active chat transition."""
+    """Render a focused guest chat with a fixed history viewport and local composer."""
     runtime = _runtime_for_ui(orchestrator)
     snapshot = runtime.snapshot(GUEST_SESSION)
     state = snapshot.state
@@ -436,12 +477,19 @@ def _render_entry_conversation(orchestrator: HotelOrchestrator) -> None:
     )
     identity_html = f'<div class="client-identity"><span>{html.escape(identity_text)}</span></div>'
 
+    background_uri = _asset_data_uri("campus-lake.jpg")
+    background_style = f"--guest-photo:url('{background_uri}');" if background_uri else ""
+    st.markdown(
+        f'<div class="guest-workspace-marker" aria-hidden="true"></div>'
+        f'<div class="guest-backdrop" style="{html.escape(background_style, quote=True)}" aria-hidden="true"></div>',
+        unsafe_allow_html=True,
+    )
     st.markdown(
         '<div class="client-brand"><strong>学术之家 · 住客服务</strong><span>FRONT DESK · PRIVATE SESSION</span></div>',
         unsafe_allow_html=True,
     )
     stage_class = "client-chat-stage client-chat-stage-active" if has_conversation else "client-chat-stage"
-    st.markdown(f'<section class="{stage_class}">', unsafe_allow_html=True)
+    st.markdown(f'<div class="{stage_class}" aria-hidden="true"></div>', unsafe_allow_html=True)
 
     if not has_conversation:
         st.markdown(
@@ -461,29 +509,28 @@ def _render_entry_conversation(orchestrator: HotelOrchestrator) -> None:
             f'<span>{icon} {html.escape(label)} · {html.escape(identity_text)}</span></div>',
             unsafe_allow_html=True,
         )
-        st.markdown('<div class="client-chat-history">', unsafe_allow_html=True)
-        chat = st.container(height=500)
-        with chat:
+        st.markdown('<div class="client-chat-history" aria-hidden="true"></div>', unsafe_allow_html=True)
+        with st.container(height=300, border=True, key="client-history-panel", autoscroll=True):
             for message in state.messages:
                 with st.chat_message("user" if message["role"] == "user" else "assistant"):
                     st.write(message["content"])
-        st.markdown('</div>', unsafe_allow_html=True)
 
-    composer_class = "client-composer client-composer-active" if has_conversation else "client-composer"
-    st.markdown(f'<div class="{composer_class}">', unsafe_allow_html=True)
-    with st.form("entry-conversation-form", clear_on_submit=True, border=False):
-        prompt = st.text_input(
-            "告诉前台你需要什么",
-            placeholder="描述送物、报修、退房或咨询需求",
-            max_chars=240,
-            label_visibility="collapsed",
-        )
-        submitted = st.form_submit_button("发送给前台", type="primary", use_container_width=True)
-    st.markdown('</div>', unsafe_allow_html=True)
+    st.markdown(
+        '<div class="client-composer" aria-hidden="true"></div>',
+        unsafe_allow_html=True,
+    )
+    with st.container(key="client-composer-panel"):
+        with st.form("entry-conversation-form", clear_on_submit=True, border=False):
+            prompt = st.text_input(
+                "告诉前台你需要什么",
+                placeholder="描述送物、报修、退房或咨询需求",
+                max_chars=240,
+                label_visibility="collapsed",
+            )
+            submitted = st.form_submit_button("发送给前台", type="primary", use_container_width=True)
 
     if active_tasks:
         st.info("正在处理您的请求，您可以继续输入补充、修改或取消。")
-        st.markdown('<div class="client-progress"><strong>服务处理中</strong> · 你可以继续补充、修改或取消当前请求。</div>', unsafe_allow_html=True)
         if st.button("取消当前请求", key="cancel-current-task"):
             try:
                 runtime.submit(GUEST_SESSION, "不用了", force_rules=orchestrator.force_rules)
@@ -495,8 +542,6 @@ def _render_entry_conversation(orchestrator: HotelOrchestrator) -> None:
         if progress_items:
             latest = progress_items[-1]
             st.markdown(f'<div class="client-progress"><strong>服务进度</strong> · {html.escape(str(latest.get("label", "已收到请求")))}</div>', unsafe_allow_html=True)
-
-    st.markdown('</section>', unsafe_allow_html=True)
 
     # Retain the hidden input for existing AppTest flows; customers see only
     # the composer above because CSS hides this compatibility control.
@@ -864,10 +909,6 @@ def _render_staff(orchestrator: HotelOrchestrator) -> None:
     repair = sum(r.get("room_status") == "维修中" for r in pms.values())
     pending_tickets = sum(ticket["status"] == "处理中" for ticket in tickets)
     alerts = sum(ticket.get("risk_level") == "红色" and ticket["status"] == "处理中" for ticket in tickets)
-
-    st.markdown('<div class="eyebrow">OPERATIONS CONTROL CENTER</div>', unsafe_allow_html=True)
-    st.subheader("酒店运营管理中枢")
-    _render_photo_strip()
 
     cur_date = getattr(state, "current_date", "2026-10-01")
     date_col1, date_col2 = st.columns([3, 1.2])
@@ -1256,15 +1297,16 @@ def main() -> None:
     if workspace == "住客端":
         _render_entry_conversation(orchestrator)
     elif workspace == "运营中枢":
-        _render_property_hero(mode_text)
+        _render_workspace_header("OPERATIONS CONTROL CENTER", "酒店运营管理中枢", mode_text)
         _render_staff(orchestrator)
     elif workspace == "质量验收":
-        _render_property_hero(mode_text)
+        _render_workspace_header("QUALITY & EVALUATION", "质量验收与回归", mode_text)
         _render_harness(orchestrator)
     else:
-        _render_property_hero(mode_text)
+        _render_workspace_header("EXAMPLES & REGRESSION", "难例回归与 Few-Shot 示例库", mode_text)
         _render_evolution(orchestrator)
 
 
 if __name__ == "__main__":
     main()
+

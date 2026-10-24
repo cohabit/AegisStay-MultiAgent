@@ -56,9 +56,21 @@ class VisualContractTests(unittest.TestCase):
     def test_client_chat_has_empty_and_active_layout_contract(self):
         self.assertIn('client-chat-stage', APP_SOURCE)
         self.assertIn('client-chat-history', APP_SOURCE)
+        self.assertIn('client-history-panel', APP_SOURCE)
+        self.assertIn('height=300', APP_SOURCE)
+        self.assertIn('guest-workspace-marker', APP_SOURCE)
+        self.assertIn('guest-backdrop', APP_SOURCE)
+        self.assertIn(':has(.guest-workspace-marker)', APP_SOURCE)
+        self.assertIn('.stBottom { display: none !important; }', APP_SOURCE)
         self.assertIn('client-composer', APP_SOURCE)
         self.assertIn('client-chat-stage-active', APP_SOURCE)
         self.assertIn('入住凭证', APP_SOURCE)
+        self.assertIn('@st.fragment(run_every=1.0)\ndef _render_entry_conversation', APP_SOURCE)
+
+    def test_staff_workspace_is_compact_and_image_free(self):
+        staff_source = APP_SOURCE.split('def _render_staff', 1)[1].split('def _render_', 1)[0]
+        self.assertIn('workspace-header', APP_SOURCE)
+        self.assertNotIn('_render_photo_strip()', staff_source)
 
     def test_hotel_simulation_contains_shared_state_facilities(self):
         for marker in ("hotel-sim-shell", "hotel-building-overview", "building-floor-row", "sim-facility-elevator", "安全楼梯", "布草服务", "pms", "tickets"):
@@ -74,3 +86,4 @@ class VisualContractTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+

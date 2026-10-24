@@ -13,6 +13,7 @@ import streamlit as st
 from hotel_core import HotelOrchestrator
 from agent_runtime import RuntimeBusy, SessionManager
 from deployed_ui import guest_history_controls, guest_history_page
+from hotel_catalog import ITEM_CATALOG
 
 GUEST_SESSION = "streamlit-guest"
 
@@ -54,12 +55,8 @@ THEME_PALETTES = {
     },
 }
 
-INVENTORY_GROUPS = {
-    "布草": ("浴巾", "毛巾", "枕头", "被子", "拖鞋"),
-    "客耗": ("矿泉水", "牙刷", "洗发水", "沐浴露", "梳子", "剃须刀"),
-    "借用设备": ("吹风机", "雨伞", "充电器"),
-    "餐饮": ("早餐券",),
-}
+INVENTORY_GROUPS = {group: tuple(name for name, meta in ITEM_CATALOG.items() if meta["group"] == group)
+                    for group in ("布草", "客耗", "借用设备", "餐饮")}
 INVENTORY_ICONS = {
     "浴巾": "▤", "毛巾": "▥", "枕头": "◫", "被子": "▰", "拖鞋": "⌁",
     "矿泉水": "◉", "牙刷": "✦", "洗发水": "◍", "沐浴露": "◌", "梳子": "≋", "剃须刀": "⌇",
@@ -277,6 +274,13 @@ __THEME_VARS__
         .client-welcome-kicker { color:var(--as-accent); letter-spacing:.16em; font-size:.68rem; font-weight:800; }
         .client-welcome h1 { margin:14px 0 10px; color:var(--as-text); font-family:Georgia,'Noto Serif SC',serif; font-size:clamp(2rem,4vw,3.2rem); font-weight:600; }
         .client-welcome p { max-width:580px; margin:0 auto; color:var(--as-muted); line-height:1.8; }
+        .guest-arrival { display:grid; grid-template-columns:1.15fr 1fr; max-width:920px; margin:12px auto 4px; overflow:hidden; border:1px solid var(--as-border); border-radius:24px; background:color-mix(in srgb, var(--as-surface) 95%, transparent); box-shadow:0 22px 54px rgba(16,42,67,.13); animation:client-enter .55s ease both; }
+        .guest-arrival-photo { position:relative; display:flex; align-items:center; background:var(--as-surface-soft); }
+        .guest-arrival-photo img { display:block; width:100%; height:auto; aspect-ratio:1280/718; object-fit:contain; }
+        .guest-arrival-photo span { position:absolute; left:18px; bottom:14px; padding:5px 9px; border-radius:5px; color:#fff; background:rgba(10,31,48,.72); font-size:.65rem; letter-spacing:.1em; }
+        .guest-arrival .client-welcome { margin:0; padding:30px 27px; border:0; border-radius:0; background:transparent; box-shadow:none; text-align:left; }
+        .guest-arrival .client-welcome h1 { margin:14px 0; font-size:clamp(1.6rem,3vw,2.35rem); }
+        .guest-arrival .client-welcome p { margin:0; font-size:.9rem; }
         .st-key-client-composer-panel { max-width:820px; margin:14px auto 0; padding:0; animation:client-composer-in .55s .08s ease both; }
         .block-container:has(.client-chat-stage-active) .st-key-client-composer-panel { max-width:920px; margin-top:10px; }
         .block-container:has(.guest-workspace-marker) .st-key-client-composer-panel [data-testid="stForm"] { padding:10px 12px 8px; border:1px solid color-mix(in srgb, var(--as-border) 88%, white); border-radius:17px; background:color-mix(in srgb, var(--as-surface) 91%, transparent); box-shadow:0 14px 35px rgba(16,42,67,.11); backdrop-filter:blur(11px); }
@@ -299,6 +303,9 @@ __THEME_VARS__
         @keyframes client-expand { from { opacity:0; transform:translateY(18px) scale(.99); } to { opacity:1; transform:translateY(0) scale(1); } }
         @media (prefers-reduced-motion: reduce) { .client-welcome, .st-key-client-composer-panel, .st-key-client-history-panel { animation:none; } }
         @media (max-width: 800px) {
+            .guest-arrival { grid-template-columns:1fr; margin-top:9px; }
+            .guest-arrival .client-welcome { padding:18px 22px 14px; }
+            .guest-arrival .client-welcome h1 { margin:8px 0; font-size:1.8rem; }
             .block-container:has(.guest-workspace-marker) { padding-left:.75rem; padding-right:.75rem; }
             .guest-campus-banner { height:82px; margin-bottom:9px; }
             .client-welcome { margin-top:clamp(2rem, 8vh, 4rem); padding:30px 22px 24px; }
@@ -313,6 +320,9 @@ __THEME_VARS__
             .block-container:has(.guest-workspace-marker) { --as-chat-history-height:clamp(150px, calc(100dvh - 480px), 240px); }
             .st-key-client-composer-panel { margin-top:4px; }
             .client-progress { margin-top:5px; padding:7px 12px; }
+        }
+        @media (min-width:600px) and (max-height:760px) {
+            .guest-arrival { grid-template-columns:1.15fr 1fr; }
         }
         @media (max-width: 520px) {
             .client-brand strong { white-space:nowrap; }
@@ -533,7 +543,8 @@ def _render_entry_conversation(orchestrator: HotelOrchestrator) -> None:
         if background_uri
         else '<div class="guest-campus-banner"><span>ACADEMIC HOUSE · CAMPUS</span></div>'
     )
-    st.markdown(banner_html, unsafe_allow_html=True)
+    if has_conversation:
+        st.markdown(banner_html, unsafe_allow_html=True)
     st.markdown(
         '<div class="client-brand"><strong>学术之家 · 住客服务</strong><span>FRONT DESK · PRIVATE SESSION</span></div>',
         unsafe_allow_html=True,
@@ -543,12 +554,15 @@ def _render_entry_conversation(orchestrator: HotelOrchestrator) -> None:
 
     if not has_conversation:
         st.markdown(
+            '<section class="guest-arrival">'
+            f'<div class="guest-arrival-photo"><img src="{background_uri}" alt="完整校园湖景、学术之家建筑与湖面倒影" />'
+            '<span>ACADEMIC HOUSE · BY THE LAKE</span></div>'
             '<div class="client-welcome">'
             '<div class="client-welcome-kicker">ACADEMIC HOUSE · FRONT DESK</div>'
             '<h1>需要什么服务？</h1>'
-            '<p>直接描述你的需求，前台会先确认入住身份，再协调送物、报修、退房和酒店咨询。</p>'
+            '<p>欢迎来到学术之家。告诉我你的需求，我来协调送物、报修和酒店咨询。</p>'
             f'{identity_html}'
-            '</div>',
+            '</div></section>',
             unsafe_allow_html=True,
         )
     else:
@@ -578,7 +592,7 @@ def _render_entry_conversation(orchestrator: HotelOrchestrator) -> None:
                 max_chars=240,
                 label_visibility="collapsed",
             )
-            submitted = st.form_submit_button("发送给前台", type="primary", use_container_width=True)
+            submitted = st.form_submit_button("发送给前台", type="primary", width="stretch")
 
     if active_tasks:
         st.info("正在处理您的请求，您可以继续输入补充、修改或取消。")
@@ -872,7 +886,7 @@ def _render_inventory_board(orchestrator: HotelOrchestrator, state) -> None:
             f'<div class="inventory-card-top"><span class="inventory-icon">{INVENTORY_ICONS.get(item, "•")}</span>'
             f'<span class="inventory-group">{html.escape(group)}</span></div>'
             f'<div class="inventory-item">{html.escape(item)}</div>'
-            f'<div><span class="inventory-number">{quantity}</span><span class="inventory-unit">件可用</span></div>'
+            f'<div><span class="inventory-number">{quantity}</span><span class="inventory-unit">{html.escape(ITEM_CATALOG.get(item, {}).get("unit", "件"))}可用</span></div>'
             f'<div class="inventory-bar"><span style="width:{percent}%"></span></div>'
             f'<span class="inventory-state">{label}{html.escape(reserved_note)}</span></div>'
         )
@@ -967,10 +981,11 @@ def _render_staff(orchestrator: HotelOrchestrator) -> None:
         summary_txt = f"已压缩生成滚动摘要" if state.rolling_summary else "无需压缩"
         st.markdown(f"**📅 业务系统当前日期**：`{cur_date}` &nbsp;&nbsp;|&nbsp;&nbsp; **PMS 共享总线**：🟢 联机 &nbsp;&nbsp;|&nbsp;&nbsp; **分层记忆**：`{summary_txt}`")
     with date_col2:
-        if st.button("🌙 执行夜审跨日流转 (Night Audit)", help="将系统推进至次日，自动流转到期未退客房并重置会员权益"):
+        if st.button("🌙 执行夜审跨日流转 (Night Audit)", help="推进营业日期、标记到期待结房间并重置日配额；当前实现不执行财务结账，也不清空住客对话"):
             audit_result = runtime.night_audit()
             st.success(f"已完成夜审！日期流转至 {audit_result['date']}，处理 {audit_result['actions_count']} 条到期记录")
             st.rerun()
+    st.caption("夜审用于切换酒店营业日，不是清空聊天；财务对账和实际清扫验收仍由员工办理。")
 
     # KPI Metrics
     m1, m2, m3, m4, m5, m6 = st.columns(6)

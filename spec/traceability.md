@@ -4,21 +4,21 @@
 
 `implemented` 表示约定范围内的代码和测试存在，`partial` 表示有明确未执行/未交付范围；二者都不代表本次运行PASS。本文定义追溯方案，不嵌入可变成绩；每次执行前为 `PENDING_RUN`，完成后只认对应manifest和独立验收记录。由集成人员在源码稳定后运行统一入口。范围固定 `offline-code-baseline`，`field_readiness=NOT_VERIFIED`，FIELD-01…FIELD-06 均为 `TARGET_NOT_RUN`。
 
-JSON 顶层 `schema_version=1`；`requirements` 恰含REQ-01…REQ-16，每项对应同号AC/EXP，`tests` 仅写真实完整unittest方法，当前合计156个唯一方法；`evidence` 仅写统一目录实际文件名。未来FUT不计入当前16项。机器校验只证明方法可加载且在本次成功的完整套件里实际执行；方法是否支撑业务要求还须检查断言语义。
+JSON 顶层 `schema_version=1`；`requirements` 恰含REQ-01…REQ-16，每项对应同号AC/EXP，`tests` 仅写真实完整unittest方法，当前合计170个唯一方法；`evidence` 仅写统一目录实际文件名。未来FUT不计入当前16项。机器校验只证明方法可加载且在本次成功的完整套件里实际执行；方法是否支撑业务要求还须检查断言语义。
 
 | 要求 / 验收 / 实验 | 内容 | 实现状态 | 方法数 | 覆盖边界 |
 | --- | --- | --- | --- | --- |
-| REQ-01 / AC-01 / EXP-01 | 入住凭证与入住/会话绑定 | `implemented` | 4 | 授权、跨房、过期、撤销、换客与在途撤销；不是SSO联调。 |
+| REQ-01 / AC-01 / EXP-01 | 入住凭证与入住/会话绑定 | `implemented` | 5 | 授权、跨房、过期、撤销、换客与在途撤销；不是SSO联调。 |
 | REQ-02 / AC-02 / EXP-02 | 岗位授权与必要字段 | `implemented` | 3 | 服务端403和字段过滤；页面隐藏不替代授权。 |
-| REQ-03 / AC-03 / EXP-03 | 复合FAQ与学校未知政策 | `implemented` | 10 | standard复合基线与academic核验分开；未知政策模板仍须FIELD-04审核。 |
+| REQ-03 / AC-03 / EXP-03 | 复合FAQ与学校未知政策 | `implemented` | 11 | standard复合基线与academic核验分开；未知政策模板仍须FIELD-04审核。 |
 | REQ-04 / AC-04 / EXP-04 | 补槽与房号边界 | `implemented` | 6 | 演示补槽不授予部署跨房权限；模型提取使用stub。 |
-| REQ-05 / AC-05 / EXP-05 | 异步版本、取消与并发 | `implemented` | 21 | Event/Barrier受控竞态和队列保护；不证明生产容量。 |
-| REQ-06 / AC-06 / EXP-06 | 送物生命周期与目标定位 | `implemented` | 18 | ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒绝。 |
-| REQ-07 / AC-07 / EXP-07 | 提案核验与风险升级 | `implemented` | 7 | 错物/错房/虚构库存/风险降级拒绝；人工核验不补派被拒工单。 |
+| REQ-05 / AC-05 / EXP-05 | 异步版本、取消与并发 | `implemented` | 23 | Event/Barrier受控竞态和队列保护；不证明生产容量。 |
+| REQ-06 / AC-06 / EXP-06 | 送物生命周期与目标定位 | `implemented` | 22 | ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒绝。 |
+| REQ-07 / AC-07 / EXP-07 | 提案核验与风险升级 | `implemented` | 11 | 错物/错房/虚构库存/风险降级拒绝；人工核验不补派被拒工单。 |
 | REQ-08 / AC-08 / EXP-08 | 单写入、原子检查点与回滚 | `implemented` | 4 | 单库第二writer拒绝、聊天/员工故障回滚；非真实断电实验。 |
 | REQ-09 / AC-09 / EXP-09 | 持久幂等与重试 | `implemented` | 4 | 同载荷复用run_id，重启/裁剪仍不重复；改载荷409。 |
-| REQ-10 / AC-10 / EXP-10 | 消息归档、日期恢复与隔离 | `implemented` | 19 | 模型窗口与完整归档分层；112条分页身份/顺序/去重、116条重启恢复及两端UI历史页隔离均有断言。 |
-| REQ-11 / AC-11 / EXP-11 | 学术待遇人工核验与已知餐券保护 | `implemented` | 7 | 已知餐券表达、保洁直调/改券保护已实现；有4方法红绿和81项焦点回归。不是任意语言或真实发券证明。 |
+| REQ-10 / AC-10 / EXP-10 | 消息归档、日期恢复与隔离 | `implemented` | 20 | 模型窗口与完整归档分层；112条分页身份/顺序/去重、116条重启恢复及两端UI历史页隔离均有断言。 |
+| REQ-11 / AC-11 / EXP-11 | 学术待遇人工核验与已知餐券保护 | `implemented` | 8 | 已知餐券表达、保洁直调/改券保护已实现；有4方法红绿和81项焦点回归。不是任意语言或真实发券证明。 |
 | REQ-12 / AC-12 / EXP-12 | 部门回执、夜审与回收待检 | `implemented` | 5 | 夜审日期、借用品通知和回收待检；不等价外部财务夜审。 |
 | REQ-13 / AC-13 / EXP-13 | API工作台与岗位视图 | `implemented` | 3 | AppTest经HotelApi/TestClient访问唯一临时API；两进程/容器仍须FIELD-01。 |
 | REQ-14 / AC-14 / EXP-14 | 配置、备份、部署与硅基流动连接预检 | `partial` | 8 | 本地配置/备份和 MODEL-CONN-01 代码预检有测试；当前镜像、Compose、卷权限、连续现场探测、聊天 canary 与现场恢复未执行。 |
@@ -49,6 +49,7 @@ REQ-11焦点证据：已忽略的`.artifacts/verification/task1-coupon/red.log`�
 - `tests.test_deployment.DeploymentTests.test_revocation_and_expiry_invalidate_pass`
 - `tests.test_deployment.DeploymentTests.test_turnover_revokes_previous_occupant`
 - `tests.test_deployment.DeploymentTests.test_revoked_inflight_request_cannot_commit`
+- `tests.test_hotel_readiness.ConcurrentGuestApiTests.test_new_stay_has_new_history_and_preferences_old_pass_is_invalid`
 
 ### REQ-02 / AC-02 / EXP-02
 
@@ -76,6 +77,7 @@ standard复合基线与academic核验分开；未知政策模板仍须FIELD-04�
 - `tests.test_service_reliability.DeliveryReliabilityTests.test_delivery_speed_negation_is_not_an_order_replacement`
 - `tests.test_service_reliability.DeliveryReliabilityTests.test_emotion_alone_cannot_authorize_cloud_invented_service`
 - `tests.test_service_reliability.DeliveryReliabilityTests.test_emotion_or_denied_manager_is_not_a_complaint_under_rules_or_model`
+- `tests.test_hotel_readiness.HotelReadinessTests.test_service_three_states_and_review_counts_do_not_invent_availability`
 
 ### REQ-04 / AC-04 / EXP-04
 
@@ -117,6 +119,8 @@ Event/Barrier受控竞态和队列保护；不证明生产容量。
 - `tests.test_service_reliability.DeliveryReliabilityTests.test_batch_cancel_with_new_or_replacement_request_requires_clarification`
 - `tests.test_service_reliability.DeliveryReliabilityTests.test_cross_room_batch_command_cannot_interrupt_current_request`
 - `tests.test_service_reliability.DeliveryReliabilityTests.test_cancel_all_checkout_is_not_interpreted_as_delivery_cancellation`
+- `tests.test_hotel_readiness.HotelReadinessTests.test_new_regular_item_cancellation_restores_only_reserved_stock`
+- `tests.test_hotel_readiness.ConcurrentGuestApiTests.test_eight_guest_clients_share_stock_and_cancel_only_their_own_reservation`
 
 ### REQ-06 / AC-06 / EXP-06
 
@@ -142,6 +146,10 @@ ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒�
 - `tests.test_service_reliability.DeliveryReliabilityTests.test_batch_cancellation_requests_staff_pickup_for_completed_delivery`
 - `tests.test_service_reliability.DeliveryReliabilityTests.test_unknown_items_in_additions_conjunctions_and_polite_requests_are_not_dropped`
 - `tests.test_service_reliability.DeliveryReliabilityTests.test_catalog_validation_also_applies_to_direct_department_dispatch`
+- `tests.test_hotel_readiness.HotelReadinessTests.test_regular_catalog_has_at_least_24_stocked_items_and_safe_metadata`
+- `tests.test_hotel_readiness.HotelReadinessTests.test_stock_question_uses_current_inventory_without_model_or_ticket`
+- `tests.test_hotel_readiness.HotelReadinessTests.test_catalog_question_does_not_swallow_delivery_or_cancellation`
+- `tests.test_hotel_readiness.HotelReadinessTests.test_spoken_delivery_fillers_are_not_unknown_products`
 
 ### REQ-07 / AC-07 / EXP-07
 
@@ -156,6 +164,10 @@ ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒�
 - `tests.test_streamlit.GuestInteractionTests.test_staff_can_review_conflict_without_bypassing_validation`
 - `tests.test_app.MultiAgentFlowTests.test_angry_ticket_gets_red_risk_alert`
 - `tests.test_service_reliability.DeliveryReliabilityTests.test_supervisor_rejects_child_that_silently_drops_unknown_item`
+- `tests.test_hotel_readiness.HotelReadinessTests.test_broken_bath_is_repair_not_a_service_catalog_question`
+- `tests.test_hotel_readiness.HotelReadinessTests.test_smoke_or_electric_leak_is_high_risk_even_if_model_says_chitchat`
+- `tests.test_hotel_readiness.HotelReadinessTests.test_delivery_urgency_is_medium_but_explicitly_not_urgent_remains_low`
+- `tests.test_hotel_readiness.HotelReadinessTests.test_explicit_denial_of_smoke_does_not_raise_an_ordinary_light_repair`
 
 ### REQ-08 / AC-08 / EXP-08
 
@@ -204,6 +216,7 @@ ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒�
 - `tests.test_guest_history_ui.DeployedGuestHistoryUITests.test_deployed_main_chat_reads_authorized_archive`
 - `tests.test_guest_history_ui.DeployedGuestHistoryUITests.test_deployed_can_reach_messages_beyond_one_hundred`
 - `tests.test_guest_history_ui.DeployedGuestHistoryUITests.test_changed_guest_pass_discards_previous_history_page`
+- `tests.test_hotel_readiness.HotelReadinessTests.test_catalog_expansion_does_not_invent_stock_in_existing_database`
 
 ### REQ-11 / AC-11 / EXP-11
 
@@ -218,6 +231,7 @@ ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒�
 - `tests.test_deployment.DeploymentTests.test_academic_housekeeping_cannot_dispatch_coupons_directly`
 - `tests.test_deployment.DeploymentTests.test_academic_housekeeping_cannot_replace_delivery_with_coupons`
 - `tests.test_deployment.DeploymentTests.test_academic_coupon_replacement_preserves_existing_delivery`
+- `tests.test_hotel_readiness.HotelReadinessTests.test_room_access_and_academic_vouchers_queries_require_verification`
 
 ### REQ-12 / AC-12 / EXP-12
 

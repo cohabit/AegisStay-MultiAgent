@@ -18,6 +18,8 @@ REQ-11 的已知送物措辞绕过已修复：学术模式已知餐券表达进�
 
 `implemented` / `partial` / `planned` 描述代码覆盖状态；`PASS` / `FAIL` / `PENDING_RUN` / `TARGET_NOT_RUN` 描述指定环境、代码来源与运行的证据状态，两者不得互相替代。统一入口清单范围固定为 `scope=offline-code-baseline`，`field_readiness=NOT_VERIFIED`；离线通过不会把现场状态改为已验收。
 
+酒店常规目录、设施三态、风险分级与 8 位独立住客争用同一库存的新增门槛见[酒店服务完善规格](hotel_readiness.md)。真实模型合成联调独立记录逐条返回、状态与库存，不能混入离线 Harness 分母，也不能外推准确率或生产容量。
+
 ## 2. 自动证据的硬门槛
 
 在仓库根目录用项目 Python 执行：

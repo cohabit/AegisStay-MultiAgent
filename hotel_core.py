@@ -17,6 +17,7 @@ from types import SimpleNamespace
 from typing import Any, Callable
 
 from agent_protocol import AgentConflict, TaskInterrupted, parse_delivery_command, validate_department_ticket
+from hotel_catalog import ITEM_CATALOG, load_service_catalog
 
 ROOT = Path(__file__).resolve().parent
 DEPARTMENTS = {"送物": "楼层保洁", "工程报修": "工程部", "客诉紧急": "大堂经理", "续住申请": "前台接待", "票券服务": "礼宾部"}
@@ -220,6 +221,7 @@ class HotelState:
     stay_id: str | None = None
     session_id: str | None = None
     neutral_address: bool = False
+    service_feedback: list[dict[str, Any]] = field(default_factory=list)
 
 
 def _load_env_or_config() -> None:
@@ -520,6 +522,18 @@ def _positive_complaint_text(text: str) -> str:
     return re.sub(r"(?:大堂)?经理(?:就|先)?(?:不需要|不用|不要|别)(?:来|介入|联系|处理|参与)", "", text)
 
 
+def _delivery_priority(text: str) -> str:
+    urgency = r"(?:急用|急需|尽快|马上|加急|赶时间|着急|很急)"
+    positive = re.sub(r"(?:不用|不必|不要|无需|不需要)(?:那么|很|再)?" + urgency + r"|不(?:着)?急", "", text)
+    return "中" if re.search(urgency, positive) else "低"
+
+
+def _positive_risk_text(text: str) -> str:
+    risk = r"(?:冒烟|漏电|着火|火警|被困|受伤|漏水|断电|停电)"
+    negative = r"(?<!不是)(?<!并非)(?:没有|并未|不是|未见|不存在|没)(?:出现)?"
+    return re.sub(negative + risk + r"(?:\s*(?:和|或|及|、|也)(?:没有|未见|没)?" + risk + r")*", "", text)
+
+
 def _rules_extract(text: str, knowledge: HotelKnowledge) -> dict[str, Any]:
     compact = re.sub(r"\s+", "", text)
     resolution_phrases = (
@@ -552,7 +566,7 @@ def _rules_extract(text: str, knowledge: HotelKnowledge) -> dict[str, Any]:
     explicit_delay = any(w in compact for w in ("延迟", "延时", "推迟", "晚点", "晚退"))
     if checkout_policy_question and not explicit_delay:
         late = False
-    broken = any(w in text for w in ("坏", "漏水", "不制冷", "不亮", "没热水", "没有热水", "故障", "报修", "维修", "停电", "断电", "水管爆", "门锁"))
+    broken = any(w in text for w in ("坏", "漏水", "不制冷", "不亮", "没热水", "没有热水", "故障", "报修", "维修", "停电", "断电", "水管爆", "门锁")) or any(w in _positive_risk_text(text) for w in ("冒烟", "漏电", "着火", "火警", "被困"))
     delivery_command = parse_delivery_command(text)
     delivery = (delivery_command.item is not None or any(w in text for w in (
         "浴巾", "毛巾", "矿泉水", "瓶水", "送水", "吹风机", "枕头", "被子", "牙刷",
@@ -826,16 +840,11 @@ class HousekeepingAgent:
 
     name = "HousekeepingAgent"
     display_name = "客房保洁管家"
-    BORROWABLE_ITEMS = {"雨伞", "充电器", "吹风机"}
+    BORROWABLE_ITEMS = {name for name, meta in ITEM_CATALOG.items() if meta.get("borrowable")}
 
     def __init__(self) -> None:
         self.lock = threading.RLock()
-        self.inventory = {
-            "浴巾": 24, "毛巾": 24, "矿泉水": 36, "吹风机": 6, "枕头": 12,
-            "被子": 8, "牙刷": 30, "早餐券": 40, "拖鞋": 24,
-            "洗发水": 18, "沐浴露": 18, "梳子": 20, "剃须刀": 12,
-            "雨伞": 10, "充电器": 8,
-        }
+        self.inventory = {name: meta["initial_stock"] for name, meta in ITEM_CATALOG.items()}
 
     def _item(self, detail: str) -> str:
         item = parse_delivery_command(detail).item
@@ -865,7 +874,7 @@ class HousekeepingAgent:
                 remaining = before - reserved
                 self.inventory[item] = remaining
                 inventory_status = "库存充足" if before >= quantity else "库存不足，已转前台协调"
-            ticket = create_hotel_ticket(room_no, "送物", detail, "低", DEPARTMENTS["送物"])
+            ticket = create_hotel_ticket(room_no, "送物", detail, _delivery_priority(detail), DEPARTMENTS["送物"])
             ticket.update(
                 agent=self.name,
                 department_agent=self.name,
@@ -934,10 +943,10 @@ class EngineeringAgent:
 
     name = "EngineeringAgent"
     display_name = "工程安防工程师"
-    MAJOR_INCIDENTS = ("漏水", "水管爆", "断电", "停电", "门锁", "打不开门", "被困", "受伤", "着火", "火警")
+    MAJOR_INCIDENTS = ("漏水", "水管爆", "断电", "停电", "门锁", "打不开门", "被困", "受伤", "着火", "火警", "冒烟", "漏电")
 
     def diagnose(self, room_no: str, detail: str, state: HotelState, sentiment: str = "正常") -> dict[str, Any]:
-        major = any(word in detail for word in self.MAJOR_INCIDENTS)
+        major = any(word in _positive_risk_text(detail) for word in self.MAJOR_INCIDENTS)
         priority = "高" if major or sentiment == "愤怒" else "中"
         ticket = create_hotel_ticket(room_no, "工程报修", detail, priority, DEPARTMENTS["工程报修"])
         ticket.update(
@@ -946,7 +955,7 @@ class EngineeringAgent:
             incident_level="重大险情" if major else "一般故障",
             risk_level="红色" if major else ticket["risk_level"],
             safety_guidance=(
-                "请立即远离漏水/带电区域，关闭房内电源并等待工程部确认安全。"
+                "请先远离危险区域，不要触碰故障设备，并立即联系酒店前台或现场工作人员确认安全。"
                 if major else "请先停止使用故障设备，工程部将按排查单逐项检查。"
             ),
         )
@@ -1074,12 +1083,13 @@ class HotelOrchestrator:
             raise AgentConflict("送物提案缺少完整、可核验的目录物品，不能丢弃未知物品后派单")
         minimum = "低"
         if intent == "送物":
+            minimum = _delivery_priority(detail)
             child = copy(self.housekeeping)
             child.lock = threading.RLock()
             child.inventory = deepcopy(self.housekeeping.inventory)
             ticket = child.dispatch(state.room_no, detail, child_state)
         elif intent == "工程报修":
-            minimum = "高" if state.sentiment == "愤怒" or any(w in detail for w in self.engineering.MAJOR_INCIDENTS) else "中"
+            minimum = "高" if state.sentiment == "愤怒" or any(w in _positive_risk_text(detail) for w in self.engineering.MAJOR_INCIDENTS) else "中"
             ticket = self.engineering.diagnose(state.room_no, detail, child_state, state.sentiment)
         elif intent == "客诉紧急":
             minimum = "高"
@@ -1231,6 +1241,40 @@ class HotelOrchestrator:
         quantity = command.quantity or _requested_quantity(prior_detail)
         return None, f"送 {quantity} 件{command.item}"
 
+    def _catalog_reply(self, text: str) -> str | None:
+        if re.search(r"坏|故障|漏水|报修|维修|冒烟|漏电|着火|被困", text):
+            return None
+        for service in load_service_catalog().get("services", []):
+            if not any(alias.casefold() in text.casefold() for alias in service.get("aliases", [service["name"]])):
+                continue
+            name, status = service["name"], service["status"]
+            if status == "available":
+                return f"酒店当前配置显示可提供{name}；具体时段、房型、费用和预约请由前台确认，尚未为您创建预约。"
+            record = next((r for r in self.state.service_feedback if r["topic"] == name), None)
+            if record is None:
+                record = {"topic": name, "catalog_status": status, "status": "待酒店核验", "count": 0}
+                self.state.service_feedback.append(record)
+            record["count"] += 1
+            record["last_seen_at"] = datetime.now().isoformat(timespec="seconds")
+            if status == "unavailable":
+                return f"酒店当前不提供{name}。已记录这类需求供酒店评估；不会据此自动开放服务或为您预约。"
+            return f"{name}的可用情况尚未核验，请联系前台按实际设施和房型确认。已记录为待酒店核验需求，尚未创建该项服务工单。"
+        if re.search(r"能送哪些|可送哪些|有哪些(?:物品|用品)|有什么(?:用品|物品)|物品清单", text):
+            names = [name for name, n in self.housekeeping.inventory.items() if n > 0 and name != "早餐券"]
+            return "当前可申请的客房物品有：" + "、".join(names) + "。请说明一种物品和数量，是否可派送以实时库存核验为准。"
+        if re.search(r"有没有|是否有|还有.*(?:吗|？|\?)|有.*吗|库存", text):
+            items = parse_delivery_command(text).references
+            if items:
+                def status_reply(name: str) -> str:
+                    if name == "房卡":
+                        return "房卡须由前台核验入住身份后办理，不属于普通客房送物"
+                    if name == "早餐券":
+                        return "早餐券须由前台核验本次接待订单、含早及收费安排，不能凭库存承诺发券"
+                    return (f"{name}目前可申请" if self.housekeeping.inventory.get(name, 0) > 0
+                            else f"{name}暂时缺货，请联系前台协调")
+                return "；".join(status_reply(name) for name in items) + "。查询本身不创建送物工单。"
+        return None
+
     def process(
         self, text: str, *, record_user: bool = True, cancellation_check: Callable[[], bool] | None = None,
     ) -> str:
@@ -1266,11 +1310,26 @@ class HotelOrchestrator:
             trace = [{"agent": "ReceptionAgent", "event": "neutral_address_requested", "detail": "停止使用档案称呼，入住信息更正仍须前台核验"}]
             return self._finish("好的，接下来我将使用中性称呼。入住姓名如需更正，请联系前台核验；当前房间和服务权限绑定保持不变。", trace)
 
+        preview = _rules_extract(text, self.knowledge)
+        delivery_command = parse_delivery_command(text)
+        catalog_reply = self._catalog_reply(text)
+        # A configured answer may accompany an actual service or cancellation.
+        # Do not terminate the turn before that action reaches the normal guards.
+        catalog_with_action = (delivery_command.action in {"cancel", "replace"}
+                               or preview["intent"] in {"工程报修", "客诉紧急", "服务完结", "延迟退房", "续住申请"}
+                               or preview["intent"] in SERVICE_INTENTS and any(
+                                   word in text for word in ("送", "拿", "借", "给我", "我要", "申请", "报修", "投诉", "退房", "续住")))
+        if catalog_reply is not None and not catalog_with_action:
+            if record_user:
+                state.messages.append({"role": "user", "content": text, "room_no": state.room_no})
+            state.active_agent, state.intent, state.model_mode = "ReceptionAgent", "酒店咨询", "规则护栏 · 服务目录"
+            return self._finish(catalog_reply, [{"agent": "ReceptionAgent", "event": "service_catalog_checked",
+                                               "detail": "读取配置服务与实时库存；需求计数不自动改变服务事实"}])
+
         # If a bound session explicitly names another room for a write intent,
         # keep the cloud model out of that decision. The deterministic preview
         # is enough to invoke the cross-room guard below and avoids exposing
         # private context to an unnecessary model call.
-        preview = _rules_extract(text, self.knowledge)
         correction_markers = ("搞错", "更正", "换成", "改为", "重新", "不是", "切换", "我是", "我住", "登记", "换到", "其实是", "不是这")
         preview_is_correction = any(word in text for word in correction_markers)
         preview_cross_room = (
@@ -1297,6 +1356,10 @@ class HotelOrchestrator:
         # Always record user turn immediately so conversation history is never dropped
         if record_user:
             state.messages.append({"role": "user", "content": text, "room_no": state.room_no or room})
+
+        if catalog_reply is not None:
+            analysis["faq_entries"] = [*analysis.get("faq_entries", []),
+                                       {"id": "service_catalog", "answer": catalog_reply}]
 
         # Dual-stream FAQ assembly
         faq_part = None
@@ -1571,7 +1634,7 @@ class HotelOrchestrator:
                 service_reply = "已为您提交服务申请，工作人员将尽快联系您。"
 
         if faq_part and service_reply:
-            reply = f"{service_reply} 另外，{faq_part}" if state.intent == "客诉紧急" else f"{faq_part} 另外，{service_reply}"
+            reply = f"{service_reply} 另外，{faq_part}" if state.intent in {"工程报修", "客诉紧急"} else f"{faq_part} 另外，{service_reply}"
         else:
             reply = service_reply or faq_part or ""
 

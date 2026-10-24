@@ -1,0 +1,34 @@
+{
+  "version": 1,
+  "inventory_basis": "synthetic-initial-stock; replace with approved hotel stock before deployment",
+  "items": [
+    {"name":"浴巾","initial_stock":24,"unit":"条","group":"布草"},
+    {"name":"毛巾","initial_stock":24,"unit":"条","group":"布草"},
+    {"name":"矿泉水","initial_stock":36,"unit":"瓶","group":"客耗"},
+    {"name":"吹风机","initial_stock":6,"unit":"个","group":"借用设备","borrowable":true},
+    {"name":"枕头","initial_stock":12,"unit":"个","group":"布草"},
+    {"name":"被子","initial_stock":8,"unit":"床","group":"布草"},
+    {"name":"牙刷","initial_stock":30,"unit":"支","group":"客耗"},
+    {"name":"早餐券","initial_stock":40,"unit":"张","group":"餐饮"},
+    {"name":"拖鞋","initial_stock":24,"unit":"双","group":"布草"},
+    {"name":"洗发水","initial_stock":18,"unit":"瓶","group":"客耗"},
+    {"name":"沐浴露","initial_stock":18,"unit":"瓶","group":"客耗"},
+    {"name":"梳子","initial_stock":20,"unit":"把","group":"客耗"},
+    {"name":"剃须刀","initial_stock":12,"unit":"个","group":"客耗"},
+    {"name":"雨伞","initial_stock":10,"unit":"把","group":"借用设备","borrowable":true},
+    {"name":"充电器","initial_stock":8,"unit":"个","group":"借用设备","borrowable":true},
+    {"name":"纸巾","initial_stock":40,"unit":"包","group":"客耗"},
+    {"name":"卷纸","initial_stock":36,"unit":"卷","group":"客耗"},
+    {"name":"牙膏","initial_stock":30,"unit":"支","group":"客耗"},
+    {"name":"浴帽","initial_stock":24,"unit":"个","group":"客耗"},
+    {"name":"棉签","initial_stock":30,"unit":"包","group":"客耗"},
+    {"name":"香皂","initial_stock":24,"unit":"块","group":"客耗"},
+    {"name":"耳塞","initial_stock":20,"unit":"副","group":"客耗"},
+    {"name":"洗衣袋","initial_stock":24,"unit":"个","group":"客耗"},
+    {"name":"衣架","initial_stock":20,"unit":"个","group":"借用设备","borrowable":true}
+  ],
+  "services": [
+    {"name":"按摩服务","aliases":["按摩","SPA","水疗"],"status":"unconfirmed","source":"待学校酒店核验"},
+    {"name":"泡澡设施","aliases":["泡澡","泡浴","浴缸"],"status":"unconfirmed","source":"须按房型和酒店设施核验"}
+  ]
+}

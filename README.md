@@ -6,6 +6,8 @@
 
 项目机制、业务边界与代码对应见 [项目剖析](docs/academic_hotel_analysis.md)，部署、备份和恢复见 [值班手册](docs/operations.md)。
 
+常规客房物资使用统一的 24 项目录和实时库存；按摩、泡澡等设施按“可提供／不提供／尚未核验”配置答复，未知项目不自动派单。新增目录的默认数量为合成初值，已有酒店数据库不会因升级而自动补货。每次入住刷新上下文、WiFi 验证入口设想、多人并发、数据库与 Redis 的分工及夜审说明见 [入住数据与运营方案](docs/stay_data_and_operations.md)。
+
 工作台默认进入住客端，只显示当前入住会话的对话和服务进度；员工通过侧栏工作区进入运营中枢、质量验收或难例回归。住客端不展示房态、库存、酒店仿真和内部黑板，服务权限由入住凭证绑定 `room_no`、`stay_id` 与 `session_id`，不能靠聊天切换到其他房间。界面对比度、对话动画、全楼仿真和响应式房态布局见 [界面视觉规格](spec/ui_visual_quality.md)。
 
 住客对话以“学术之家住客服务助手”作为公开服务身份；已覆盖的内部提示、模型和权限探询在本地处理，不外呼模型或修改订单。入住授权、限定工具、提案核验和原子提交共同约束业务写入，安全边界见 [对话安全规格](spec/security_prompt_injection.md)。本地工作区选择器供开发和值班使用，不承担鉴权；公网住客入口必须使用受凭证保护的 API 工作台。
@@ -20,7 +22,7 @@
 
 ### 住客入口与夜间对话
 
-![校园湖景与聚焦住客入口](docs/images/guest-home.jpg)
+![完整校园湖景与聚焦住客入口](docs/images/guest-lake-entry.jpg)
 
 ![夜间住客对话与公开服务身份](docs/images/guest-night.jpg)
 
@@ -161,6 +163,8 @@ docker compose up -d --build
 统一证据入口会强制使用离线环境，在新建目录保存原始日志、退出码、源码指纹、结构化指标和黑板断言。失败、缺失证据或跳过用例均不能报告通过；产物默认保存在被 Git 忽略的 `.artifacts/`。GitHub CI 执行同一入口并归档证据。
 
 本机运行的来源、实测结果与适用边界见 [服务可靠性验收记录](spec/service_reliability_verification_2026-10-25.md)；早期基线保留在 [规格体系验收记录](spec/specification_verification_2026-10-23.md)。
+
+本轮湖景入口、24 项物资、8 位住客库存竞争及 17 轮实际模型联调的结果见 [酒店服务完善验收记录](spec/hotel_readiness_verification_2026-10-25.md)。
 
 ~~~powershell
 .\.venv\Scripts\python.exe -B -X utf8 scripts/verify_release.py --output-dir .artifacts/verification/local-001

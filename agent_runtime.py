@@ -110,7 +110,11 @@ class SessionManager:
         self.shared_voucher_ledger: list[dict[str, Any]] = deepcopy((persisted or {}).get("voucher_ledger") or [])
         self.housekeeping = HousekeepingAgent()
         persisted_inventory = (persisted or {}).get("inventory") or {}
-        if persisted_inventory:
+        if persisted:
+            # Existing databases must not acquire invented stock when the
+            # catalog adds a SKU. An operator must register the actual amount.
+            self.housekeeping.inventory = {name: persisted_inventory.get(name, 0)
+                                           for name in self.housekeeping.inventory}
             self.housekeeping.inventory.update(persisted_inventory)
         self.current_date = (persisted or {}).get("current_date") or initial_date
         self.grants = deepcopy((persisted or {}).get("grants", {}))
@@ -123,6 +127,9 @@ class SessionManager:
         for room in self.shared_pms.values():
             room.setdefault("stay_id", "STAY-" + uuid.uuid4().hex)
         self._executor = ThreadPoolExecutor(max_workers=max_workers, thread_name_prefix="aegis-agent")
+        # With N competing snapshots, as many as N commits may be needed to
+        # settle one contention wave; a fixed three retries loses valid work.
+        self._commit_attempts = max(3, min(max_workers, max_pending) + 1)
         self._runs: dict[str, TaskRun] = {}
         self._active: dict[str, str] = {}
         self._queues: dict[str, deque[str]] = {}
@@ -146,7 +153,7 @@ class SessionManager:
         "last_trace", "model_mode", "guest_profile", "pending", "late_checkout",
         "current_date", "borrowed_items", "audit_logs", "rolling_summary", "tasks",
         "agent_conflicts",
-        "authorized_room", "stay_id", "session_id", "neutral_address",
+        "authorized_room", "stay_id", "session_id", "neutral_address", "service_feedback",
     )
 
     def _business_payload(self) -> dict[str, Any]:
@@ -611,7 +618,7 @@ class SessionManager:
         additions: list[tuple[list, dict[str, Any]]] = []
         private_changes: dict[str, Any] = {}
         for name in ("room_no", "intent", "sentiment", "active_agent", "request_detail", "pending",
-                     "late_checkout", "current_date", "borrowed_items", "audit_logs", "agent_conflicts", "neutral_address"):
+                     "late_checkout", "current_date", "borrowed_items", "audit_logs", "agent_conflicts", "neutral_address", "service_feedback"):
             before, proposed = getattr(baseline, name), getattr(candidate, name)
             if before != proposed:
                 if getattr(state, name) != before:
@@ -677,7 +684,7 @@ class SessionManager:
 
     def _execute(self, run: TaskRun) -> None:
         try:
-            for attempt in range(3):
+            for attempt in range(self._commit_attempts):
                 with self.lock:
                     if not self._is_current(run):
                         raise TaskInterrupted()
@@ -721,7 +728,7 @@ class SessionManager:
                             self._commit(run, baseline, stock, worker)
                             self._finish_task(run, baseline, reply)
                     except CommitConflict:
-                        if attempt < 2:
+                        if attempt + 1 < self._commit_attempts:
                             continue
                         raise
                     if not run.result.done():

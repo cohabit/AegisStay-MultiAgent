@@ -19,6 +19,8 @@
 | 当前界面视觉、对比度、工作区与空间仿真 | [界面视觉规格](spec/ui_visual_quality.md) |
 | 住客公开身份、提示注入与调度/API 边界 | [对话安全规格](spec/security_prompt_injection.md) |
 | 完整住客归档、批量取消与物品/称呼边界 | [服务可靠性规格](spec/service_reliability.md) |
+| 湖景入口、常规物品、设施核验与风险分级 | [酒店服务完善规格](spec/hotel_readiness.md) |
+| WiFi 入口、每次入住刷新、数据库与 Redis 方案 | [入住数据与运营说明](docs/stay_data_and_operations.md) |
 | 旧专题及旧验收适用范围 | [历史索引](spec/legacy_specs.md) |
 | 安装、启动和值班操作 | [README](README.md)、[运维手册](docs/operations.md)、[部署子规格](spec/design/deployment.md) |
 | 实施边界与原始测试身份 | [工作计划](spec/work_plan.md)、[127 项基线 ID](spec/baseline_test_ids.json) |
@@ -36,6 +38,7 @@
 | `auth.py` / `server.py` | 凭证、岗位和会话授权、FastAPI 路由、安全字段投影 |
 | `app.py` / `deployed_ui.py` / `api_client.py` | Streamlit 本地演示或 API 工作台；部署分支通过 `HotelApi` 访问唯一服务端 |
 | `data/academic_hotel_knowledge.json` | 学校政策模板，未知时间/地点/权益要求核验 |
+| `hotel_catalog.py` / `data/service_catalog.json` | 24 项库存元数据与设施三态；合成初值不代表酒店实盘，存量库新增 SKU 默认为 0 |
 | `data/hotel_knowledge.json` / `data/pms_rooms_240.json` | standard 知识与合成初始房态；不是外部真实 PMS |
 | `harness/eval_runner.py` / `eval_dataset.json` | 固定 H01…H20 规则回归、结构化四指标 |
 | `harness/eval_extended.json` / `tests/test_quality_evaluation.py` | 5 组、40 条分层质量集；不替换 H01…H20，报告分组指标与 Wilson 区间 |
@@ -47,6 +50,7 @@
 | `tests/test_api.py` / `test_task_runtime.py` | API、异步仲裁、冲突与受控竞态 |
 | `tests/test_delivery_language.py` / `test_persistence.py` | 口语送物生命周期、持久化和重启 |
 | `tests/test_service_reliability.py` / `test_guest_history_ui.py` | 完整归档与两端分页、批量取消代际、未知物品和情绪/称呼边界 |
+| `tests/test_hotel_readiness.py` | 目录事实、口语风险、设施需求记录、8 位住客抢库存及换客空上下文 |
 | `tests/test_evolution.py` / `test_streamlit.py` / `test_visual_contract.py` | 示例检索、记忆与本地界面、主题对比度回归 |
 | `tests/test_release_verification.py` | 证据工具负向测试，拒绝假通过 |
 | `tests/stress_test.py` | 开发压测工具；不能对真实酒店执行全量重置或声称生产容量 |

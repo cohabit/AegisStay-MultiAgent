@@ -26,3 +26,9 @@ jobs:
           if-no-files-found: error
           retention-days: 14
       - run: docker build -t aegisstay:test .
+      - name: Verify packaged catalog and hotel imagery
+        run: >-
+          docker run --rm --entrypoint python aegisstay:test -c
+          "from pathlib import Path; from hotel_catalog import ITEM_CATALOG;
+          assert len(ITEM_CATALOG) >= 24;
+          assert Path('assets/hotel/campus-lake.jpg').is_file()"

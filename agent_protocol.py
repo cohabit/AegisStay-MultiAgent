@@ -4,6 +4,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 from typing import Any
+from hotel_catalog import ITEM_CATALOG
 
 
 class TaskInterrupted(Exception):
@@ -14,10 +15,7 @@ class AgentConflict(ValueError):
     """A department proposal contradicts the task contract or a safety rule."""
 
 
-DELIVERY_ITEMS = (
-    "浴巾", "毛巾", "矿泉水", "吹风机", "枕头", "被子", "牙刷", "早餐券",
-    "拖鞋", "洗发水", "沐浴露", "梳子", "剃须刀", "雨伞", "充电器", "房卡",
-)
+DELIVERY_ITEMS = (*ITEM_CATALOG, "房卡")
 
 
 @dataclass(frozen=True)
@@ -54,6 +52,8 @@ def _unknown_requested_items(text: str) -> tuple[str, ...]:
         if any(item in part for item in DELIVERY_ITEMS):
             continue
         if re.match(r"\s*(?:我)?(?:不需要|不用|不要|无需|先别)", part):
+            continue
+        if re.fullmatch(r"\s*(?:请|麻烦)?(?:给我|帮我)?(?:再)?(?:来|送|拿)(?:一下|过来|到房间|就好|就行)[。！？!?\s]*", part):
             continue
         explicit = bool(re.search(r"(?:送|拿|来|借|给我|我要|只要|需要|再加|补)", part))
         measured_item = bool(re.search(r"(?:\d+|[一两二三四五六七八九十])\s*(?:条|瓶|罐|个|把|双|份|张|块|床|件)", part))
@@ -115,7 +115,7 @@ def parse_delivery_command(text: str) -> DeliveryCommand:
         action = "cancel"
     if non_delivery_cancel:
         cancel_all = False
-    quantities = re.findall(r"(\d+|一|两|二|三|四|五|六|七|八|九|十)\s*(?:条|瓶|个|把|双|份|张|块|床|件)", text)
+    quantities = re.findall(r"(\d+|一|两|二|三|四|五|六|七|八|九|十)\s*(?:条|瓶|个|把|双|份|张|块|床|件|包|卷|支|副)", text)
     digits = {"一": 1, "两": 2, "二": 2, "三": 3, "四": 4, "五": 5, "六": 6, "七": 7, "八": 8, "九": 9, "十": 10}
     raw_quantity = quantities[-1] if quantities else None
     quantity = int(raw_quantity) if raw_quantity and raw_quantity.isdigit() else digits.get(raw_quantity)

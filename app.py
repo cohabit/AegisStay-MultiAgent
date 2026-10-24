@@ -222,6 +222,30 @@ __THEME_VARS__
         .conversation-dock p { position:relative; z-index:1; margin:0; color:var(--as-muted); font-size:.8rem; }
         .conversation-quick { display:flex; flex-wrap:wrap; gap:7px; margin-top:12px; }
         .conversation-quick span { padding:5px 9px; border:1px solid var(--as-border); border-radius:999px; color:var(--as-muted); background:var(--as-surface-soft); font-size:.68rem; }
+        .client-brand { display:flex; justify-content:space-between; align-items:center; gap:18px; margin: 8px 0 22px; padding: 10px 2px; color:var(--as-muted); font-size:.72rem; letter-spacing:.08em; }
+        .client-brand strong { color:var(--as-text); font-family:Georgia,'Noto Serif SC',serif; font-size:1.1rem; letter-spacing:0; }
+        .client-chat-stage { max-width: 920px; margin: 7vh auto 0; }
+        .client-chat-stage-active { margin-top: 1.2rem; }
+        .client-welcome { padding: 46px 44px 38px; border:1px solid var(--as-border); border-radius:24px; background:var(--as-surface); box-shadow:var(--as-shadow); text-align:center; animation:client-enter .55s ease both; }
+        .client-welcome-kicker { color:var(--as-accent); letter-spacing:.16em; font-size:.68rem; font-weight:800; }
+        .client-welcome h1 { margin:14px 0 10px; color:var(--as-text); font-family:Georgia,'Noto Serif SC',serif; font-size:clamp(2rem,4vw,3.2rem); font-weight:600; }
+        .client-welcome p { max-width:580px; margin:0 auto; color:var(--as-muted); line-height:1.8; }
+        .client-composer { max-width:820px; margin:18px auto 0; animation:client-composer-in .55s .08s ease both; }
+        .client-composer-active { max-width:920px; margin-top:16px; }
+        .client-identity { display:flex; justify-content:center; gap:8px; flex-wrap:wrap; margin:14px 0 0; color:var(--as-muted); font-size:.7rem; }
+        .client-identity span { padding:5px 9px; border:1px solid var(--as-border); border-radius:999px; background:var(--as-surface-soft); }
+        .client-active-head { display:flex; justify-content:space-between; align-items:end; gap:16px; margin-bottom:10px; padding:0 4px; }
+        .client-active-head strong { color:var(--as-text); font-family:Georgia,'Noto Serif SC',serif; font-size:1.3rem; font-weight:600; }
+        .client-active-head span { color:var(--as-muted); font-size:.7rem; }
+        .client-chat-history { min-height:460px; padding:16px 18px; border:1px solid var(--as-border); border-radius:20px; background:var(--as-surface); box-shadow:var(--as-shadow); animation:client-expand .62s cubic-bezier(.2,.75,.25,1) both; }
+        .client-chat-history [data-testid="stChatMessage"] { border-bottom:1px solid color-mix(in srgb, var(--as-border) 55%, transparent); padding:13px 4px; }
+        .client-chat-history [data-testid="stChatMessage"]:last-child { border-bottom:0; }
+        .client-progress { margin:12px 0 0; padding:10px 13px; border-left:3px solid var(--as-accent); border-radius:9px; background:var(--as-surface-soft); color:var(--as-muted); font-size:.76rem; }
+        .client-progress strong { color:var(--as-text); }
+        @keyframes client-enter { from { opacity:0; transform:translateY(12px) scale(.985); } to { opacity:1; transform:translateY(0) scale(1); } }
+        @keyframes client-composer-in { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
+        @keyframes client-expand { from { opacity:0; transform:translateY(26px) scale(.98); max-height:320px; } to { opacity:1; transform:translateY(0) scale(1); max-height:900px; } }
+        @media (prefers-reduced-motion: reduce) { .client-welcome, .client-composer, .client-chat-history { animation:none; } }
         @keyframes as-rise { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
         @keyframes as-pulse { 0%, 100% { box-shadow:0 0 0 0 color-mix(in srgb, var(--as-accent) 0%, transparent); } 50% { box-shadow:0 0 0 6px color-mix(in srgb, var(--as-accent) 24%, transparent); } }
         @media (prefers-reduced-motion: reduce) { .conversation-dock, .conversation-live-dot { animation:none; } }
@@ -346,6 +370,17 @@ __THEME_VARS__
         .hotel-sim-legend .sim-dot-occ { background:#0f766e; }
         .hotel-sim-legend .sim-dot-dirty { background:#d97706; }
         .hotel-sim-legend .sim-dot-repair { background:#dc2626; }
+        .hotel-building-overview { display:grid; gap:5px; padding:16px; background:var(--as-surface-soft); }
+        .building-floor-row { display:grid; grid-template-columns:48px minmax(0,1fr) 72px minmax(0,1fr); gap:8px; align-items:center; min-height:38px; }
+        .building-floor-label { display:grid; place-items:center; min-height:31px; border-radius:8px; background:var(--as-accent-soft); color:var(--as-accent); font-size:.67rem; font-weight:800; }
+        .building-room-band { display:flex; align-items:center; justify-content:space-between; gap:8px; min-height:31px; padding:0 10px; border:1px solid var(--as-border); border-radius:8px; background:var(--as-surface); color:var(--as-muted); font-size:.63rem; }
+        .building-room-band strong { color:var(--as-text); font-size:.7rem; }
+        .building-dots { display:flex; gap:3px; }
+        .building-dots i { width:6px; height:6px; border-radius:50%; background:#64748b; }
+        .building-dots .occ { background:#0f766e; }
+        .building-dots .dirty { background:#d97706; }
+        .building-dots .repair { background:#dc2626; }
+        .building-core { display:grid; place-items:center; min-height:34px; border:1px solid var(--as-accent); border-radius:8px; background:var(--as-accent-soft); color:var(--as-accent); font-size:.61rem; font-weight:800; text-align:center; }
         @media (max-width: 800px) {
             .property-hero-copy { padding: 34px 28px 30px; }
             .property-hero-copy h1 { font-size: 2.15rem; }
@@ -355,10 +390,13 @@ __THEME_VARS__
             .room-tile:hover .room-tooltip, .room-tile:focus-within .room-tooltip { transform: translate(0, 0); }
             .room-tooltip::after { left: 24px; }
             .photo-strip { grid-template-columns: 1fr; }
-            .room-map { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+            .room-map { grid-template-columns: repeat(2, minmax(0, 1fr)); }
             .hotel-floor-plan { grid-template-columns:minmax(0,1fr) 76px minmax(0,1fr); gap:6px; padding:10px; }
             .hotel-wing { grid-template-columns:repeat(2,minmax(0,1fr)); }
+            .building-floor-row { grid-template-columns:38px minmax(0,1fr) 58px minmax(0,1fr); gap:4px; }
+            .building-room-band { padding:0 6px; font-size:.57rem; }
         }
+        @media (min-width: 801px) and (max-width: 1100px) { .room-map { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
         </style>
         """
     st.markdown(css.replace("__THEME_VARS__", theme_vars), unsafe_allow_html=True)
@@ -384,40 +422,94 @@ def _staff_action(orchestrator: HotelOrchestrator, method: str, *args):
 
 
 def _render_entry_conversation(orchestrator: HotelOrchestrator) -> None:
-    """Put a compact, always-visible front-desk composer before the tabbed views."""
+    """Render the guest-only client with an empty-to-active chat transition."""
     runtime = _runtime_for_ui(orchestrator)
     snapshot = runtime.snapshot(GUEST_SESSION)
     state = snapshot.state
-    active = any(task.get("status") in {"running", "queued"} for task in state.tasks.values())
-    last_reply = next(
-        (message.get("content", "") for message in reversed(state.messages) if message.get("role") == "assistant"),
-        "欢迎来到学术之家，我可以帮你安排送物、报修、延迟退房和设施问答。",
+    has_conversation = bool(state.messages)
+    active_tasks = [task for task in state.tasks.values() if task["status"] in {"running", "queued"}]
+    profile = state.guest_profile or {}
+    identity_text = (
+        f"当前入住：{profile.get('room_no', state.room_no)} 房 · 仅限当前入住授权"
+        if (profile.get("room_no") or state.room_no)
+        else "入住凭证绑定中 · 不能通过聊天切换到其他房间"
     )
-    if len(last_reply) > 92:
-        last_reply = last_reply[:92] + "…"
-    status_text = "前台正在处理上一条请求，你可以直接补充、修改或取消。" if active else last_reply
+    identity_html = f'<div class="client-identity"><span>{html.escape(identity_text)}</span></div>'
+
     st.markdown(
-        f"""
-        <section class="conversation-dock">
-          <div class="conversation-dock-head"><span class="conversation-live-dot"></span> FRONT DESK · 即时对话</div>
-          <h2>你说需求，我来协调。</h2>
-          <p>{html.escape(status_text)}</p>
-          <div class="conversation-quick"><span>送物：毛巾 · 矿泉水</span><span>工程：空调 · 漏水</span><span>权益：延退 · 早餐</span></div>
-        </section>
-        """,
+        '<div class="client-brand"><strong>学术之家 · 住客服务</strong><span>FRONT DESK · PRIVATE SESSION</span></div>',
         unsafe_allow_html=True,
     )
+    stage_class = "client-chat-stage client-chat-stage-active" if has_conversation else "client-chat-stage"
+    st.markdown(f'<section class="{stage_class}">', unsafe_allow_html=True)
+
+    if not has_conversation:
+        st.markdown(
+            '<div class="client-welcome">'
+            '<div class="client-welcome-kicker">ACADEMIC HOUSE · FRONT DESK</div>'
+            '<h1>需要什么服务？</h1>'
+            '<p>直接描述你的需求，前台会先确认入住身份，再协调送物、报修、退房和酒店咨询。</p>'
+            f'{identity_html}'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+    else:
+        current_agent = state.active_agent.split(" · ", 1)[0]
+        icon, label = AGENT_BADGES.get(current_agent, ("🧭", current_agent))
+        st.markdown(
+            f'<div class="client-active-head"><strong>住客对话</strong>'
+            f'<span>{icon} {html.escape(label)} · {html.escape(identity_text)}</span></div>',
+            unsafe_allow_html=True,
+        )
+        st.markdown('<div class="client-chat-history">', unsafe_allow_html=True)
+        chat = st.container(height=500)
+        with chat:
+            for message in state.messages:
+                with st.chat_message("user" if message["role"] == "user" else "assistant"):
+                    st.write(message["content"])
+        st.markdown('</div>', unsafe_allow_html=True)
+
+    composer_class = "client-composer client-composer-active" if has_conversation else "client-composer"
+    st.markdown(f'<div class="{composer_class}">', unsafe_allow_html=True)
     with st.form("entry-conversation-form", clear_on_submit=True, border=False):
         prompt = st.text_input(
             "告诉前台你需要什么",
-            placeholder="例如：1128 送两条毛巾；也可以说‘水不用了’来取消矿泉水",
+            placeholder="描述送物、报修、退房或咨询需求",
             max_chars=240,
             label_visibility="collapsed",
         )
         submitted = st.form_submit_button("发送给前台", type="primary", use_container_width=True)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+    if active_tasks:
+        st.info("正在处理您的请求，您可以继续输入补充、修改或取消。")
+        st.markdown('<div class="client-progress"><strong>服务处理中</strong> · 你可以继续补充、修改或取消当前请求。</div>', unsafe_allow_html=True)
+        if st.button("取消当前请求", key="cancel-current-task"):
+            try:
+                runtime.submit(GUEST_SESSION, "不用了", force_rules=orchestrator.force_rules)
+                st.rerun()
+            except RuntimeBusy as error:
+                st.warning(str(error))
+    elif has_conversation:
+        progress_items = orchestrator.guest_progress_items()
+        if progress_items:
+            latest = progress_items[-1]
+            st.markdown(f'<div class="client-progress"><strong>服务进度</strong> · {html.escape(str(latest.get("label", "已收到请求")))}</div>', unsafe_allow_html=True)
+
+    st.markdown('</section>', unsafe_allow_html=True)
+
+    # Retain the hidden input for existing AppTest flows; customers see only
+    # the composer above because CSS hides this compatibility control.
+    compat_prompt = st.chat_input("继续描述需求", key="guest-prompt")
     if submitted and prompt.strip():
         try:
             runtime.submit(GUEST_SESSION, prompt.strip(), force_rules=orchestrator.force_rules)
+            st.rerun()
+        except (RuntimeBusy, ValueError) as error:
+            st.warning(str(error))
+    if compat_prompt:
+        try:
+            runtime.submit(GUEST_SESSION, compat_prompt.strip(), force_rules=orchestrator.force_rules)
             st.rerun()
         except (RuntimeBusy, ValueError) as error:
             st.warning(str(error))
@@ -545,18 +637,6 @@ def _render_hotel_simulation(pms: dict, tickets: list[dict], selected_floor: str
     drift from the room matrix shown directly below it.
     """
     floors = sorted({str(room.get("floor", "")) for room in pms.values() if room.get("floor") is not None}, key=lambda value: int(value or 0))
-    target_floor = str(selected_floor or "").strip()
-    if target_floor not in floors:
-        # The overview opens on a representative full floor instead of the
-        # small VIP floor, so the building silhouette reads immediately.
-        target_floor = "8" if "8" in floors else (floors[-1] if floors else "8")
-    rooms = sorted(
-        [room for room in pms.values() if str(room.get("floor", "")) == target_floor],
-        key=lambda room: str(room.get("room_no", "")),
-    )
-    if not rooms:
-        rooms = sorted(list(pms.values()), key=lambda room: str(room.get("room_no", "")))[:24]
-
     status_classes = {
         "在住": "sim-room-occupied",
         "待清洁": "sim-room-dirty",
@@ -567,6 +647,54 @@ def _render_hotel_simulation(pms: dict, tickets: list[dict], selected_floor: str
         for ticket in tickets
         if ticket.get("status") in {"处理中", "需人工核验"}
     }
+
+    if selected_floor is None:
+        def status_dots(rooms: list[dict]) -> str:
+            counts = Counter(str(room.get("room_status", "空净房")) for room in rooms)
+            dots = []
+            for status, css in (("在住", "occ"), ("待清洁", "dirty"), ("维修中", "repair"), ("空净房", "")):
+                dots.extend(f'<i class="{css}" title="{status}"></i>' for _ in range(min(8, counts.get(status, 0))))
+            return "".join(dots)
+
+        overview_rows = []
+        for floor in reversed(floors):
+            floor_rooms = [room for room in pms.values() if str(room.get("floor", "")) == floor]
+            left_count = (len(floor_rooms) + 1) // 2
+            right_count = len(floor_rooms) - left_count
+            ticket_count = sum(1 for room in floor_rooms if str(room.get("room_no")) in ticket_rooms)
+            suffix = f" · 工单 {ticket_count}" if ticket_count else ""
+            overview_rows.append(
+                f'<div class="building-floor-row">'
+                f'<div class="building-floor-label">{html.escape(floor)}F</div>'
+                f'<div class="building-room-band"><strong>{left_count} 间</strong><span class="building-dots">{status_dots(floor_rooms[:left_count])}</span></div>'
+                f'<div class="building-core">🛗<br>电梯 / 楼梯</div>'
+                f'<div class="building-room-band"><strong>{right_count} 间{html.escape(suffix)}</strong><span class="building-dots">{status_dots(floor_rooms[left_count:])}</span></div>'
+                f'</div>'
+            )
+        image_uri = _asset_data_uri("academic-house-entrance.jpg")
+        image_html = f'<img src="{image_uri}" alt="学术之家建筑" />' if image_uri else ""
+        st.markdown(
+            f'''
+            <section class="hotel-sim-shell" aria-label="酒店全楼仿真图">
+              <div class="hotel-sim-header"><strong>酒店空间仿真 · 全楼概览</strong><span>客房楼层 · 中央电梯 · 安全楼梯 · 服务核心</span></div>
+              <div class="hotel-sim-photo">{image_html}<span class="hotel-sim-photo-label">ACADEMIC HOUSE · BUILDING OVERVIEW</span></div>
+              <div class="hotel-building-overview">{"".join(overview_rows)}</div>
+              <div class="hotel-sim-legend"><span><i></i>空净房</span><span><i class="sim-dot-occ"></i>在住</span><span><i class="sim-dot-dirty"></i>待清洁</span><span><i class="sim-dot-repair"></i>维修中</span><span>点选楼层筛选后查看单层平面图</span></div>
+            </section>
+            ''',
+            unsafe_allow_html=True,
+        )
+        return
+
+    target_floor = str(selected_floor or "").strip()
+    if target_floor not in floors:
+        target_floor = floors[-1] if floors else "8"
+    rooms = sorted(
+        [room for room in pms.values() if str(room.get("floor", "")) == target_floor],
+        key=lambda room: str(room.get("room_no", "")),
+    )
+    if not rooms:
+        rooms = sorted(list(pms.values()), key=lambda room: str(room.get("room_no", "")))[:24]
 
     def room_markup(room: dict) -> str:
         room_no = html.escape(str(room.get("room_no", "—")))
@@ -668,13 +796,13 @@ def _render_inventory_board(orchestrator: HotelOrchestrator, state) -> None:
 
 
 def _render_guest_blackboard(orchestrator: HotelOrchestrator) -> None:
-    """Show the guest-facing session blackboard beside the conversation tab."""
+    """Show internal session state for staff, away from the guest client."""
     runtime = _runtime_for_ui(orchestrator)
     snapshot = runtime.snapshot(GUEST_SESSION)
     state = snapshot.state
     st.markdown('<div class="eyebrow">SESSION BLACKBOARD</div>', unsafe_allow_html=True)
     st.subheader("会话黑板")
-    st.caption("这里展示当前住客会话的可解释状态；它与运营中枢的内部审计视图分开，避免把调试 JSON 直接暴露给住客。")
+    st.caption("内部运营视图：展示当前会话的可解释状态，不向住客端暴露调试 JSON。")
 
     m_c1, m_c2, m_c3, m_c4 = st.columns(4)
     with m_c1:
@@ -716,65 +844,9 @@ def _render_guest_blackboard(orchestrator: HotelOrchestrator) -> None:
             st.caption("当前会话还没有 Agent 交接记录。")
 
 
-@st.fragment(run_every=0.5)
 def _render_guest(orchestrator: HotelOrchestrator) -> None:
-    runtime = _runtime_for_ui(orchestrator)
-    force_rules = orchestrator.force_rules
-    orchestrator = runtime.snapshot(GUEST_SESSION)
-    state = orchestrator.state
-    st.markdown('<div class="eyebrow">GUEST SERVICES</div>', unsafe_allow_html=True)
-    st.subheader("住客服务中心")
-    has_model = bool(orchestrator.model.client)
-    mode_tag = f"🟢 大脑：云端模型 ({orchestrator.model.model})" if has_model else "🟡 大脑：本地规则引擎 (离线保底)"
-    if state.guest_profile:
-        profile = state.guest_profile
-        st.caption(f"已关联 {profile['guest_name']} · 房间 {profile['room_no']} · {profile['member_level']} | {mode_tag}")
-    else:
-        st.caption(f"告诉我房间号和需求，我会为你安排酒店服务。 | {mode_tag}")
-    current_agent = state.active_agent.split(" · ", 1)[0]
-    icon, label = AGENT_BADGES.get(current_agent, ("🧭", current_agent))
-    st.markdown(f"<div class='agent-badge'>{icon} 当前对接：{label} · <code>{current_agent}</code></div>", unsafe_allow_html=True)
-
-    chat = st.container(height=320)
-    with chat:
-        for message in state.messages:
-            with st.chat_message("user" if message["role"] == "user" else "assistant"):
-                st.write(message["content"])
-
-    active_tasks = [task for task in state.tasks.values() if task["status"] in {"running", "queued"}]
-    if active_tasks:
-        st.info("正在处理您的请求，您可以继续输入补充、修改或取消。")
-        if st.button("取消当前请求", key="cancel-current-task"):
-            try:
-                runtime.submit(GUEST_SESSION, "不用了", force_rules=force_rules)
-                st.rerun()
-            except RuntimeBusy as error:
-                st.warning(str(error))
-
-    st.markdown("#### 我的服务进度")
-    progress_items = orchestrator.guest_progress_items()
-    if not progress_items:
-        st.info("暂无进行中的服务请求", icon="🛎️")
-    else:
-        for item in progress_items:
-            if item["type"] == "success":
-                st.success(item["label"], icon="✅")
-            elif item["type"] == "error":
-                st.error(item["label"], icon="❌")
-            elif item["type"] == "warning":
-                st.warning(item["label"], icon="⏳")
-            else:
-                st.info(item["label"], icon="🛎️")
-
-    # The hidden compatibility input keeps existing AppTest flows stable. The
-    # visible composer is rendered once in the client conversation tab above.
-    prompt = st.chat_input("例如：1128 送两条毛巾；也可以继续输入修改", key="guest-prompt")
-    if prompt:
-        try:
-            runtime.submit(GUEST_SESSION, prompt, force_rules=force_rules)
-            st.rerun()
-        except (RuntimeBusy, ValueError) as error:
-            st.warning(str(error))
+    """Backward-compatible alias for callers that used the old guest view."""
+    _render_entry_conversation(orchestrator)
 
 
 @st.fragment(run_every=1.0)
@@ -959,17 +1031,8 @@ def _render_staff(orchestrator: HotelOrchestrator) -> None:
         with st.expander("查看保洁部物资实时库存 (支持原子扣减防超卖)", expanded=True):
             _render_inventory_board(orchestrator, state)
 
-    with st.expander("🔍 查看 Blackboard 与 Agent 交接追踪（运营内部）"):
-        st.json({
-            "active_agent": state.active_agent,
-            "room_no": state.room_no,
-            "intent": state.intent,
-            "sentiment": state.sentiment,
-            "model_mode": state.model_mode,
-            "last_trace": state.last_trace,
-            "tasks": list(state.tasks.values()),
-            "agent_conflicts": state.agent_conflicts,
-        })
+    with st.expander("🔍 会话黑板与 Agent 交接（运营内部）", expanded=False):
+        _render_guest_blackboard(canonical)
 
 
 def _render_harness(orchestrator: HotelOrchestrator) -> None:
@@ -1114,12 +1177,15 @@ def main() -> None:
     has_model = bool(orchestrator.model.client)
     mode_text = f"🟢 云端大模型实时驱动（{orchestrator.model.model}）" if has_model else "🟡 本地确定性规则保底（离线零成本模式）"
 
-    _render_property_hero(mode_text)
-
     # Sidebar Controls
     st.sidebar.title("AegisStay")
     st.sidebar.caption("单酒店运营工作台 · 240 间客房")
     st.sidebar.radio("显示模式", THEME_OPTIONS, key="ui-theme-control", horizontal=True)
+    workspace = st.sidebar.radio(
+        "工作区",
+        ["住客端", "运营中枢", "质量验收", "难例回归"],
+        key="workspace-page",
+    )
     st.sidebar.caption(THEME_HINTS.get(st.session_state.get("ui-theme-control", active_theme), THEME_HINTS["护眼"]))
     if has_model:
         st.sidebar.success(f"🟢 **云端大模型在线**\n\n`{orchestrator.model.model}`", icon="⚡")
@@ -1187,26 +1253,16 @@ def main() -> None:
   跨日到期房态流转 + 次日预订保洁冲突预检
 """)
 
-    client_chat, client_board = st.tabs([
-        "💬 住客对话",
-        "🧠 会话黑板",
-    ])
-    with client_chat:
+    if workspace == "住客端":
         _render_entry_conversation(orchestrator)
-        _render_guest(orchestrator)
-    with client_board:
-        _render_guest_blackboard(orchestrator)
-
-    staff, harness, evolution = st.tabs([
-        "运营中枢",
-        "质量验收",
-        "难例回归",
-    ])
-    with staff:
+    elif workspace == "运营中枢":
+        _render_property_hero(mode_text)
         _render_staff(orchestrator)
-    with harness:
+    elif workspace == "质量验收":
+        _render_property_hero(mode_text)
         _render_harness(orchestrator)
-    with evolution:
+    else:
+        _render_property_hero(mode_text)
         _render_evolution(orchestrator)
 
 

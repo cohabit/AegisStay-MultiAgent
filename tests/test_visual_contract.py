@@ -38,17 +38,33 @@ class VisualContractTests(unittest.TestCase):
         self.assertIn("room-tile-empty", APP_SOURCE)
         self.assertRegex(APP_SOURCE, r"remainder\s*=\s*len\(tiles\)\s*%\s*6")
 
-    def test_client_tabs_have_one_visible_composer_and_blackboard(self):
-        self.assertIn('"💬 住客对话"', APP_SOURCE)
-        self.assertIn('"🧠 会话黑板"', APP_SOURCE)
+    def test_workspace_routing_keeps_operations_out_of_guest_client(self):
+        self.assertIn('"住客端"', APP_SOURCE)
+        self.assertIn('"运营中枢"', APP_SOURCE)
+        self.assertIn('workspace-page', APP_SOURCE)
+        self.assertIn('if workspace == "住客端"', APP_SOURCE)
+        self.assertIn('_render_staff(orchestrator)', APP_SOURCE)
+        self.assertNotIn('client_chat, client_board = st.tabs', APP_SOURCE)
+        self.assertNotIn('"🧠 会话黑板"', APP_SOURCE)
         self.assertEqual(APP_SOURCE.count('st.form("entry-conversation-form"'), 1)
-        self.assertEqual(APP_SOURCE.count('st.chat_input("例如：1128 送两条毛巾；也可以继续输入修改", key="guest-prompt")'), 1)
+        self.assertEqual(APP_SOURCE.count('key="guest-prompt"'), 1)
         self.assertIn('[data-testid="stChatInput"] { display: none !important; }', APP_SOURCE)
+        self.assertIn('placeholder="描述送物、报修、退房或咨询需求"', APP_SOURCE)
+        self.assertNotIn('例如：1128 送两条毛巾', APP_SOURCE)
+        self.assertNotIn('水不用了\'来取消矿泉水', APP_SOURCE)
+
+    def test_client_chat_has_empty_and_active_layout_contract(self):
+        self.assertIn('client-chat-stage', APP_SOURCE)
+        self.assertIn('client-chat-history', APP_SOURCE)
+        self.assertIn('client-composer', APP_SOURCE)
+        self.assertIn('client-chat-stage-active', APP_SOURCE)
+        self.assertIn('入住凭证', APP_SOURCE)
 
     def test_hotel_simulation_contains_shared_state_facilities(self):
-        for marker in ("hotel-sim-shell", "sim-facility-elevator", "安全楼梯", "布草服务", "pms", "tickets"):
+        for marker in ("hotel-sim-shell", "hotel-building-overview", "building-floor-row", "sim-facility-elevator", "安全楼梯", "布草服务", "pms", "tickets"):
             with self.subTest(marker=marker):
                 self.assertIn(marker, APP_SOURCE)
+        self.assertIn("酒店空间仿真 · 全楼概览", APP_SOURCE)
 
     def test_primary_and_disabled_button_css_are_theme_aware(self):
         self.assertIn("color: var(--as-accent-text)", APP_SOURCE)

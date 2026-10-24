@@ -98,7 +98,7 @@ class GuestInteractionTests(unittest.TestCase):
             run = self.send("1128 送两条浴巾")
             outcome = self.runtime.wait("streamlit-guest", run.run_id)
         self.assertEqual(outcome.status, "needs_review")
-        self.app.run()
+        self.app.sidebar.radio(key="workspace-page").set_value("运营中枢").run()
         conflict = self.runtime.get_session("streamlit-guest").state.agent_conflicts[0]
         self.app.button(key=f"resolve-{conflict['conflict_id']}").click().run()
         self.assertEqual(list(self.app.exception), [])

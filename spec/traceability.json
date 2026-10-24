@@ -52,7 +52,10 @@
         "tests.test_deployment.DeploymentTests.test_academic_meeting_and_checkout_need_real_confirmation",
         "tests.test_app.MultiAgentFlowTests.test_faq_does_not_create_ticket",
         "tests.test_app.MultiAgentFlowTests.test_multi_topic_faq_and_delivery_compound_turn",
-        "tests.test_app.MultiAgentFlowTests.test_emergency_suppresses_facility_faq"
+        "tests.test_app.MultiAgentFlowTests.test_emergency_suppresses_facility_faq",
+        "tests.test_service_reliability.DeliveryReliabilityTests.test_delivery_speed_negation_is_not_an_order_replacement",
+        "tests.test_service_reliability.DeliveryReliabilityTests.test_emotion_alone_cannot_authorize_cloud_invented_service",
+        "tests.test_service_reliability.DeliveryReliabilityTests.test_emotion_or_denied_manager_is_not_a_complaint_under_rules_or_model"
       ],
       "experiment_ids": [
         "EXP-03"
@@ -77,7 +80,8 @@
         "tests.test_app.MultiAgentFlowTests.test_second_turn_completes_pending_request",
         "tests.test_app.MultiAgentFlowTests.test_room_correction_from_invalid_to_valid",
         "tests.test_app.MultiAgentFlowTests.test_cloud_room_requires_pms_and_mentioned_number",
-        "tests.test_deployment.DeploymentTests.test_guest_is_bound_to_own_session_room_and_stay"
+        "tests.test_deployment.DeploymentTests.test_guest_is_bound_to_own_session_room_and_stay",
+        "tests.test_service_reliability.DeliveryReliabilityTests.test_denied_guest_name_switches_to_neutral_address_without_rebinding"
       ],
       "experiment_ids": [
         "EXP-04"
@@ -105,7 +109,18 @@
         "tests.test_api.FastAPISessionTests.test_async_submit_accepts_replacement_and_poll_enforces_session",
         "tests.test_task_runtime.TaskRuntimeTests.test_unrelated_faq_queues_without_cancelling_delivery",
         "tests.test_task_runtime.TaskRuntimeTests.test_explicit_delivery_cancel_does_not_discard_active_faq",
-        "tests.test_task_runtime.TaskRuntimeTests.test_task_polling_cannot_use_another_session"
+        "tests.test_task_runtime.TaskRuntimeTests.test_task_polling_cannot_use_another_session",
+        "tests.test_service_reliability.DeliveryReliabilityTests.test_all_cancel_stops_running_and_queued_delivery_before_old_worker_returns",
+        "tests.test_service_reliability.DeliveryReliabilityTests.test_explicit_all_cancel_after_faq_releases_every_own_order_once",
+        "tests.test_service_reliability.DeliveryReliabilityTests.test_batch_cancel_includes_delivery_identified_by_model_after_queuing",
+        "tests.test_service_reliability.DeliveryReliabilityTests.test_batch_cancel_bypasses_blocked_unrelated_business_worker",
+        "tests.test_service_reliability.DeliveryReliabilityTests.test_late_delivery_from_unclassified_slot_reply_cannot_commit_after_batch",
+        "tests.test_service_reliability.DeliveryReliabilityTests.test_batch_cancel_does_not_touch_another_session_in_same_room",
+        "tests.test_service_reliability.DeliveryReliabilityTests.test_item_scoped_batch_status_and_audit_ignore_unrelated_cancellations",
+        "tests.test_service_reliability.DeliveryReliabilityTests.test_negated_batch_command_is_not_executed",
+        "tests.test_service_reliability.DeliveryReliabilityTests.test_batch_cancel_with_new_or_replacement_request_requires_clarification",
+        "tests.test_service_reliability.DeliveryReliabilityTests.test_cross_room_batch_command_cannot_interrupt_current_request",
+        "tests.test_service_reliability.DeliveryReliabilityTests.test_cancel_all_checkout_is_not_interpreted_as_delivery_cancellation"
       ],
       "experiment_ids": [
         "EXP-05"
@@ -133,7 +148,13 @@
         "tests.test_task_runtime.TaskRuntimeTests.test_dispatch_during_amendment_rechecks_actual_delivery_state",
         "tests.test_delivery_language.DeliveryLanguageTests.test_unknown_water_reference_does_not_cancel_existing_drinking_water",
         "tests.test_delivery_language.DeliveryLanguageTests.test_replacing_water_alias_updates_only_its_original_order",
-        "tests.test_api.FastAPISessionTests.test_dispatched_change_confirmation_is_idempotent"
+        "tests.test_api.FastAPISessionTests.test_dispatched_change_confirmation_is_idempotent",
+        "tests.test_service_reliability.DeliveryReliabilityTests.test_explicit_all_cancel_after_faq_releases_every_own_order_once",
+        "tests.test_service_reliability.DeliveryReliabilityTests.test_unknown_and_mixed_catalog_requests_never_create_delivery_ticket",
+        "tests.test_service_reliability.DeliveryReliabilityTests.test_batch_cancellation_leaves_dispatched_stock_until_staff_confirmation",
+        "tests.test_service_reliability.DeliveryReliabilityTests.test_batch_cancellation_requests_staff_pickup_for_completed_delivery",
+        "tests.test_service_reliability.DeliveryReliabilityTests.test_unknown_items_in_additions_conjunctions_and_polite_requests_are_not_dropped",
+        "tests.test_service_reliability.DeliveryReliabilityTests.test_catalog_validation_also_applies_to_direct_department_dispatch"
       ],
       "experiment_ids": [
         "EXP-06"
@@ -155,7 +176,8 @@
         "tests.test_task_runtime.TaskRuntimeTests.test_child_cannot_downgrade_safety_priority",
         "tests.test_api.FastAPISessionTests.test_conflicting_child_is_visible_as_review_without_order",
         "tests.test_streamlit.GuestInteractionTests.test_staff_can_review_conflict_without_bypassing_validation",
-        "tests.test_app.MultiAgentFlowTests.test_angry_ticket_gets_red_risk_alert"
+        "tests.test_app.MultiAgentFlowTests.test_angry_ticket_gets_red_risk_alert",
+        "tests.test_service_reliability.DeliveryReliabilityTests.test_supervisor_rejects_child_that_silently_drops_unknown_item"
       ],
       "experiment_ids": [
         "EXP-07"
@@ -223,7 +245,18 @@
         "tests.test_deployment.DeploymentTests.test_department_cannot_complete_other_department_ticket",
         "tests.test_api.FastAPISessionTests.test_multi_session_isolation",
         "tests.test_deployment.DeploymentTests.test_new_guest_does_not_read_previous_room_orders",
-        "tests.test_evolution.SelfEvolutionAndMemoryTests.test_sliding_window_memory_summary"
+        "tests.test_evolution.SelfEvolutionAndMemoryTests.test_sliding_window_memory_summary",
+        "tests.test_service_reliability.TranscriptRetentionTests.test_model_compaction_does_not_delete_guest_transcript",
+        "tests.test_service_reliability.TranscriptRetentionTests.test_durable_archive_and_neutral_address_survive_restart",
+        "tests.test_guest_history_ui.LocalGuestHistoryUITests.test_local_can_reach_messages_beyond_one_hundred",
+        "tests.test_service_reliability.TranscriptRetentionTests.test_memory_archive_pages_are_exclusive_ordered_and_private",
+        "tests.test_service_reliability.TranscriptRetentionTests.test_reset_removes_only_the_current_sessions_archive",
+        "tests.test_guest_history_ui.LocalGuestHistoryUITests.test_local_main_chat_reads_archive_after_compaction",
+        "tests.test_guest_history_ui.LocalGuestHistoryUITests.test_polling_preserves_old_page_until_return_to_latest",
+        "tests.test_guest_history_ui.LocalGuestHistoryUITests.test_replacement_local_runtime_cannot_reuse_old_history_page",
+        "tests.test_guest_history_ui.DeployedGuestHistoryUITests.test_deployed_main_chat_reads_authorized_archive",
+        "tests.test_guest_history_ui.DeployedGuestHistoryUITests.test_deployed_can_reach_messages_beyond_one_hundred",
+        "tests.test_guest_history_ui.DeployedGuestHistoryUITests.test_changed_guest_pass_discards_previous_history_page"
       ],
       "experiment_ids": [
         "EXP-10"

@@ -144,7 +144,7 @@ class SQLiteStateStore:
         with self._lock:
             rows = self._connection.execute(
                 "SELECT sequence,data_json FROM aegis_messages WHERE session_id=? AND sequence<? "
-                "ORDER BY sequence DESC LIMIT ?", (session_id, before or 2**63 - 1, min(100, max(1, limit)))).fetchall()
+                "ORDER BY sequence DESC LIMIT ?", (session_id, before if before is not None else 2**63 - 1, min(100, max(1, limit)))).fetchall()
         return [{"sequence": r["sequence"], **json.loads(r["data_json"])} for r in reversed(rows)]
 
     def close(self) -> None:

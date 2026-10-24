@@ -4,20 +4,20 @@
 
 `implemented` 表示约定范围内的代码和测试存在，`partial` 表示有明确未执行/未交付范围；二者都不代表本次运行PASS。本文定义追溯方案，不嵌入可变成绩；每次执行前为 `PENDING_RUN`，完成后只认对应manifest和独立验收记录。由集成人员在源码稳定后运行统一入口。范围固定 `offline-code-baseline`，`field_readiness=NOT_VERIFIED`，FIELD-01…FIELD-06 均为 `TARGET_NOT_RUN`。
 
-JSON 顶层 `schema_version=1`；`requirements` 恰含REQ-01…REQ-16，每项对应同号AC/EXP，`tests` 仅写真实完整unittest方法，当前合计120个唯一方法；`evidence` 仅写统一目录实际文件名。未来FUT不计入当前16项。机器校验只证明方法可加载且在本次成功的完整套件里实际执行；方法是否支撑业务要求还须检查断言语义。
+JSON 顶层 `schema_version=1`；`requirements` 恰含REQ-01…REQ-16，每项对应同号AC/EXP，`tests` 仅写真实完整unittest方法，当前合计156个唯一方法；`evidence` 仅写统一目录实际文件名。未来FUT不计入当前16项。机器校验只证明方法可加载且在本次成功的完整套件里实际执行；方法是否支撑业务要求还须检查断言语义。
 
 | 要求 / 验收 / 实验 | 内容 | 实现状态 | 方法数 | 覆盖边界 |
 | --- | --- | --- | --- | --- |
 | REQ-01 / AC-01 / EXP-01 | 入住凭证与入住/会话绑定 | `implemented` | 4 | 授权、跨房、过期、撤销、换客与在途撤销；不是SSO联调。 |
 | REQ-02 / AC-02 / EXP-02 | 岗位授权与必要字段 | `implemented` | 3 | 服务端403和字段过滤；页面隐藏不替代授权。 |
-| REQ-03 / AC-03 / EXP-03 | 复合FAQ与学校未知政策 | `implemented` | 7 | standard复合基线与academic核验分开；未知政策模板仍须FIELD-04审核。 |
-| REQ-04 / AC-04 / EXP-04 | 补槽与房号边界 | `implemented` | 5 | 演示补槽不授予部署跨房权限；模型提取使用stub。 |
-| REQ-05 / AC-05 / EXP-05 | 异步版本、取消与并发 | `implemented` | 10 | Event/Barrier受控竞态和队列保护；不证明生产容量。 |
-| REQ-06 / AC-06 / EXP-06 | 送物生命周期与目标定位 | `implemented` | 12 | ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒绝。 |
-| REQ-07 / AC-07 / EXP-07 | 提案核验与风险升级 | `implemented` | 6 | 错物/错房/虚构库存/风险降级拒绝；人工核验不补派被拒工单。 |
+| REQ-03 / AC-03 / EXP-03 | 复合FAQ与学校未知政策 | `implemented` | 10 | standard复合基线与academic核验分开；未知政策模板仍须FIELD-04审核。 |
+| REQ-04 / AC-04 / EXP-04 | 补槽与房号边界 | `implemented` | 6 | 演示补槽不授予部署跨房权限；模型提取使用stub。 |
+| REQ-05 / AC-05 / EXP-05 | 异步版本、取消与并发 | `implemented` | 21 | Event/Barrier受控竞态和队列保护；不证明生产容量。 |
+| REQ-06 / AC-06 / EXP-06 | 送物生命周期与目标定位 | `implemented` | 18 | ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒绝。 |
+| REQ-07 / AC-07 / EXP-07 | 提案核验与风险升级 | `implemented` | 7 | 错物/错房/虚构库存/风险降级拒绝；人工核验不补派被拒工单。 |
 | REQ-08 / AC-08 / EXP-08 | 单写入、原子检查点与回滚 | `implemented` | 4 | 单库第二writer拒绝、聊天/员工故障回滚；非真实断电实验。 |
 | REQ-09 / AC-09 / EXP-09 | 持久幂等与重试 | `implemented` | 4 | 同载荷复用run_id，重启/裁剪仍不重复；改载荷409。 |
-| REQ-10 / AC-10 / EXP-10 | 消息归档、日期恢复与隔离 | `implemented` | 8 | 在线窗口与16条归档、8条分页计数、持久日期和interrupted恢复分别检查；分页身份/顺序/去重尚无独立断言。 |
+| REQ-10 / AC-10 / EXP-10 | 消息归档、日期恢复与隔离 | `implemented` | 19 | 模型窗口与完整归档分层；112条分页身份/顺序/去重、116条重启恢复及两端UI历史页隔离均有断言。 |
 | REQ-11 / AC-11 / EXP-11 | 学术待遇人工核验与已知餐券保护 | `implemented` | 7 | 已知餐券表达、保洁直调/改券保护已实现；有4方法红绿和81项焦点回归。不是任意语言或真实发券证明。 |
 | REQ-12 / AC-12 / EXP-12 | 部门回执、夜审与回收待检 | `implemented` | 5 | 夜审日期、借用品通知和回收待检；不等价外部财务夜审。 |
 | REQ-13 / AC-13 / EXP-13 | API工作台与岗位视图 | `implemented` | 3 | AppTest经HotelApi/TestClient访问唯一临时API；两进程/容器仍须FIELD-01。 |
@@ -73,6 +73,9 @@ standard复合基线与academic核验分开；未知政策模板仍须FIELD-04�
 - `tests.test_app.MultiAgentFlowTests.test_faq_does_not_create_ticket`
 - `tests.test_app.MultiAgentFlowTests.test_multi_topic_faq_and_delivery_compound_turn`
 - `tests.test_app.MultiAgentFlowTests.test_emergency_suppresses_facility_faq`
+- `tests.test_service_reliability.DeliveryReliabilityTests.test_delivery_speed_negation_is_not_an_order_replacement`
+- `tests.test_service_reliability.DeliveryReliabilityTests.test_emotion_alone_cannot_authorize_cloud_invented_service`
+- `tests.test_service_reliability.DeliveryReliabilityTests.test_emotion_or_denied_manager_is_not_a_complaint_under_rules_or_model`
 
 ### REQ-04 / AC-04 / EXP-04
 
@@ -85,6 +88,7 @@ standard复合基线与academic核验分开；未知政策模板仍须FIELD-04�
 - `tests.test_app.MultiAgentFlowTests.test_room_correction_from_invalid_to_valid`
 - `tests.test_app.MultiAgentFlowTests.test_cloud_room_requires_pms_and_mentioned_number`
 - `tests.test_deployment.DeploymentTests.test_guest_is_bound_to_own_session_room_and_stay`
+- `tests.test_service_reliability.DeliveryReliabilityTests.test_denied_guest_name_switches_to_neutral_address_without_rebinding`
 
 ### REQ-05 / AC-05 / EXP-05
 
@@ -102,6 +106,17 @@ Event/Barrier受控竞态和队列保护；不证明生产容量。
 - `tests.test_task_runtime.TaskRuntimeTests.test_unrelated_faq_queues_without_cancelling_delivery`
 - `tests.test_task_runtime.TaskRuntimeTests.test_explicit_delivery_cancel_does_not_discard_active_faq`
 - `tests.test_task_runtime.TaskRuntimeTests.test_task_polling_cannot_use_another_session`
+- `tests.test_service_reliability.DeliveryReliabilityTests.test_all_cancel_stops_running_and_queued_delivery_before_old_worker_returns`
+- `tests.test_service_reliability.DeliveryReliabilityTests.test_explicit_all_cancel_after_faq_releases_every_own_order_once`
+- `tests.test_service_reliability.DeliveryReliabilityTests.test_batch_cancel_includes_delivery_identified_by_model_after_queuing`
+- `tests.test_service_reliability.DeliveryReliabilityTests.test_batch_cancel_bypasses_blocked_unrelated_business_worker`
+- `tests.test_service_reliability.DeliveryReliabilityTests.test_late_delivery_from_unclassified_slot_reply_cannot_commit_after_batch`
+- `tests.test_service_reliability.DeliveryReliabilityTests.test_batch_cancel_does_not_touch_another_session_in_same_room`
+- `tests.test_service_reliability.DeliveryReliabilityTests.test_item_scoped_batch_status_and_audit_ignore_unrelated_cancellations`
+- `tests.test_service_reliability.DeliveryReliabilityTests.test_negated_batch_command_is_not_executed`
+- `tests.test_service_reliability.DeliveryReliabilityTests.test_batch_cancel_with_new_or_replacement_request_requires_clarification`
+- `tests.test_service_reliability.DeliveryReliabilityTests.test_cross_room_batch_command_cannot_interrupt_current_request`
+- `tests.test_service_reliability.DeliveryReliabilityTests.test_cancel_all_checkout_is_not_interpreted_as_delivery_cancellation`
 
 ### REQ-06 / AC-06 / EXP-06
 
@@ -121,6 +136,12 @@ ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒�
 - `tests.test_delivery_language.DeliveryLanguageTests.test_unknown_water_reference_does_not_cancel_existing_drinking_water`
 - `tests.test_delivery_language.DeliveryLanguageTests.test_replacing_water_alias_updates_only_its_original_order`
 - `tests.test_api.FastAPISessionTests.test_dispatched_change_confirmation_is_idempotent`
+- `tests.test_service_reliability.DeliveryReliabilityTests.test_explicit_all_cancel_after_faq_releases_every_own_order_once`
+- `tests.test_service_reliability.DeliveryReliabilityTests.test_unknown_and_mixed_catalog_requests_never_create_delivery_ticket`
+- `tests.test_service_reliability.DeliveryReliabilityTests.test_batch_cancellation_leaves_dispatched_stock_until_staff_confirmation`
+- `tests.test_service_reliability.DeliveryReliabilityTests.test_batch_cancellation_requests_staff_pickup_for_completed_delivery`
+- `tests.test_service_reliability.DeliveryReliabilityTests.test_unknown_items_in_additions_conjunctions_and_polite_requests_are_not_dropped`
+- `tests.test_service_reliability.DeliveryReliabilityTests.test_catalog_validation_also_applies_to_direct_department_dispatch`
 
 ### REQ-07 / AC-07 / EXP-07
 
@@ -134,6 +155,7 @@ ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒�
 - `tests.test_api.FastAPISessionTests.test_conflicting_child_is_visible_as_review_without_order`
 - `tests.test_streamlit.GuestInteractionTests.test_staff_can_review_conflict_without_bypassing_validation`
 - `tests.test_app.MultiAgentFlowTests.test_angry_ticket_gets_red_risk_alert`
+- `tests.test_service_reliability.DeliveryReliabilityTests.test_supervisor_rejects_child_that_silently_drops_unknown_item`
 
 ### REQ-08 / AC-08 / EXP-08
 
@@ -171,6 +193,17 @@ ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒�
 - `tests.test_api.FastAPISessionTests.test_multi_session_isolation`
 - `tests.test_deployment.DeploymentTests.test_new_guest_does_not_read_previous_room_orders`
 - `tests.test_evolution.SelfEvolutionAndMemoryTests.test_sliding_window_memory_summary`
+- `tests.test_service_reliability.TranscriptRetentionTests.test_model_compaction_does_not_delete_guest_transcript`
+- `tests.test_service_reliability.TranscriptRetentionTests.test_durable_archive_and_neutral_address_survive_restart`
+- `tests.test_guest_history_ui.LocalGuestHistoryUITests.test_local_can_reach_messages_beyond_one_hundred`
+- `tests.test_service_reliability.TranscriptRetentionTests.test_memory_archive_pages_are_exclusive_ordered_and_private`
+- `tests.test_service_reliability.TranscriptRetentionTests.test_reset_removes_only_the_current_sessions_archive`
+- `tests.test_guest_history_ui.LocalGuestHistoryUITests.test_local_main_chat_reads_archive_after_compaction`
+- `tests.test_guest_history_ui.LocalGuestHistoryUITests.test_polling_preserves_old_page_until_return_to_latest`
+- `tests.test_guest_history_ui.LocalGuestHistoryUITests.test_replacement_local_runtime_cannot_reuse_old_history_page`
+- `tests.test_guest_history_ui.DeployedGuestHistoryUITests.test_deployed_main_chat_reads_authorized_archive`
+- `tests.test_guest_history_ui.DeployedGuestHistoryUITests.test_deployed_can_reach_messages_beyond_one_hundred`
+- `tests.test_guest_history_ui.DeployedGuestHistoryUITests.test_changed_guest_pass_discards_previous_history_page`
 
 ### REQ-11 / AC-11 / EXP-11
 

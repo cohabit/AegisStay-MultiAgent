@@ -76,6 +76,8 @@ class TaskRun:
     worker_finished: bool = False
     reply: str = ""
     created_at: str = field(default_factory=lambda: datetime.now().isoformat(timespec="seconds"))
+    is_control: bool = False
+    delivery_epoch: int = 0
 
     def public(self) -> dict[str, Any]:
         return {
@@ -126,9 +128,16 @@ class SessionManager:
         self._queues: dict[str, deque[str]] = {}
         self._requests: dict[tuple[str, str], str] = {}
         self._outstanding, self.max_pending = 0, max_pending
+        self._delivery_epoch = 0
+        self._delivery_cancel_epochs: dict[str, dict[tuple[str | None, str | None], int]] = {}
         self._closed = False
         self.storage_error: str | None = None
         self._audit: list[dict[str, Any]] = []
+        # The model's bounded message window is not the guest transcript.
+        # SQLite owns durable archives; local sessions keep a private archive.
+        self._transcripts: dict[str, list[dict[str, Any]]] = {}
+        self._transcript_ids: dict[str, set[str]] = {}
+        self._transcript_sequence = 0
         if self.store and not persisted:
             self.persist()
 
@@ -137,7 +146,7 @@ class SessionManager:
         "last_trace", "model_mode", "guest_profile", "pending", "late_checkout",
         "current_date", "borrowed_items", "audit_logs", "rolling_summary", "tasks",
         "agent_conflicts",
-        "authorized_room", "stay_id", "session_id",
+        "authorized_room", "stay_id", "session_id", "neutral_address",
     )
 
     def _business_payload(self) -> dict[str, Any]:
@@ -160,6 +169,9 @@ class SessionManager:
                 deleted: tuple[str, ...] = ()) -> None:
         """Flush the current business state and optional session to SQLite."""
         with self.lock:
+            if not self.store:
+                for sid, flow in self.sessions.items():
+                    self._archive_messages(sid, flow)
             if self.store:
                 for flow in self.sessions.values():
                     for message in flow.state.messages:
@@ -377,12 +389,28 @@ class SessionManager:
         )}
         return cloned
 
+    def _archive_messages(self, session_id: str, flow: HotelOrchestrator) -> None:
+        archive = self._transcripts.setdefault(session_id, [])
+        known = self._transcript_ids.setdefault(session_id, set())
+        for message in flow.state.messages:
+            mid = message.setdefault("message_id", uuid.uuid4().hex)
+            if mid not in known:
+                self._transcript_sequence += 1
+                archive.append({**deepcopy(message), "sequence": self._transcript_sequence})
+                known.add(mid)
+
     def conversation_history(self, session_id: str, before: int | None = None, limit: int = 30) -> list[dict]:
         with self.lock:
             if self.store:
                 return self.store.messages(session_id, before, limit)
             flow = self.get_session(session_id)
-            return deepcopy(flow.state.messages[-limit:]) if flow else []
+            if not flow:
+                return []
+            self._archive_messages(session_id, flow)
+            rows = self._transcripts[session_id]
+            if before is not None:
+                rows = [row for row in rows if row["sequence"] < before]
+            return deepcopy(rows[-min(100, max(1, limit)):])
 
     def snapshot(self, session_id: str) -> HotelOrchestrator | None:
         with self.lock:
@@ -412,22 +440,23 @@ class SessionManager:
                         previous.room_hint != (room_no or _room_no(message) or previous.room_hint)):
                     raise ValueError("同一 request_id 不能用于不同请求")
                 return previous
-            if self._outstanding >= self.max_pending:
+            command = parse_delivery_command(message)
+            batch_control = boundary_kind is None and command.cancel_all and not command.ambiguous
+            if self._outstanding >= self.max_pending and not batch_control:
                 raise RuntimeBusy("任务队列已满，请稍后重试")
             active = self._runs.get(self._active.get(session_id, ""))
-            command = parse_delivery_command(message)
             # A safety probe is a separate read-only turn, even if its wording
             # contains a cancellation, replacement or another room number.
             control = boundary_kind is None and command.action in {"replace", "cancel"}
             explicit_delivery = bool(command.references)
             old_items = set(command.references) - {command.item}
             active_item = parse_delivery_command(flow.state.tasks[active.task_id].get("goal_detail", active.message)).item if active else None
-            target_active = active if control and not (command.unresolved_target or command.ambiguous) and active and (
+            target_active = active if control and not batch_control and not (command.unresolved_target or command.ambiguous) and active and (
                 not explicit_delivery or active.kind == "送物" and (not old_items or active_item in old_items)
             ) else None
             origin = ""
             target_ticket = None
-            kind = "安全边界" if boundary_kind else _rules_extract(message, flow.knowledge)["intent"]
+            kind = "安全边界" if boundary_kind else "送物" if batch_control else _rules_extract(message, flow.knowledge)["intent"]
             if target_active:
                 kind = target_active.kind
                 previous = flow.state.tasks[target_active.task_id]
@@ -438,7 +467,7 @@ class SessionManager:
                 room_hint = flow.state.room_no
             task_id = target_active.task_id if target_active else f"TASK-{uuid.uuid4().hex[:12]}"
             version = target_active.version + 1 if target_active else 1
-            if control and not target_active:
+            if control and not target_active and not batch_control:
                 target_ticket, target_error = flow.delivery_target(message, command)
                 latest = flow.state.tasks.get(target_ticket.get("task_id")) if target_ticket else None
                 if target_ticket or target_error or explicit_delivery:
@@ -458,7 +487,8 @@ class SessionManager:
                 goal_detail = f"送 {quantity} 件{command.item}"
             run = TaskRun(session_id, flow, message, force_rules, kind, task_id, version,
                           room_hint, origin, request_id,
-                          target_ticket_id=target_ticket["ticket_id"] if target_ticket else None)
+                          target_ticket_id=target_ticket["ticket_id"] if target_ticket else None,
+                          is_control=batch_control, delivery_epoch=self._delivery_epoch)
             self._runs[run.run_id] = run
             self._outstanding += 1
             if request_id:
@@ -466,6 +496,34 @@ class SessionManager:
             flow.state.messages.append({"role": "user", "content": message,
                                         "room_no": room_hint, "run_id": run.run_id})
             flow.state.tasks[task_id] = {**run.public(), "message": message, "goal_detail": goal_detail, "kind": kind}
+            if batch_control:
+                self._delivery_epoch += 1
+                run.delivery_epoch = self._delivery_epoch
+                epochs = self._delivery_cancel_epochs.setdefault(session_id, {})
+                for item in command.references or (None,):
+                    epochs[(room_hint, item)] = self._delivery_epoch
+                for previous_run in list(self._runs.values()):
+                    if (previous_run is run or previous_run.owner is not flow or previous_run.result.done()
+                            or (room_hint and previous_run.room_hint != room_hint)):
+                        continue
+                    goal = flow.state.tasks.get(previous_run.task_id, {}).get("goal_detail", previous_run.message)
+                    previous_command = parse_delivery_command(goal)
+                    potential_delivery = previous_run.kind == "送物" or (
+                        previous_run.kind in {"其他", "闲聊"} and previous_command.item is not None
+                        and (previous_command.quantity is not None or not any(
+                            term in goal for term in ("哪里", "在哪", "几点", "如何", "怎么", "什么", "是否", "吗", "？", "?")
+                        ))
+                    )
+                    if not potential_delivery or command.references and previous_command.item not in command.references:
+                        continue
+                    queued = previous_run.status == "queued"
+                    self._supersede(previous_run, "cancelled")
+                    if queued:
+                        self._queues[session_id].remove(previous_run.run_id)
+                        previous_run.worker_finished = True
+                        self._outstanding -= 1
+                    if self._active.get(session_id) == previous_run.run_id:
+                        self._active.pop(session_id, None)
             if target_active:
                 self._supersede(target_active)
                 self._active.pop(session_id, None)
@@ -477,7 +535,13 @@ class SessionManager:
                 self._outstanding -= 1
                 flow.state.tasks[task_id]["status"] = "failed"
                 raise RuntimeBusy("请求未受理：持久化失败，请联系前台") from error
-            if session_id in self._active:
+            if batch_control:
+                run.status = "running"
+                flow.state.tasks[task_id]["status"] = "running"
+                # This local control has its own validity, so an unrelated
+                # active business worker keeps its slot and can finish later.
+                self._execute(run)
+            elif session_id in self._active:
                 self._queues[session_id].append(run.run_id)
             else:
                 self._start(run)
@@ -511,7 +575,8 @@ class SessionManager:
             if room.get("stay_id") != state.stay_id or room.get("room_status") != "在住" or not valid_pass:
                 return False
         return (not run.cancelled.is_set() and self.sessions.get(run.session_id) is run.owner
-                and self._active.get(run.session_id) == run.run_id
+                and (self._active.get(run.session_id) == run.run_id
+                     or run.is_control and run.status == "running" and not run.worker_finished)
                 and run.owner.state.tasks.get(run.task_id, {}).get("version") == run.version)
 
     @staticmethod
@@ -527,6 +592,17 @@ class SessionManager:
         if not self._is_current(run):
             raise TaskInterrupted()
         state, candidate = run.owner.state, worker.state
+        originals = {ticket["ticket_id"]: ticket for ticket in baseline.tickets}
+        epochs = self._delivery_cancel_epochs.get(run.session_id, {})
+        for ticket in candidate.tickets:
+            if ticket.get("category") != "送物" or ticket == originals.get(ticket["ticket_id"]):
+                continue
+            # Intent can become known only inside the worker (e.g. a room
+            # slot reply). Recheck the cancellation fence on the actual delta.
+            if any(epoch > run.delivery_epoch and room in (None, ticket.get("room_no"))
+                   and item in (None, ticket.get("inventory_item"))
+                   for (room, item), epoch in epochs.items()):
+                raise TaskInterrupted()
         if state.authorized_room and candidate.room_no != state.authorized_room:
             raise ValueError("拒绝提交不属于入住凭证的房间")
         if state.current_date != baseline.current_date:
@@ -535,7 +611,7 @@ class SessionManager:
         additions: list[tuple[list, dict[str, Any]]] = []
         private_changes: dict[str, Any] = {}
         for name in ("room_no", "intent", "sentiment", "active_agent", "request_detail", "pending",
-                     "late_checkout", "current_date", "borrowed_items", "audit_logs", "agent_conflicts"):
+                     "late_checkout", "current_date", "borrowed_items", "audit_logs", "agent_conflicts", "neutral_address"):
             before, proposed = getattr(baseline, name), getattr(candidate, name)
             if before != proposed:
                 if getattr(state, name) != before:
@@ -625,7 +701,8 @@ class SessionManager:
                     originals = {t["ticket_id"]: t for t in baseline.tickets}
                     for ticket in worker.state.tickets:
                         if ticket != originals.get(ticket["ticket_id"]):
-                            ticket.update(task_id=run.task_id, task_version=run.version)
+                            if not (parse_delivery_command(run.message).cancel_all and ticket["ticket_id"] in originals):
+                                ticket.update(task_id=run.task_id, task_version=run.version)
                             if ticket["ticket_id"] not in originals:
                                 ticket.update(owner_session_id=run.session_id,
                                               stay_id=worker.state.stay_id or self.shared_pms.get(ticket["room_no"], {}).get("stay_id"))
@@ -677,6 +754,7 @@ class SessionManager:
                 self._outstanding -= 1
                 if self._active.get(run.session_id) == run.run_id:
                     self._active.pop(run.session_id, None)
+                if run.session_id not in self._active:
                     queue = self._queues.get(run.session_id)
                     if queue:
                         next_run = self._runs[queue.popleft()]
@@ -706,6 +784,18 @@ class SessionManager:
                 any(t.get("task_id") == run.task_id and t["status"] == "已取消" for t in owned_tickets)
                 or any(step["event"] == "task_cancelled" for step in state.last_trace)):
                 task_status = "cancelled"
+            if command.cancel_all and any(step["event"] == "delivery_batch_cancel" for step in state.last_trace):
+                originals = {t["ticket_id"]: t for t in baseline.tickets}
+                changed_tickets = [t for t in owned_tickets if t["ticket_id"] in originals
+                                   and t != originals[t["ticket_id"]]]
+                for ticket in changed_tickets:
+                    owner_task = state.tasks.get(ticket.get("task_id"))
+                    if owner_task and ticket.get("room_no") == state.room_no:
+                        if ticket["status"] == "已取消":
+                            owner_task.update(status="cancelled", cancelled_by_run=run.run_id)
+                        elif ticket.get("change_request", {}).get("status") == "待部门确认":
+                            owner_task.update(status="awaiting_confirmation")
+                task_status = "awaiting_confirmation" if any(t.get("change_request", {}).get("status") == "待部门确认" for t in changed_tickets) else "cancelled"
         if run.status == "needs_review":
             task_status = "needs_review"
         state.tasks[run.task_id].update(status=task_status, run_status=run.status)
@@ -974,6 +1064,9 @@ class SessionManager:
                 if run.session_id == session_id and run.worker_finished:
                     self._runs.pop(run_id, None)
             removed = self.sessions.pop(session_id, None) is not None
+            self._transcripts.pop(session_id, None)
+            self._transcript_ids.pop(session_id, None)
+            self._delivery_cancel_epochs.pop(session_id, None)
             if removed and self.store:
                 self.persist(deleted=(session_id,))
             return removed

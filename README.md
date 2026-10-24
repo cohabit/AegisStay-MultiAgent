@@ -10,6 +10,8 @@
 
 住客对话以“学术之家住客服务助手”作为公开服务身份；已覆盖的内部提示、模型和权限探询在本地处理，不外呼模型或修改订单。入住授权、限定工具、提案核验和原子提交共同约束业务写入，安全边界见 [对话安全规格](spec/security_prompt_injection.md)。本地工作区选择器供开发和值班使用，不承担鉴权；公网住客入口必须使用受凭证保护的 API 工作台。
 
+完整聊天记录与模型短上下文分别管理，住客可在固定高度的消息面板中翻页查看历史。“全部取消”处理本会话送物，已派出或送达的物品需部门确认撤回；未知物品、混合取消/改单指令和没有业务目标的情绪表达先核验或澄清。具体行为与复测步骤见 [服务可靠性规格](spec/service_reliability.md)。
+
 开发入口见 [AGENTS.md 仓库地图](AGENTS.md)。目标、交付清单和范围见 [主规格](spec/specification.md)，REQ-14 见 [部署与运维子规格](spec/design/deployment.md)，FIELD-01～06 见 [现场验收协议](spec/field_validation.md)，FUT-01～06 见 [未来集成规格](spec/future_integrations.md)。剩余规格的静态验收见 [补全规格验收记录](spec/remaining_spec_verification_2026-10-23.md)。详细步骤见 [实验方案](spec/experiments.md)，判定门槛见 [验收标准](spec/acceptance_criteria.md)，每条要求对应的真实测试见 [追溯矩阵](spec/traceability.md)。旧专题按 [历史规格索引](spec/legacy_specs.md) 区分适用范围。
 
 ## 产品界面
@@ -21,6 +23,8 @@
 ![校园湖景与聚焦住客入口](docs/images/guest-home.jpg)
 
 ![夜间住客对话与公开服务身份](docs/images/guest-night.jpg)
+
+![完整对话归档与历史翻页](docs/images/guest-history.jpg)
 
 ### 运营总览
 
@@ -156,7 +160,7 @@ docker compose up -d --build
 
 统一证据入口会强制使用离线环境，在新建目录保存原始日志、退出码、源码指纹、结构化指标和黑板断言。失败、缺失证据或跳过用例均不能报告通过；产物默认保存在被 Git 忽略的 `.artifacts/`。GitHub CI 执行同一入口并归档证据。
 
-最近一次本机运行的来源、实测结果与适用边界见 [规格体系验收记录](spec/specification_verification_2026-10-23.md)。
+本机运行的来源、实测结果与适用边界见 [服务可靠性验收记录](spec/service_reliability_verification_2026-10-25.md)；早期基线保留在 [规格体系验收记录](spec/specification_verification_2026-10-23.md)。
 
 ~~~powershell
 .\.venv\Scripts\python.exe -B -X utf8 scripts/verify_release.py --output-dir .artifacts/verification/local-001

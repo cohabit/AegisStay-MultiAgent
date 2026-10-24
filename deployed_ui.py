@@ -11,6 +11,49 @@ import streamlit as st
 from api_client import ApiError, HotelApi
 
 
+def guest_history_page(fetch_page, *, scope: tuple, key: str) -> dict:
+    """Keep one archive page per visitor, freezing older pages during polling."""
+    page = st.session_state.get(key)
+    if page is None or page["scope"] != scope:
+        page = {"scope": scope, "messages": [], "latest": True, "has_older": False, "action": None}
+        st.session_state[key] = page
+
+    action = page["action"]
+    if action == "older" and page["messages"]:
+        before = page["messages"][0]["sequence"]
+    elif action == "latest" or page["latest"]:
+        before = None
+    else:
+        return page
+
+    # One extra entry tells the controls whether another earlier page exists.
+    records = fetch_page(before=before, limit=31)
+    records = sorted({record["message_id"]: record for record in records}.values(),
+                     key=lambda record: record["sequence"])
+    if records or before is None:
+        page.update(messages=records[-30:], latest=before is None, has_older=len(records) > 30)
+    else:
+        page["has_older"] = False
+    page["action"] = None
+    return page
+
+
+def _navigate_guest_history(key: str, scope: tuple, action: str) -> None:
+    page = st.session_state.get(key)
+    if page is not None and page["scope"] == scope:
+        page["action"] = action
+
+
+def guest_history_controls(page: dict, *, key: str) -> None:
+    """Render navigation inside the existing scrolling chat panel."""
+    with st.container(horizontal=True, gap="small"):
+        st.button("加载更早记录", key=key + "-older", disabled=not page["has_older"],
+                  on_click=_navigate_guest_history, args=(key, page["scope"], "older"))
+        st.button("回到最新消息", key=key + "-latest", disabled=page["latest"],
+                  on_click=_navigate_guest_history, args=(key, page["scope"], "latest"))
+    st.caption("最近的对话 · 自动更新" if page["latest"] else "较早的对话 · 回到最新消息可查看新回复")
+
+
 def show_api_error(function):
     @wraps(function)
     def safe(*args, **kwargs):
@@ -26,14 +69,25 @@ def show_api_error(function):
 def guest_services(api: HotelApi, person: dict) -> None:
     sid = person["session_id"]
     detail = api.request("GET", f"/api/session/{sid}")
+
+    def fetch_history(*, before, limit):
+        params = {"limit": limit}
+        if before is not None:
+            params["before"] = before
+        return api.request("GET", f"/api/session/{sid}/messages", params=params)["messages"]
+
+    history_key = "deployed-guest-history"
+    history = guest_history_page(fetch_history, key=history_key,
+                                 scope=(api.base_url, sid, person.get("stay_id"), person.get("grant_id")))
     st.subheader("住客服务", icon=":material/room_service:")
     st.caption(f"房间 {person['room_no']} · 已核验本次入住 · 服务请求由前台与相应部门办理")
     chat, progress = st.columns([2.2, 1])
     with chat:
-        with st.container(height=380, border=True):
-            if not detail["messages"]:
+        with st.container(height=380, border=True, key="deployed-history-panel", autoscroll=history["latest"]):
+            guest_history_controls(history, key=history_key)
+            if not history["messages"]:
                 st.write("您好，您可以咨询会务安排、申请送物或报修。")
-            for message in detail["messages"]:
+            for message in history["messages"]:
                 with st.chat_message(message["role"]):
                     st.write(message["content"])
         prompt = st.chat_input("例如：送两条毛巾；也可以补充、修改或取消", key="deployed-prompt", max_chars=4000)
@@ -57,12 +111,6 @@ def guest_services(api: HotelApi, person: dict) -> None:
                 st.warning("有请求未确认完成，请查看服务进度后重试或联系前台。")
         if not detail["progress_items"]:
             st.caption("暂无进行中的服务")
-        with st.expander("查看历史记录"):
-            history = api.request("GET", f"/api/session/{sid}/messages", params={"limit": 100})
-            for message in history["messages"]:
-                st.caption("住客" if message["role"] == "user" else "酒店")
-                st.write(message["content"])
-            st.caption("显示最近 100 条；接口支持分页查询更早记录。")
 
 
 @st.fragment(run_every=3)

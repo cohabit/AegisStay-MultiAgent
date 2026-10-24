@@ -12,6 +12,7 @@ import streamlit as st
 
 from hotel_core import HotelOrchestrator
 from agent_runtime import RuntimeBusy, SessionManager
+from deployed_ui import guest_history_controls, guest_history_page
 
 GUEST_SESSION = "streamlit-guest"
 
@@ -504,7 +505,12 @@ def _render_entry_conversation(orchestrator: HotelOrchestrator) -> None:
     runtime = _runtime_for_ui(orchestrator)
     snapshot = runtime.snapshot(GUEST_SESSION)
     state = snapshot.state
-    has_conversation = bool(state.messages)
+    history_key = "local-guest-history"
+    history = guest_history_page(
+        lambda **params: runtime.conversation_history(GUEST_SESSION, **params),
+        key=history_key, scope=(id(runtime), GUEST_SESSION, state.stay_id),
+    )
+    has_conversation = bool(history["messages"])
     active_tasks = [task for task in state.tasks.values() if task["status"] in {"running", "queued"}]
     profile = state.guest_profile or {}
     identity_text = (
@@ -554,8 +560,9 @@ def _render_entry_conversation(orchestrator: HotelOrchestrator) -> None:
             unsafe_allow_html=True,
         )
         st.markdown('<div class="client-chat-history" aria-hidden="true"></div>', unsafe_allow_html=True)
-        with st.container(height=300, border=True, key="client-history-panel", autoscroll=True):
-            for message in state.messages:
+        with st.container(height=300, border=True, key="client-history-panel", autoscroll=history["latest"]):
+            guest_history_controls(history, key=history_key)
+            for message in history["messages"]:
                 with st.chat_message("user" if message["role"] == "user" else "assistant"):
                     st.write(message["content"])
 

@@ -219,6 +219,7 @@ class HotelState:
     authorized_room: str | None = None
     stay_id: str | None = None
     session_id: str | None = None
+    neutral_address: bool = False
 
 
 def _load_env_or_config() -> None:
@@ -510,6 +511,15 @@ def _academic_voucher_request(text: str) -> bool:
     )
 
 
+def _positive_complaint_text(text: str) -> str:
+    """Remove explicitly declined complaint targets before testing escalation evidence."""
+    text = re.sub(
+        r"(?:不需要|不用|不要|无需|不想|没有|没说要|不是要|别)(?:(?:再|你|帮我|请|找|叫|让|联系)\s*){0,4}"
+        r"(?:大堂经理|经理|投诉|客诉|赔偿|差评)", "", text,
+    )
+    return re.sub(r"(?:大堂)?经理(?:就|先)?(?:不需要|不用|不要|别)(?:来|介入|联系|处理|参与)", "", text)
+
+
 def _rules_extract(text: str, knowledge: HotelKnowledge) -> dict[str, Any]:
     compact = re.sub(r"\s+", "", text)
     resolution_phrases = (
@@ -527,11 +537,11 @@ def _rules_extract(text: str, knowledge: HotelKnowledge) -> dict[str, Any]:
         "臭死了", "怎么做卫生", "卫生怎么", "找经理", "大堂经理", "经理给我解释", "恶心", "脏死了",
     )
     strong_complaint_terms = (
-        "投诉", "客诉", "太差", "差评", "赔偿", "无法忍受", "一星", "垃圾", "气死",
+        "投诉", "客诉", "太差", "差评", "赔偿", "无法忍受", "一星", "垃圾",
         "臭死了", "怎么做卫生", "卫生怎么", "找经理", "大堂经理", "经理给我解释", "恶心", "脏死了",
     )
     angry = any(word in compact for word in angry_terms)
-    strong_complaint = any(word in compact for word in strong_complaint_terms)
+    strong_complaint = any(word in _positive_complaint_text(compact) for word in strong_complaint_terms)
     negate_checkout = any(w in compact for w in ("没说退房", "不是退房", "不要退房", "不用退房", "不退房", "我不退", "不打算退"))
     extend_stay = any(w in compact for w in ("续住", "续订", "续房", "多住", "再住", "延住", "延期住", "加订一天", "续一天", "续订一天", "续住一天", "想续"))
     request_time = requested_checkout_time(text)
@@ -579,7 +589,7 @@ def _rules_extract(text: str, knowledge: HotelKnowledge) -> dict[str, Any]:
 
     # Determine service intent if any
     service_intent = None
-    if explicit_complaint or (angry and not broken and not delivery and not late and not extend_stay):
+    if explicit_complaint:
         service_intent = "客诉紧急"
     elif extend_stay:
         service_intent = "续住申请"
@@ -635,6 +645,7 @@ class ReceptionAgent:
             "提取酒店住客意图 JSON：intent(酒店咨询/送物/工程报修/客诉紧急/延迟退房/续住申请/票券服务/闲聊/其他)、"
             "sentiment(正常/愤怒)、room_no(住客的有效房间号，纯数字字符串或null)。"
             "不能替客人猜房号、会员身份或批准权益。"
+            "着急、冷静、不要帮助或不需要很快等情绪和时效描述本身不构成派单或取消；没有具体业务目标时应澄清。"
             "如果住客存在口误纠错、换房或提到多个房号（如‘我是1102……不对我记错了，其实我是1106’），"
             "请理解上下文逻辑，提取住客最终明确认定的当前有效房间号（仅提取纯数字，若未确定则为null）。"
             "询问酒店设施政策、退房时间/退房政策（如‘退房时间是几点’、‘几点退房’）一律属于‘酒店咨询’；"
@@ -672,6 +683,18 @@ class ReceptionAgent:
         if cloud_sentiment is not None:
             cloud_sentiment = str(cloud_sentiment).strip()
 
+        # A model label/emotion alone is never authority to create a service.
+        command = parse_delivery_command(text)
+        anchors = {
+            "送物": bool(command.item or command.unknown_items),
+            "工程报修": bool(re.search(r"空调|门锁|灯|热水|水管|电视|插座|花洒|网络|wifi|故障|坏|漏水|断电|停电", text, re.IGNORECASE)),
+            "客诉紧急": bool(re.search(r"投诉|经理|差评|赔偿|不满|恶劣|卫生|脏|臭|危险|被困|救命|受伤|火警|着火|呼吸|急救|流血", _positive_complaint_text(text))),
+            "续住申请": bool(re.search(r"续住|续房|续订|延住|多住|再住|加住|延长入住", text)),
+            "票券服务": "票" in text or "券" in text,
+        }
+        if cloud_intent in anchors and not anchors[cloud_intent]:
+            cloud_intent = None
+
         checkout_faq_terms = ("退房时间", "几点退房", "何时退房", "退房政策")
         delay_terms = ("延迟", "延时", "推迟", "晚点", "晚退")
         if cloud_intent == "延迟退房":
@@ -701,9 +724,6 @@ class ReceptionAgent:
             result["sentiment"] = "愤怒"
         elif cloud_sentiment == "愤怒":
             result["sentiment"] = "愤怒"
-            if result.get("intent") not in {"工程报修", "送物", "延迟退房"}:
-                result["intent"] = "客诉紧急"
-                result["service_intent"] = "客诉紧急"
         result["item_detail"] = text if result["intent"] in SERVICE_INTENTS else None
         return result, "云模型 + 规则校验"
 
@@ -824,6 +844,9 @@ class HousekeepingAgent:
     def dispatch(self, room_no: str, detail: str, state: HotelState) -> dict[str, Any]:
         if _academic_voucher_request(detail):
             raise AgentConflict("学术接待餐券需前台核验，不能按普通送物派单")
+        command = parse_delivery_command(detail)
+        if command.unknown_items or command.ambiguous or command.item not in self.inventory:
+            raise AgentConflict("物品尚未全部通过配送目录核验，不能创建送物工单")
         with self.lock:
             active = sum(
                 ticket.get("category") == "送物" and ticket.get("status") == "处理中"
@@ -1047,6 +1070,8 @@ class HotelOrchestrator:
         state = self.state
         child_state = deepcopy(state)
         delivery = parse_delivery_command(detail) if intent == "送物" else None
+        if delivery and (delivery.unknown_items or delivery.ambiguous or delivery.item not in self.housekeeping.inventory):
+            raise AgentConflict("送物提案缺少完整、可核验的目录物品，不能丢弃未知物品后派单")
         minimum = "低"
         if intent == "送物":
             child = copy(self.housekeeping)
@@ -1157,6 +1182,30 @@ class HotelOrchestrator:
         if command.unresolved_target or command.ambiguous or command.action == "replace" and command.quantity == 0:
             trace.append({"agent": "Supervisor", "event": "delivery_target_required", "detail": "需要确认更换的物品和有效数量"})
             return "请确认要修改或取消的具体送物物品及有效数量，暂未修改任何工单。", None
+        if command.cancel_all:
+            targets = [t for t in state.tickets if t.get("room_no") == state.room_no
+                       and t.get("category") == "送物" and t.get("status") in {"处理中", "已结单"}
+                       and t.get("delivery_status") != "已取消"
+                       and (not state.session_id or not t.get("owner_session_id") or t.get("owner_session_id") == state.session_id)
+                       and (not state.authorized_room or t.get("stay_id") == state.stay_id and t.get("owner_session_id") == state.session_id)
+                       and (not command.references or t.get("inventory_item") in command.references)]
+            cancelled, awaiting = 0, 0
+            for target in targets:
+                self.housekeeping.revise(target, command)
+                self.sync_borrowed_ticket(target)
+                cancelled += target["status"] == "已取消"
+                awaiting += target.get("change_request", {}).get("status") == "待部门确认"
+            if state.pending and state.pending.get("intent") == "送物" and (
+                not command.references or parse_delivery_command(state.pending.get("detail", "")).item in command.references
+            ):
+                state.pending = None
+            state.intent, state.active_agent = "送物", self.housekeeping.name
+            trace.append({"agent": "Supervisor", "event": "delivery_batch_cancel",
+                          "detail": f"当前会话已取消 {cancelled} 单；待部门确认 {awaiting} 单；未提交请求停止派单"})
+            reply = f"已取消当前会话尚未派送的送物请求（{cancelled} 单），并释放对应预留库存。"
+            if awaiting:
+                reply += f"另有 {awaiting} 单已派出或送达，已申请撤回，需等待部门确认；尚未确认取消成功。"
+            return reply, None
         pending_delivery = state.pending and state.pending.get("intent") == "送物"
         named_item = bool(command.references)
         if not command.item and not named_item and not pending_delivery and state.intent != "送物":
@@ -1207,6 +1256,16 @@ class HotelOrchestrator:
             }]
             return self._finish(_public_boundary_reply(boundary_kind), trace)
 
+        name = (state.guest_profile or {}).get("guest_name")
+        compact_text = normalized(text)
+        if ((name and any(normalized(prefix + name) in compact_text for prefix in ("我不是", "我不叫", "别叫我", "不要叫我")))
+                or name and any(term in text for term in ("认错人了", "不要这样称呼我"))):
+            if record_user:
+                state.messages.append({"role": "user", "content": text, "room_no": state.room_no})
+            state.neutral_address = True
+            trace = [{"agent": "ReceptionAgent", "event": "neutral_address_requested", "detail": "停止使用档案称呼，入住信息更正仍须前台核验"}]
+            return self._finish("好的，接下来我将使用中性称呼。入住姓名如需更正，请联系前台核验；当前房间和服务权限绑定保持不变。", trace)
+
         # If a bound session explicitly names another room for a write intent,
         # keep the cloud model out of that decision. The deterministic preview
         # is enough to invoke the cross-room guard below and avoids exposing
@@ -1221,7 +1280,9 @@ class HotelOrchestrator:
             and preview.get("intent") in SERVICE_INTENTS
             and not preview_is_correction
         )
-        if preview_cross_room:
+        if parse_delivery_command(text).cancel_all:
+            analysis, state.model_mode = preview, "规则护栏 · 批量取消"
+        elif preview_cross_room:
             analysis, state.model_mode = preview, "规则护栏 · 跨房预检"
         else:
             analysis, state.model_mode = self.reception.understand(text)
@@ -1259,7 +1320,7 @@ class HotelOrchestrator:
         # Security guard: Intercept unauthorized cross-room spoofing
         # Trigger only when an active service/write operation is targeted at a DIFFERENT room,
         # and the user is NOT switching/correcting their session room.
-        has_service_target = (analysis["intent"] in SERVICE_INTENTS) or (state.pending is not None)
+        has_service_target = (analysis["intent"] in SERVICE_INTENTS) or (state.pending is not None) or parse_delivery_command(text).cancel_all
         if state.room_no and room and room != state.room_no and not is_correction and has_service_target:
             trace = [{"agent": "ReceptionAgent", "event": "跨房安全拦截", "detail": f"当前绑定 {state.room_no}，阻止操作 {room}"}]
             guard_msg = f"您当前会话已关联 {state.room_no} 房。为保障住客安全与隐私，系统已拦截跨房为 {room} 房办理业务的操作；如需为该房间办理，请发送'切换到{room}'或点击侧边栏清空会话。"
@@ -1398,6 +1459,11 @@ class HotelOrchestrator:
         state.intent, state.sentiment = pending["intent"], pending["sentiment"]
         if state.intent == "送物":
             delivery = parse_delivery_command(pending["detail"])
+            if delivery.unknown_items or (delivery.item is None and not delivery.ambiguous) or (delivery.item and delivery.item not in self.housekeeping.inventory):
+                state.pending = None
+                trace.append({"agent": "Supervisor", "event": "delivery_catalog_required", "detail": "存在未核验物品，禁止静默忽略或作为综合物料派送"})
+                names = "、".join(delivery.unknown_items) or delivery.item or "所需物品"
+                return self._finish(f"目前配送清单中未找到{names}，请先联系前台确认；本次尚未创建送物工单，也未扣减库存。", trace)
             if delivery.ambiguous or delivery.quantity == 0:
                 state.pending = None
                 trace.append({"agent": "Supervisor", "event": "delivery_target_required", "detail": "单次送物需明确一种物品及有效数量"})
@@ -1512,7 +1578,7 @@ class HotelOrchestrator:
         return self._finish(reply, trace)
 
     def _finish(self, reply: str, trace: list[dict[str, str]]) -> str:
-        guest_name = self.state.guest_profile.get("guest_name") if self.state.guest_profile else None
+        guest_name = self.state.guest_profile.get("guest_name") if self.state.guest_profile and not self.state.neutral_address else None
         reply = _format_greeting(guest_name, reply)
         self.state.request_detail = self.state.pending["detail"] if self.state.pending else None
         self.state.messages.append({"role": "assistant", "content": reply, "room_no": self.state.room_no})

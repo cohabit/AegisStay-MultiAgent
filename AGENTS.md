@@ -18,6 +18,7 @@
 | 分层质量集与验收方法 | [质量验收子规格](spec/quality_evaluation.md) |
 | 当前界面视觉、对比度、工作区与空间仿真 | [界面视觉规格](spec/ui_visual_quality.md) |
 | 住客公开身份、提示注入与调度/API 边界 | [对话安全规格](spec/security_prompt_injection.md) |
+| 完整住客归档、批量取消与物品/称呼边界 | [服务可靠性规格](spec/service_reliability.md) |
 | 旧专题及旧验收适用范围 | [历史索引](spec/legacy_specs.md) |
 | 安装、启动和值班操作 | [README](README.md)、[运维手册](docs/operations.md)、[部署子规格](spec/design/deployment.md) |
 | 实施边界与原始测试身份 | [工作计划](spec/work_plan.md)、[127 项基线 ID](spec/baseline_test_ids.json) |
@@ -45,6 +46,7 @@
 | `tests/test_deployment.py` | academic 身份、岗位、待遇核验、存储故障与部署工作台 |
 | `tests/test_api.py` / `test_task_runtime.py` | API、异步仲裁、冲突与受控竞态 |
 | `tests/test_delivery_language.py` / `test_persistence.py` | 口语送物生命周期、持久化和重启 |
+| `tests/test_service_reliability.py` / `test_guest_history_ui.py` | 完整归档与两端分页、批量取消代际、未知物品和情绪/称呼边界 |
 | `tests/test_evolution.py` / `test_streamlit.py` / `test_visual_contract.py` | 示例检索、记忆与本地界面、主题对比度回归 |
 | `tests/test_release_verification.py` | 证据工具负向测试，拒绝假通过 |
 | `tests/stress_test.py` | 开发压测工具；不能对真实酒店执行全量重置或声称生产容量 |

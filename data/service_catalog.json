@@ -29,6 +29,7 @@
   ],
   "services": [
     {"name":"按摩服务","aliases":["按摩","SPA","水疗"],"status":"unconfirmed","source":"待学校酒店核验"},
-    {"name":"泡澡设施","aliases":["泡澡","泡浴","浴缸"],"status":"unconfirmed","source":"须按房型和酒店设施核验"}
+    {"name":"泡澡设施","aliases":["泡澡","泡浴","浴缸"],"status":"unconfirmed","source":"须按房型和酒店设施核验"},
+    {"name":"足浴服务","aliases":["足浴","洗脚","泡脚"],"status":"unconfirmed","source":"尚无学校酒店核准的足浴项目、地点或预约信息"}
   ]
 }

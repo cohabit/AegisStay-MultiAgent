@@ -2,9 +2,11 @@
 from __future__ import annotations
 
 import unittest
+import re
 from pathlib import Path
+from unittest.mock import patch
 
-from app import THEME_PALETTES
+from app import THEME_PALETTES, _style
 
 
 APP_SOURCE = (Path(__file__).resolve().parents[1] / "app.py").read_text(encoding="utf-8")
@@ -19,6 +21,83 @@ def _relative_luminance(color: str) -> float:
 def _contrast(first: str, second: str) -> float:
     lighter, darker = sorted((_relative_luminance(first), _relative_luminance(second)), reverse=True)
     return (lighter + 0.05) / (darker + 0.05)
+
+
+def _button_styles(css, palette, *, sidebar, submit, disabled):
+    """Evaluate the descendant-selector cascade for our native button DOM.
+
+    This deliberately checks specificity, source order, inheritance and the
+    text-fill override; actual browser rendering is a separate release check.
+    Selectors outside this small contract are ignored rather than guessed.
+    """
+    nodes = [{"tag": "div", "class": "stApp"}]
+    if sidebar:
+        nodes.append({"tag": "section", "data-testid": "stSidebar"})
+    nodes.extend([
+        {"tag": "div", "data-testid": "stExpander"}, {"tag": "details"},
+        {"tag": "div", "class": "stFormSubmitButton" if submit else "stButton",
+         "data-testid": "stFormSubmitButton" if submit else "stButton"},
+        {"tag": "button", "kind": "primary", "disabled": disabled},
+        {"tag": "div", "data-testid": "stMarkdownContainer"},
+        {"tag": "p"}, {"tag": "span"},
+    ])
+
+    def matches(token, node):
+        attributes = re.findall(r'\[([\w-]+)(?:="([^"]*)")?\]', token)
+        classes = re.findall(r'\.([\w-]+)', token)
+        tag = re.match(r'^[a-zA-Z][\w-]*', token)
+        remainder = re.sub(r'\[[^\]]+\]|\.[\w-]+|:disabled', '', token)
+        if remainder not in ("", "*") and (not tag or remainder != tag[0]):
+            return False
+        return ((not tag or tag[0] == node["tag"])
+                and all(node.get(name) == value if value else name in node for name, value in attributes)
+                and all(name in node.get("class", "").split() for name in classes)
+                and (":disabled" not in token or node.get("disabled", False)))
+
+    def selected(selector, target):
+        parts = selector.split()
+        if not parts or not matches(parts[-1], nodes[target]):
+            return False
+        ancestor = target - 1
+        for token in reversed(parts[:-1]):
+            while ancestor >= 0 and not matches(token, nodes[ancestor]):
+                ancestor -= 1
+            if ancestor < 0:
+                return False
+            ancestor -= 1
+        return True
+
+    rules = []
+    for selectors, declarations in re.findall(r'([^{}]+)\{([^{}]*)\}', css.replace("<style>", "").replace("</style>", "")):
+        for selector in selectors.split(","):
+            selector = selector.strip()
+            specificity = (len(re.findall(r'\.[\w-]+|\[[^\]]+\]|:disabled', selector)),
+                           len(re.findall(r'(?:^|\s)[a-zA-Z][\w-]*', selector)))
+            for declaration in declarations.split(";"):
+                if ":" not in declaration:
+                    continue
+                name, value = (part.strip() for part in declaration.split(":", 1))
+                if name not in {"color", "-webkit-text-fill-color", "background", "background-color"}:
+                    continue
+                important = "!important" in value
+                value = value.replace("!important", "").strip()
+                rules.append((selector, specificity, important, "background" if name == "background-color" else name, value))
+
+    inherited = {"color": "#000000", "-webkit-text-fill-color": "currentColor"}
+    results = []
+    variables = {"--as-" + name.replace("_", "-"): value for name, value in palette.items()}
+    for target in range(len(nodes)):
+        computed = {**inherited, "background": "transparent"}
+        winners = {}
+        for order, (selector, specificity, important, name, value) in enumerate(rules):
+            rank = (important, specificity, order)
+            if selected(selector, target) and rank > winners.get(name, (False, (-1, -1), -1)):
+                winners[name] = rank
+                variable = re.fullmatch(r'var\((--[\w-]+)\)', value)
+                computed[name] = variables[variable[1]] if variable else value
+        inherited = {name: computed[name] for name in ("color", "-webkit-text-fill-color")}
+        results.append(computed)
+    return results[-4:]
 
 
 class VisualContractTests(unittest.TestCase):
@@ -91,9 +170,21 @@ class VisualContractTests(unittest.TestCase):
         self.assertIn("酒店空间仿真 · 全楼概览", APP_SOURCE)
 
     def test_primary_and_disabled_button_css_are_theme_aware(self):
-        self.assertIn("color: var(--as-accent-text)", APP_SOURCE)
-        self.assertIn(".stApp button:disabled", APP_SOURCE)
-        self.assertNotIn("button[kind=\"primary\"] { color: #fff", APP_SOURCE)
+        for theme, palette in THEME_PALETTES.items():
+            with patch("app.st.markdown") as markdown:
+                _style(theme)
+            css = markdown.call_args.args[0]
+            for sidebar in (False, True):
+                for submit in (False, True):
+                    for disabled in (False, True):
+                        with self.subTest(theme=theme, sidebar=sidebar, submit=submit, disabled=disabled):
+                            foreground = palette["muted" if disabled else "accent_text"]
+                            background = palette["surface_soft" if disabled else "accent"]
+                            for computed in _button_styles(css, palette, sidebar=sidebar, submit=submit, disabled=disabled):
+                                self.assertEqual(computed["color"], foreground)
+                                self.assertEqual(computed["-webkit-text-fill-color"], foreground)
+                                self.assertEqual(computed["background"], background)
+                                self.assertGreaterEqual(_contrast(computed["-webkit-text-fill-color"], computed["background"]), 4.5)
 
 
 if __name__ == "__main__":

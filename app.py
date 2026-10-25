@@ -12,7 +12,7 @@ import streamlit as st
 
 from hotel_core import HotelOrchestrator
 from agent_runtime import RuntimeBusy, SessionManager
-from deployed_ui import guest_history_controls, guest_history_page
+from deployed_ui import _navigate_guest_history, guest_history_controls, guest_history_page
 from hotel_catalog import ITEM_CATALOG
 
 GUEST_SESSION = "streamlit-guest"
@@ -189,8 +189,6 @@ __THEME_VARS__
         .stApp input, .stApp textarea, [data-baseweb="select"] > div { background: var(--as-surface) !important; color: var(--as-text) !important; border-color: var(--as-border) !important; }
         .stApp input::placeholder, .stApp textarea::placeholder { color: var(--as-muted) !important; opacity: 1; }
         .stApp button { color: var(--as-text) !important; -webkit-text-fill-color: var(--as-text) !important; border-color: var(--as-border) !important; background: var(--as-surface) !important; }
-        [data-testid="stFormSubmitButton"] button, [data-testid="stFormSubmitButton"] button *, .stButton button[kind="primary"] { color: var(--as-accent-text) !important; -webkit-text-fill-color: var(--as-accent-text) !important; background: var(--as-accent) !important; border-color: var(--as-accent) !important; }
-        .stApp button:disabled, .stApp button:disabled * { color: var(--as-muted) !important; -webkit-text-fill-color: var(--as-muted) !important; background: var(--as-surface-soft) !important; border-color: var(--as-border) !important; opacity: 1 !important; }
         [data-testid="stChatInput"] { display: none !important; }
         .stBottom { display: none !important; }
         .stApp label, [data-testid="stMarkdownContainer"], [data-testid="stCaptionContainer"] { color: var(--as-text); }
@@ -208,6 +206,10 @@ __THEME_VARS__
         [data-baseweb="radio"] label,
         [data-baseweb="radio"] label span { color:var(--as-text) !important; -webkit-text-fill-color:var(--as-text) !important; }
         [data-testid="stRadio"] [role="radiogroup"] { color:var(--as-text) !important; }
+        .stApp button[kind="primary"], .stApp button[kind="primary"] *,
+        .stApp [data-testid="stFormSubmitButton"] button, .stApp [data-testid="stFormSubmitButton"] button * { color: var(--as-accent-text) !important; -webkit-text-fill-color: var(--as-accent-text) !important; background: var(--as-accent) !important; border-color: var(--as-accent) !important; }
+        .stApp button:disabled, .stApp button:disabled *,
+        .stApp [data-testid="stFormSubmitButton"] button:disabled, .stApp [data-testid="stFormSubmitButton"] button:disabled * { color: var(--as-muted) !important; -webkit-text-fill-color: var(--as-muted) !important; background: var(--as-surface-soft) !important; border-color: var(--as-border) !important; opacity: 1 !important; }
         [data-testid="stMetric"] { color: var(--as-text); }
         .hero { padding: .6rem 0 .35rem; }
         .eyebrow { color: var(--as-teal); letter-spacing:.16em; font-size:.68rem; font-weight:800; }
@@ -289,19 +291,26 @@ __THEME_VARS__
         .client-active-head { display:flex; justify-content:space-between; align-items:end; gap:16px; max-width:920px; margin:0 auto 8px; padding:0 4px; }
         .client-active-head strong { color:var(--as-text); font-family:Georgia,'Noto Serif SC',serif; font-size:1.3rem; font-weight:600; }
         .client-active-head span { color:var(--as-muted); font-size:.7rem; }
-        .block-container:has(.guest-workspace-marker) [data-testid="stLayoutWrapper"]:has(> .st-key-client-history-panel) { flex:0 0 var(--as-chat-history-height) !important; height:var(--as-chat-history-height) !important; min-height:0; }
-        .st-key-client-history-panel { width:100%; height:100% !important; min-height:0; max-height:100% !important; overflow-y:auto !important; padding:9px 18px 12px; border:1px solid var(--as-border); border-radius:20px; background:color-mix(in srgb, var(--as-surface) 94%, transparent); box-shadow:0 18px 42px rgba(16,42,67,.14); backdrop-filter:blur(11px); animation:client-expand .48s cubic-bezier(.2,.75,.25,1) both; }
-        .st-key-client-history-panel [data-testid="stChatMessage"] { color:var(--as-text); background:transparent; border-bottom:1px solid color-mix(in srgb, var(--as-border) 55%, transparent); padding:11px 4px; }
-        .st-key-client-history-panel [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) { background:var(--as-surface-soft); }
-        .st-key-client-history-panel [data-testid="stChatMessage"]:last-child { border-bottom:0; }
-        .block-container:has(.guest-workspace-marker) .st-key-client-history-panel [data-testid="stVerticalBlock"] { gap:0; }
+        .st-key-local-guest-history-controls { max-width:920px; margin:0 auto; }
+        .block-container:has(.client-chat-stage-active) [data-testid="stVerticalBlock"]:has(.guest-workspace-marker) { gap:6px; }
+        .block-container:has(.client-chat-stage-active) .guest-campus-banner { height:32px; margin:0 auto 4px; }
+        .block-container:has(.client-chat-stage-active) .guest-campus-banner span { bottom:7px; }
+        .block-container:has(.client-chat-stage-active) .client-brand { padding:6px 12px; margin:0 auto 4px; }
+        .block-container:has(.client-chat-stage-active) .client-active-head { margin:0 auto; }
+        .block-container:has(.client-chat-stage-active) .client-active-head strong { display:none; }
+        .block-container:has(.guest-workspace-marker) [data-testid="stLayoutWrapper"]:has(> :is(.st-key-client-history-panel, [class*="st-key-client-history-panel-jump-"])) { flex:0 0 var(--as-chat-history-height) !important; height:var(--as-chat-history-height) !important; min-height:0; }
+        :is(.st-key-client-history-panel, [class*="st-key-client-history-panel-jump-"]) { width:100%; height:100% !important; min-height:0; max-height:100% !important; overflow-y:auto !important; padding:9px 18px 12px; border:1px solid var(--as-border); border-radius:20px; background:color-mix(in srgb, var(--as-surface) 94%, transparent); box-shadow:0 18px 42px rgba(16,42,67,.14); backdrop-filter:blur(11px); animation:client-expand .48s cubic-bezier(.2,.75,.25,1) both; }
+        :is(.st-key-client-history-panel, [class*="st-key-client-history-panel-jump-"]) [data-testid="stChatMessage"] { color:var(--as-text); background:transparent; border-bottom:1px solid color-mix(in srgb, var(--as-border) 55%, transparent); padding:11px 4px; }
+        :is(.st-key-client-history-panel, [class*="st-key-client-history-panel-jump-"]) [data-testid="stChatMessage"]:has([data-testid="stChatMessageAvatarUser"]) { background:var(--as-surface-soft); }
+        :is(.st-key-client-history-panel, [class*="st-key-client-history-panel-jump-"]) [data-testid="stChatMessage"]:last-child { border-bottom:0; }
+        .block-container:has(.guest-workspace-marker) :is(.st-key-client-history-panel, [class*="st-key-client-history-panel-jump-"]) [data-testid="stVerticalBlock"] { gap:0; }
         .client-progress { margin:12px 0 0; padding:10px 13px; border-left:3px solid var(--as-accent); border-radius:9px; background:var(--as-surface-soft); color:var(--as-muted); font-size:.76rem; }
         .client-progress strong { color:var(--as-text); }
         .block-container:has(.guest-workspace-marker) [data-testid="stAlert"] { margin:8px auto 0; padding:8px 12px; max-width:920px; font-size:.76rem; line-height:1.35; }
         @keyframes client-enter { from { opacity:0; transform:translateY(12px) scale(.985); } to { opacity:1; transform:translateY(0) scale(1); } }
         @keyframes client-composer-in { from { opacity:0; transform:translateY(18px); } to { opacity:1; transform:translateY(0); } }
         @keyframes client-expand { from { opacity:0; transform:translateY(18px) scale(.99); } to { opacity:1; transform:translateY(0) scale(1); } }
-        @media (prefers-reduced-motion: reduce) { .client-welcome, .st-key-client-composer-panel, .st-key-client-history-panel { animation:none; } }
+        @media (prefers-reduced-motion: reduce) { .client-welcome, .st-key-client-composer-panel, :is(.st-key-client-history-panel, [class*="st-key-client-history-panel-jump-"]) { animation:none; } }
         @media (max-width: 800px) {
             .guest-arrival { grid-template-columns:1fr; margin-top:9px; }
             .guest-arrival .client-welcome { padding:18px 22px 14px; }
@@ -310,14 +319,15 @@ __THEME_VARS__
             .guest-campus-banner { height:82px; margin-bottom:9px; }
             .client-welcome { margin-top:clamp(2rem, 8vh, 4rem); padding:30px 22px 24px; }
             .client-active-head { align-items:start; flex-direction:column; gap:4px; }
-            .block-container:has(.guest-workspace-marker) { --as-chat-history-height:min(280px, calc(100vh - 300px)); }
+            .block-container:has(.guest-workspace-marker) { --as-chat-history-height:min(320px, calc(100dvh - 520px)); }
         }
         @media (max-height: 760px) {
             .guest-campus-banner { height:48px; margin-bottom:4px; }
+            .block-container:has(.client-chat-stage-active) .guest-campus-banner { display:none; }
             .client-welcome { margin-top:.5rem; padding:22px 24px 18px; }
             .block-container:has(.guest-workspace-marker) .client-brand { padding:7px 12px; margin-bottom:4px; }
             .client-active-head { margin-bottom:4px; }
-            .block-container:has(.guest-workspace-marker) { --as-chat-history-height:clamp(150px, calc(100dvh - 480px), 240px); }
+            .block-container:has(.guest-workspace-marker) { --as-chat-history-height:clamp(180px, calc(100dvh - 480px), 300px); }
             .st-key-client-composer-panel { margin-top:4px; }
             .client-progress { margin-top:5px; padding:7px 12px; }
         }
@@ -574,8 +584,10 @@ def _render_entry_conversation(orchestrator: HotelOrchestrator) -> None:
             unsafe_allow_html=True,
         )
         st.markdown('<div class="client-chat-history" aria-hidden="true"></div>', unsafe_allow_html=True)
-        with st.container(height=300, border=True, key="client-history-panel", autoscroll=history["latest"]):
-            guest_history_controls(history, key=history_key)
+        guest_history_controls(history, key=history_key)
+        panel_key = (f"client-history-panel-jump-{history['scroll_revision']}"
+                     if history["scroll_revision"] else "client-history-panel")
+        with st.container(height=300, border=True, key=panel_key, autoscroll=history["autoscroll"]):
             for message in history["messages"]:
                 with st.chat_message("user" if message["role"] == "user" else "assistant"):
                     st.write(message["content"])
@@ -614,12 +626,14 @@ def _render_entry_conversation(orchestrator: HotelOrchestrator) -> None:
     if submitted and prompt.strip():
         try:
             runtime.submit(GUEST_SESSION, prompt.strip(), force_rules=orchestrator.force_rules)
+            _navigate_guest_history(history_key, history["scope"], "latest")
             st.rerun()
         except (RuntimeBusy, ValueError) as error:
             st.warning(str(error))
     if compat_prompt:
         try:
             runtime.submit(GUEST_SESSION, compat_prompt.strip(), force_rules=orchestrator.force_rules)
+            _navigate_guest_history(history_key, history["scope"], "latest")
             st.rerun()
         except (RuntimeBusy, ValueError) as error:
             st.warning(str(error))
@@ -1276,6 +1290,9 @@ def main() -> None:
     if os.getenv("AEGIS_DEPLOYED") == "1":
         st.error("部署模式必须配置 AEGIS_API_URL；工作台不能直接打开数据库。")
         st.stop()
+    # The school-branded local entry uses unverified academic policies by
+    # default; explicitly selected standard fixtures remain available.
+    os.environ.setdefault("AEGIS_SITE_PROFILE", "academic")
     active_theme = st.session_state.get("ui-theme-control", "护眼")
     _style(active_theme)
     if "orchestrator" not in st.session_state:

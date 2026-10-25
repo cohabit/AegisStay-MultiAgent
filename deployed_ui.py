@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import os
 import uuid
+from hashlib import sha256
 from functools import wraps
 from datetime import date, timedelta
 
@@ -12,28 +13,58 @@ from api_client import ApiError, HotelApi
 
 
 def guest_history_page(fetch_page, *, scope: tuple, key: str) -> dict:
-    """Keep one archive page per visitor, freezing older pages during polling."""
+    """Accumulate the authorized archive without evicting records already read."""
     page = st.session_state.get(key)
-    if page is None or page["scope"] != scope:
-        page = {"scope": scope, "messages": [], "latest": True, "has_older": False, "action": None}
+    initial = page is None or page["scope"] != scope
+    if initial:
+        page = {"scope": scope, "messages": [], "latest": True, "has_older": False,
+                "action": None, "scroll_revision": 0}
         st.session_state[key] = page
+    page.setdefault("scroll_revision", 0)
 
     action = page["action"]
-    if action == "older" and page["messages"]:
-        before = page["messages"][0]["sequence"]
-    elif action == "latest" or page["latest"]:
-        before = None
-    else:
-        return page
+    existing = page["messages"]
 
-    # One extra entry tells the controls whether another earlier page exists.
-    records = fetch_page(before=before, limit=31)
-    records = sorted({record["message_id"]: record for record in records}.values(),
-                     key=lambda record: record["sequence"])
-    if records or before is None:
-        page.update(messages=records[-30:], latest=before is None, has_older=len(records) > 30)
+    def ordered(records):
+        return sorted({record["message_id"]: record for record in records}.values(),
+                      key=lambda record: (record["sequence"], record["message_id"]))
+
+    # The extra entry is a lookahead, never a replacement for the retained
+    # timeline. All reads stay below the backend's unchanged limit of 100.
+    if action == "older" and page["messages"]:
+        before = existing[0]["sequence"]
+        records = ordered(fetch_page(before=before, limit=61))
+        incoming = records[-60:]
+        page["has_older"] = len(records) > 60
+        page["latest"] = False
     else:
-        page["has_older"] = False
+        records = ordered(fetch_page(before=None, limit=61))
+        incoming = records[-60:]
+        if not existing:
+            page["has_older"] = len(records) > 60
+        # A tab can sleep through many replies. Bridge back to the newest
+        # cached record rather than leave an invisible gap in the timeline.
+        while existing and incoming and incoming[0]["sequence"] > existing[-1]["sequence"]:
+            before = incoming[0]["sequence"]
+            bridge = ordered(fetch_page(before=before, limit=61))
+            bridge = [record for record in bridge if record["sequence"] < before][-60:]
+            if not bridge:
+                break
+            incoming = bridge + incoming
+        if action == "latest":
+            page["latest"] = True
+
+    page["messages"] = ordered(existing + incoming)
+    if action == "latest":
+        # Native autoscroll reacts to content changes. An explicit jump with
+        # unchanged messages needs a new container key (and thus identity).
+        # Only the viewport remounts; the retained timeline stays in this page.
+        page["scroll_revision"] += 1
+    # Keep the native observer enabled throughout latest mode. Disabling it
+    # on the next fragment poll cancels a still-running native animation.
+    # Streamlit's observer suspends following on manual wheel/pointer scroll;
+    # explicit older-history mode additionally disables it until latest.
+    page["autoscroll"] = page["latest"]
     page["action"] = None
     return page
 
@@ -45,13 +76,15 @@ def _navigate_guest_history(key: str, scope: tuple, action: str) -> None:
 
 
 def guest_history_controls(page: dict, *, key: str) -> None:
-    """Render navigation inside the existing scrolling chat panel."""
-    with st.container(horizontal=True, gap="small"):
+    """Keep navigation above the scrolling history so it remains discoverable."""
+    with st.container(key=key + "-controls", horizontal=True, wrap=False,
+                      vertical_alignment="center", gap="xsmall"):
         st.button("加载更早记录", key=key + "-older", disabled=not page["has_older"],
                   on_click=_navigate_guest_history, args=(key, page["scope"], "older"))
-        st.button("回到最新消息", key=key + "-latest", disabled=page["latest"],
+        st.button("回到最新消息", key=key + "-latest",
                   on_click=_navigate_guest_history, args=(key, page["scope"], "latest"))
-    st.caption("最近的对话 · 自动更新" if page["latest"] else "较早的对话 · 回到最新消息可查看新回复")
+        st.caption(f"{len(page['messages'])} 条", width="content", wrap=False,
+                   help="已加载的对话条数；新回复自动更新，阅读历史时保持滚动位置。")
 
 
 def show_api_error(function):
@@ -78,13 +111,16 @@ def guest_services(api: HotelApi, person: dict) -> None:
 
     history_key = "deployed-guest-history"
     history = guest_history_page(fetch_history, key=history_key,
-                                 scope=(api.base_url, sid, person.get("stay_id"), person.get("grant_id")))
+                                 scope=(api.base_url, sid, person.get("stay_id"), person.get("grant_id"),
+                                        sha256(api.headers.get("Authorization", "").encode()).hexdigest()))
     st.subheader("住客服务", icon=":material/room_service:")
     st.caption(f"房间 {person['room_no']} · 已核验本次入住 · 服务请求由前台与相应部门办理")
     chat, progress = st.columns([2.2, 1])
     with chat:
-        with st.container(height=380, border=True, key="deployed-history-panel", autoscroll=history["latest"]):
-            guest_history_controls(history, key=history_key)
+        guest_history_controls(history, key=history_key)
+        panel_key = (f"deployed-history-panel-jump-{history['scroll_revision']}"
+                     if history["scroll_revision"] else "deployed-history-panel")
+        with st.container(height=380, border=True, key=panel_key, autoscroll=history["autoscroll"]):
             if not history["messages"]:
                 st.write("您好，您可以咨询会务安排、申请送物或报修。")
             for message in history["messages"]:
@@ -99,6 +135,7 @@ def guest_services(api: HotelApi, person: dict) -> None:
                 st.session_state.pending_submission = pending
             api.request("POST", "/api/chat/submit", json={"session_id": sid, **pending})
             st.session_state.pop("pending_submission", None)
+            _navigate_guest_history(history_key, history["scope"], "latest")
             st.rerun(scope="fragment")
     with progress:
         st.markdown("#### 我的服务进度")

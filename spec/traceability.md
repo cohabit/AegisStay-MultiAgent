@@ -4,21 +4,21 @@
 
 `implemented` 表示约定范围内的代码和测试存在，`partial` 表示有明确未执行/未交付范围；二者都不代表本次运行PASS。本文定义追溯方案，不嵌入可变成绩；每次执行前为 `PENDING_RUN`，完成后只认对应manifest和独立验收记录。由集成人员在源码稳定后运行统一入口。范围固定 `offline-code-baseline`，`field_readiness=NOT_VERIFIED`，FIELD-01…FIELD-06 均为 `TARGET_NOT_RUN`。
 
-JSON 顶层 `schema_version=1`；`requirements` 恰含REQ-01…REQ-16，每项对应同号AC/EXP，`tests` 仅写真实完整unittest方法，当前合计170个唯一方法；`evidence` 仅写统一目录实际文件名。未来FUT不计入当前16项。机器校验只证明方法可加载且在本次成功的完整套件里实际执行；方法是否支撑业务要求还须检查断言语义。
+JSON 顶层 `schema_version=1`；`requirements` 恰含REQ-01…REQ-16，每项对应同号AC/EXP，`tests` 仅写真实完整unittest方法，当前合计196个唯一方法；`evidence` 仅写统一目录实际文件名。未来FUT不计入当前16项。机器校验只证明方法可加载且在本次成功的完整套件里实际执行；方法是否支撑业务要求还须检查断言语义。
 
 | 要求 / 验收 / 实验 | 内容 | 实现状态 | 方法数 | 覆盖边界 |
 | --- | --- | --- | --- | --- |
 | REQ-01 / AC-01 / EXP-01 | 入住凭证与入住/会话绑定 | `implemented` | 5 | 授权、跨房、过期、撤销、换客与在途撤销；不是SSO联调。 |
 | REQ-02 / AC-02 / EXP-02 | 岗位授权与必要字段 | `implemented` | 3 | 服务端403和字段过滤；页面隐藏不替代授权。 |
-| REQ-03 / AC-03 / EXP-03 | 复合FAQ与学校未知政策 | `implemented` | 11 | standard复合基线与academic核验分开；未知政策模板仍须FIELD-04审核。 |
-| REQ-04 / AC-04 / EXP-04 | 补槽与房号边界 | `implemented` | 6 | 演示补槽不授予部署跨房权限；模型提取使用stub。 |
+| REQ-03 / AC-03 / EXP-03 | 复合FAQ与学校未知政策 | `implemented` | 20 | standard复合基线与academic核验分开；未知政策模板仍须FIELD-04审核。 |
+| REQ-04 / AC-04 / EXP-04 | 补槽与房号边界 | `implemented` | 8 | 演示补槽不授予部署跨房权限；模型提取使用stub。 |
 | REQ-05 / AC-05 / EXP-05 | 异步版本、取消与并发 | `implemented` | 23 | Event/Barrier受控竞态和队列保护；不证明生产容量。 |
-| REQ-06 / AC-06 / EXP-06 | 送物生命周期与目标定位 | `implemented` | 22 | ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒绝。 |
-| REQ-07 / AC-07 / EXP-07 | 提案核验与风险升级 | `implemented` | 11 | 错物/错房/虚构库存/风险降级拒绝；人工核验不补派被拒工单。 |
+| REQ-06 / AC-06 / EXP-06 | 送物生命周期与目标定位 | `implemented` | 27 | ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒绝。 |
+| REQ-07 / AC-07 / EXP-07 | 提案核验与风险升级 | `implemented` | 12 | 错物/错房/虚构库存/风险降级拒绝；人工核验不补派被拒工单。 |
 | REQ-08 / AC-08 / EXP-08 | 单写入、原子检查点与回滚 | `implemented` | 4 | 单库第二writer拒绝、聊天/员工故障回滚；非真实断电实验。 |
 | REQ-09 / AC-09 / EXP-09 | 持久幂等与重试 | `implemented` | 4 | 同载荷复用run_id，重启/裁剪仍不重复；改载荷409。 |
-| REQ-10 / AC-10 / EXP-10 | 消息归档、日期恢复与隔离 | `implemented` | 20 | 模型窗口与完整归档分层；112条分页身份/顺序/去重、116条重启恢复及两端UI历史页隔离均有断言。 |
-| REQ-11 / AC-11 / EXP-11 | 学术待遇人工核验与已知餐券保护 | `implemented` | 8 | 已知餐券表达、保洁直调/改券保护已实现；有4方法红绿和81项焦点回归。不是任意语言或真实发券证明。 |
+| REQ-10 / AC-10 / EXP-10 | 消息归档、日期恢复与隔离 | `implemented` | 28 | 模型窗口与完整归档分层；112条分页身份/顺序/去重、116条重启恢复及两端UI历史页隔离均有断言。 |
+| REQ-11 / AC-11 / EXP-11 | 学术待遇人工核验与已知餐券保护 | `implemented` | 9 | 已知餐券表达、保洁直调/改券保护已实现；有4方法红绿和81项焦点回归。不是任意语言或真实发券证明。 |
 | REQ-12 / AC-12 / EXP-12 | 部门回执、夜审与回收待检 | `implemented` | 5 | 夜审日期、借用品通知和回收待检；不等价外部财务夜审。 |
 | REQ-13 / AC-13 / EXP-13 | API工作台与岗位视图 | `implemented` | 3 | AppTest经HotelApi/TestClient访问唯一临时API；两进程/容器仍须FIELD-01。 |
 | REQ-14 / AC-14 / EXP-14 | 配置、备份、部署与硅基流动连接预检 | `partial` | 8 | 本地配置/备份和 MODEL-CONN-01 代码预检有测试；当前镜像、Compose、卷权限、连续现场探测、聊天 canary 与现场恢复未执行。 |
@@ -78,6 +78,15 @@ standard复合基线与academic核验分开；未知政策模板仍须FIELD-04�
 - `tests.test_service_reliability.DeliveryReliabilityTests.test_emotion_alone_cannot_authorize_cloud_invented_service`
 - `tests.test_service_reliability.DeliveryReliabilityTests.test_emotion_or_denied_manager_is_not_a_complaint_under_rules_or_model`
 - `tests.test_hotel_readiness.HotelReadinessTests.test_service_three_states_and_review_counts_do_not_invent_availability`
+- `tests.test_conversation_followup.ConversationFollowupTests.test_human_help_refusal_and_bare_number_are_clarified_without_orders`
+- `tests.test_conversation_followup.ConversationFollowupTests.test_footbath_and_gym_are_both_answered_without_fabricated_academic_hours`
+- `tests.test_conversation_followup.ConversationFollowupTests.test_multiple_catalog_services_all_receive_a_response`
+- `tests.test_conversation_followup.ConversationFollowupTests.test_chitchat_model_cannot_solicit_identity_or_contact_details`
+- `tests.test_conversation_followup.ConversationFollowupTests.test_english_chitchat_does_not_match_spa_inside_space`
+- `tests.test_conversation_followup.ConversationFollowupTests.test_request_for_staff_does_not_prevent_explicit_cancellation`
+- `tests.test_conversation_followup.ConversationFollowupTests.test_staff_and_member_questions_do_not_swallow_real_service`
+- `tests.test_guest_history_ui.LocalGuestHistoryUITests.test_missing_local_profile_uses_unverified_academic_facilities`
+- `tests.test_guest_history_ui.LocalGuestHistoryUITests.test_explicit_standard_profile_keeps_demo_facility_fixture`
 
 ### REQ-04 / AC-04 / EXP-04
 
@@ -91,6 +100,8 @@ standard复合基线与academic核验分开；未知政策模板仍须FIELD-04�
 - `tests.test_app.MultiAgentFlowTests.test_cloud_room_requires_pms_and_mentioned_number`
 - `tests.test_deployment.DeploymentTests.test_guest_is_bound_to_own_session_room_and_stay`
 - `tests.test_service_reliability.DeliveryReliabilityTests.test_denied_guest_name_switches_to_neutral_address_without_rebinding`
+- `tests.test_conversation_followup.ConversationFollowupTests.test_unbound_profile_does_not_invent_identity_or_collect_membership_details`
+- `tests.test_conversation_followup.ConversationFollowupTests.test_disputed_name_is_not_asserted_as_identity`
 
 ### REQ-05 / AC-05 / EXP-05
 
@@ -150,6 +161,11 @@ ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒�
 - `tests.test_hotel_readiness.HotelReadinessTests.test_stock_question_uses_current_inventory_without_model_or_ticket`
 - `tests.test_hotel_readiness.HotelReadinessTests.test_catalog_question_does_not_swallow_delivery_or_cancellation`
 - `tests.test_hotel_readiness.HotelReadinessTests.test_spoken_delivery_fillers_are_not_unknown_products`
+- `tests.test_conversation_followup.ConversationFollowupTests.test_measured_unknown_compounds_never_partially_order_water`
+- `tests.test_conversation_followup.ConversationFollowupTests.test_known_sku_in_same_clause_does_not_hide_an_unknown_measured_noun`
+- `tests.test_conversation_followup.ConversationFollowupTests.test_all_unknown_nouns_are_reported_instead_of_only_last_one`
+- `tests.test_conversation_followup.ConversationFollowupTests.test_valid_delivery_quantities_and_facility_questions_are_not_unknown_nouns`
+- `tests.test_conversation_followup.ConversationFollowupTests.test_negated_unknown_and_pure_price_faq_do_not_block_a_valid_towel`
 
 ### REQ-07 / AC-07 / EXP-07
 
@@ -168,6 +184,7 @@ ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒�
 - `tests.test_hotel_readiness.HotelReadinessTests.test_smoke_or_electric_leak_is_high_risk_even_if_model_says_chitchat`
 - `tests.test_hotel_readiness.HotelReadinessTests.test_delivery_urgency_is_medium_but_explicitly_not_urgent_remains_low`
 - `tests.test_hotel_readiness.HotelReadinessTests.test_explicit_denial_of_smoke_does_not_raise_an_ordinary_light_repair`
+- `tests.test_conversation_followup.ConversationFollowupTests.test_direct_department_cannot_drop_unknown_measured_addition`
 
 ### REQ-08 / AC-08 / EXP-08
 
@@ -217,6 +234,14 @@ ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒�
 - `tests.test_guest_history_ui.DeployedGuestHistoryUITests.test_deployed_can_reach_messages_beyond_one_hundred`
 - `tests.test_guest_history_ui.DeployedGuestHistoryUITests.test_changed_guest_pass_discards_previous_history_page`
 - `tests.test_hotel_readiness.HotelReadinessTests.test_catalog_expansion_does_not_invent_stock_in_existing_database`
+- `tests.test_guest_history_ui.CumulativeHistoryStateTests.test_initial_and_older_reads_accumulate_sixty_without_dropping_newer_records`
+- `tests.test_guest_history_ui.CumulativeHistoryStateTests.test_poll_and_return_latest_deduplicate_without_losing_loaded_beginning`
+- `tests.test_guest_history_ui.CumulativeHistoryStateTests.test_poll_fills_the_gap_when_more_than_sixty_new_messages_arrive`
+- `tests.test_guest_history_ui.CumulativeHistoryStateTests.test_runtime_api_session_stay_and_grant_changes_reset_cumulative_cache`
+- `tests.test_guest_history_ui.LocalGuestHistoryUITests.test_local_return_latest_recreates_viewport_with_unchanged_messages`
+- `tests.test_guest_history_ui.DeployedGuestHistoryUITests.test_deployed_polling_and_latest_keep_accumulated_archive`
+- `tests.test_guest_history_ui.DeployedGuestHistoryUITests.test_deployed_return_latest_recreates_viewport_with_unchanged_messages`
+- `tests.test_guest_history_ui.CumulativeHistoryStateTests.test_latest_keeps_native_scroll_observer_enabled_until_reading_older`
 
 ### REQ-11 / AC-11 / EXP-11
 
@@ -232,6 +257,7 @@ ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒�
 - `tests.test_deployment.DeploymentTests.test_academic_housekeeping_cannot_replace_delivery_with_coupons`
 - `tests.test_deployment.DeploymentTests.test_academic_coupon_replacement_preserves_existing_delivery`
 - `tests.test_hotel_readiness.HotelReadinessTests.test_room_access_and_academic_vouchers_queries_require_verification`
+- `tests.test_conversation_followup.ConversationFollowupTests.test_member_query_uses_bound_profile_or_academic_policy_without_cloud`
 
 ### REQ-12 / AC-12 / EXP-12
 

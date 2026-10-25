@@ -759,7 +759,8 @@ class ReceptionAgent:
             ],
             max_tokens=100,
         )
-        if not raw or _contains_private_model_detail(raw, self.model.model):
+        if (not raw or _contains_private_model_detail(raw, self.model.model)
+                or re.search(r"卡号|联系方式|身份证|证件号|(?:手机|电话)(?:号码|号)", raw)):
             return fallback
         return raw.strip()[:70]
 
@@ -1241,15 +1242,46 @@ class HotelOrchestrator:
         quantity = command.quantity or _requested_quantity(prior_detail)
         return None, f"送 {quantity} 件{command.item}"
 
+    def _local_guest_reply(self, text: str) -> str | None:
+        """Bound profile facts and explicit navigation are not model guesses."""
+        compact = normalized(text)
+        profile = self.state.guest_profile or {}
+        if compact in {"我是谁", "你知道我是谁吗", "我叫什么", "我叫什么名字", "我的房间号是什么", "我是哪个房间的"}:
+            if not self.state.room_no or not profile:
+                return "当前还未关联已核验的入住信息，请联系前台核验后开通本次入住服务。"
+            if self.state.neutral_address:
+                return f"当前服务会话关联 {self.state.room_no} 房；您已提出称呼异议，姓名需由前台核验，不能根据聊天自述更改入住信息。"
+            return f"当前服务会话关联 {self.state.room_no} 房，入住档案称呼为{profile.get('guest_name') or '待核验'}；如有不符，请由前台核验。"
+        if "会员" in compact and re.search(r"什么|哪|查询|级别|等级|是会员吗|会员身份", compact):
+            if not self.state.room_no or not profile:
+                return "当前没有已核验的入住会员资料，请由前台核验本次入住及对应待遇。"
+            if os.getenv("AEGIS_SITE_PROFILE") == "academic":
+                return "当前按学术接待订单办理；会员等级及对应待遇尚未核验，请由前台核验本次入住，不根据商业会员名称自动承诺权益。"
+            level = profile.get("member_level")
+            return (f"当前绑定 {self.state.room_no} 房，档案记录的会员等级为{level}；对应权益请以前台核验为准。" if level
+                    else "当前档案未记录已核验的会员等级，请由前台核验本次入住。")
+        if re.search(r"人工(?:客服|服务)?|真人|你之外的帮助|其他人(?:的)?帮助|工作人员帮忙", compact):
+            return "如需工作人员帮助，请通过房内标示的联系方式或到酒店前台联系；当前聊天尚未直接接通人工。"
+        if re.fullmatch(r"(?:但|但是|不过)?我(?:又|现在|暂时)?(?:不想|不需要|不要)(?:让你)?(?:帮助|帮忙)(?:我|了)?", compact):
+            return "好的，暂不继续协助。已有服务请求保持原状态；如果需要取消，请明确说明。"
+        if compact in {"我需要帮助", "需要帮助", "帮帮我"}:
+            return "请说明需要客房送物、故障报修，还是联系前台工作人员；确认具体需求前不会创建服务单。"
+        if re.fullmatch(r"\d{1,2}", compact) and not self.state.pending:
+            return "单独一个数字还无法确认需求，请说明它指物品数量、选项还是其他信息。"
+        return None
+
     def _catalog_reply(self, text: str) -> str | None:
         if re.search(r"坏|故障|漏水|报修|维修|冒烟|漏电|着火|被困", text):
             return None
+        answers = []
         for service in load_service_catalog().get("services", []):
-            if not any(alias.casefold() in text.casefold() for alias in service.get("aliases", [service["name"]])):
+            if not any(re.search(r"\b" + re.escape(alias) + r"\b", text, re.IGNORECASE) if alias.isascii()
+                       else alias in text for alias in service.get("aliases", [service["name"]])):
                 continue
             name, status = service["name"], service["status"]
             if status == "available":
-                return f"酒店当前配置显示可提供{name}；具体时段、房型、费用和预约请由前台确认，尚未为您创建预约。"
+                answers.append(f"酒店当前配置显示可提供{name}；具体时段、房型、费用和预约请由前台确认，尚未为您创建预约。")
+                continue
             record = next((r for r in self.state.service_feedback if r["topic"] == name), None)
             if record is None:
                 record = {"topic": name, "catalog_status": status, "status": "待酒店核验", "count": 0}
@@ -1257,8 +1289,11 @@ class HotelOrchestrator:
             record["count"] += 1
             record["last_seen_at"] = datetime.now().isoformat(timespec="seconds")
             if status == "unavailable":
-                return f"酒店当前不提供{name}。已记录这类需求供酒店评估；不会据此自动开放服务或为您预约。"
-            return f"{name}的可用情况尚未核验，请联系前台按实际设施和房型确认。已记录为待酒店核验需求，尚未创建该项服务工单。"
+                answers.append(f"酒店当前不提供{name}。已记录这类需求供酒店评估；不会据此自动开放服务或为您预约。")
+            else:
+                answers.append(f"{name}的可用情况尚未核验，请联系前台按实际设施和房型确认。已记录为待酒店核验需求，尚未创建该项服务工单。")
+        if answers:
+            return " ".join(answers)
         if re.search(r"能送哪些|可送哪些|有哪些(?:物品|用品)|有什么(?:用品|物品)|物品清单", text):
             names = [name for name, n in self.housekeeping.inventory.items() if n > 0 and name != "早餐券"]
             return "当前可申请的客房物品有：" + "、".join(names) + "。请说明一种物品和数量，是否可派送以实时库存核验为准。"
@@ -1312,18 +1347,24 @@ class HotelOrchestrator:
 
         preview = _rules_extract(text, self.knowledge)
         delivery_command = parse_delivery_command(text)
+        local_reply = self._local_guest_reply(text)
         catalog_reply = self._catalog_reply(text)
         # A configured answer may accompany an actual service or cancellation.
         # Do not terminate the turn before that action reaches the normal guards.
+        voucher_query = (preview["intent"] == "票券服务" and re.search(r"有没有|是否有|还有.*吗|有.*吗|库存", text)
+                         and not re.search(r"送|拿|来|给我|我要|申请|发给|领取|需要|借|补", text))
         catalog_with_action = (delivery_command.action in {"cancel", "replace"}
-                               or preview["intent"] in {"工程报修", "客诉紧急", "服务完结", "延迟退房", "续住申请"}
-                               or preview["intent"] in SERVICE_INTENTS and any(
-                                   word in text for word in ("送", "拿", "借", "给我", "我要", "申请", "报修", "投诉", "退房", "续住")))
-        if catalog_reply is not None and not catalog_with_action:
+                               or preview["intent"] in SERVICE_INTENTS and not voucher_query
+                               or preview["intent"] == "服务完结")
+        if (catalog_reply is not None or local_reply is not None) and not catalog_with_action:
             if record_user:
                 state.messages.append({"role": "user", "content": text, "room_no": state.room_no})
+            parts = [part for part in (local_reply, catalog_reply) if part]
+            for entry in self.knowledge.match_all(text):
+                topics = [word for word in entry["keywords"] if word in text]
+                parts.append(("、".join(topics) + "：" if topics else "") + entry["answer"])
             state.active_agent, state.intent, state.model_mode = "ReceptionAgent", "酒店咨询", "规则护栏 · 服务目录"
-            return self._finish(catalog_reply, [{"agent": "ReceptionAgent", "event": "service_catalog_checked",
+            return self._finish(" ".join(parts), [{"agent": "ReceptionAgent", "event": "service_catalog_checked" if catalog_reply else "local_guest_context",
                                                "detail": "读取配置服务与实时库存；需求计数不自动改变服务事实"}])
 
         # If a bound session explicitly names another room for a write intent,
@@ -1360,6 +1401,9 @@ class HotelOrchestrator:
         if catalog_reply is not None:
             analysis["faq_entries"] = [*analysis.get("faq_entries", []),
                                        {"id": "service_catalog", "answer": catalog_reply}]
+        if local_reply is not None:
+            analysis["faq_entries"] = [*analysis.get("faq_entries", []),
+                                       {"id": "guest_context", "answer": local_reply}]
 
         # Dual-stream FAQ assembly
         faq_part = None

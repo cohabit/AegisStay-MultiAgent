@@ -51,6 +51,7 @@
 | `tests/test_delivery_language.py` / `test_persistence.py` | 口语送物生命周期、持久化和重启 |
 | `tests/test_service_reliability.py` / `test_guest_history_ui.py` | 完整归档与两端分页、批量取消代际、未知物品和情绪/称呼边界 |
 | `tests/test_hotel_readiness.py` | 目录事实、口语风险、设施需求记录、8 位住客抢库存及换客空上下文 |
+| `tests/test_conversation_followup.py` | 用户实测原句、混合未知物品/量词、档案会员查询、人工澄清与多设施完整答复 |
 | `tests/test_evolution.py` / `test_streamlit.py` / `test_visual_contract.py` | 示例检索、记忆与本地界面、主题对比度回归 |
 | `tests/test_release_verification.py` | 证据工具负向测试，拒绝假通过 |
 | `tests/stress_test.py` | 开发压测工具；不能对真实酒店执行全量重置或声称生产容量 |

@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 import os
+import html
 import uuid
 from hashlib import sha256
 from functools import wraps
@@ -10,6 +11,41 @@ from datetime import date, timedelta
 import streamlit as st
 
 from api_client import ApiError, HotelApi
+from ticket_details import delivery_fulfillment
+
+
+def render_ticket_fulfillment(ticket: dict, inventory: dict) -> dict | None:
+    """Render the shared staff projection without treating guest text as markup."""
+    if ticket.get("category") != "送物":
+        st.text(str(ticket.get("item_detail", "")))
+        return None
+    fulfillment = ticket.get("fulfillment")
+    if not isinstance(fulfillment, dict):
+        fulfillment = delivery_fulfillment(ticket, inventory)
+    label, message = fulfillment["label"], fulfillment["message"]
+    if fulfillment["needs_verification"]:
+        st.warning(html.escape(f"待人工核验 · {message}"))
+    elif fulfillment["needs_restock"]:
+        st.warning(html.escape(f"{label}，未确认派送。{message}"))
+    elif fulfillment["state"] == "awaiting_reservation":
+        st.info(html.escape(f"{label} · {message}"))
+    else:
+        st.caption(html.escape(f"{label} · {message}"))
+    st.markdown("**执行清单**")
+    for item in fulfillment["items"]:
+        unit = item["unit"]
+        restock = "需补货：请协调补足库存缺口" if item["needs_restock"] else "无需补货"
+        st.text(
+            f"{item['name']} · 申请 {item['requested_quantity']} {unit}\n"
+            f"已预留 {item['reserved_quantity']} {unit} · 当前可用 {item['available_quantity']} {unit}\n"
+            f"缺口 {item['shortage_quantity']} {unit} · {restock}",
+            width="stretch",
+        )
+    if not fulfillment["items"]:
+        st.caption("执行清单尚不完整，请人工核验物品、单位与数量。")
+    with st.expander("原始需求"):
+        st.text(str(ticket.get("item_detail", "")), width="stretch")
+    return fulfillment
 
 
 def guest_history_page(fetch_page, *, scope: tuple, key: str) -> dict:
@@ -188,14 +224,14 @@ def operations(api: HotelApi, person: dict) -> None:
         visible = active if selection == "待处理" else tickets
         for ticket in sorted(visible, key=lambda t: t.get("risk_level") != "红色")[:30]:
             tid = ticket["ticket_id"]
-            with st.container(border=True):
-                st.markdown(f"**{ticket['room_no']} 房 · {ticket['category']}**")
-                st.write(ticket["item_detail"])
-                st.caption(f"{ticket['assigned_dept']} · {ticket['status']} · {ticket.get('delivery_status', '')}")
+            with st.container(border=True, key="operation-ticket-" + tid, gap="xsmall"):
+                st.markdown(f"**{html.escape(str(ticket['room_no']))} 房 · {html.escape(str(ticket['category']))}**")
+                st.caption(html.escape(f"{ticket['assigned_dept']} · {ticket['status']} · {tid}"))
+                fulfillment = render_ticket_fulfillment(ticket, payload["inventory"])
                 change = ticket.get("change_request", {})
                 if change.get("status") == "待部门确认":
                     action_text = "取消原服务" if change["action"] == "cancel" else f"更换为 {change.get('quantity', 1)} 件{change.get('item', '')}"
-                    st.warning(f"住客申请{action_text}，请核对实际派送情况。")
+                    st.warning(html.escape(f"住客申请{action_text}，请核对实际派送情况。"))
                     delivered = ticket.get("delivery_status") == "已送达"
                     returned = st.checkbox("已确认取回（进入待检库存）", key="returned-" + tid) if delivered else False
                     yes, no = st.columns(2)
@@ -208,11 +244,12 @@ def operations(api: HotelApi, person: dict) -> None:
                         st.rerun(scope="fragment")
                 else:
                     a, b = st.columns(2)
-                    if ticket.get("delivery_status") == "待派送" and ticket["status"] == "处理中":
-                        if a.button("开始派送", key="dispatch-" + tid):
+                    if fulfillment is not None and fulfillment["state"] != "in_transit" and ticket["status"] == "处理中":
+                        if a.button("开始派送", key="dispatch-" + tid, disabled=not fulfillment["can_dispatch"]):
                             api.request("POST", f"/api/tickets/{tid}/dispatch")
                             st.rerun(scope="fragment")
-                    if ticket["status"] == "处理中" and b.button("确认完成", key="complete-" + tid):
+                    if ticket["status"] == "处理中" and b.button("确认完成", key="complete-" + tid,
+                                                              disabled=fulfillment is not None and not fulfillment["can_complete"]):
                         api.request("POST", f"/api/tickets/{tid}/complete")
                         st.rerun(scope="fragment")
         for req in state["checkout_requests"]:

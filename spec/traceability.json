@@ -30,7 +30,9 @@
       "tests": [
         "tests.test_deployment.DeploymentTests.test_missing_auth_and_shared_guest_token_cannot_access",
         "tests.test_deployment.DeploymentTests.test_department_cannot_complete_other_department_ticket",
-        "tests.test_deployment.DeploymentTests.test_new_guest_does_not_read_previous_room_orders"
+        "tests.test_deployment.DeploymentTests.test_new_guest_does_not_read_previous_room_orders",
+        "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_guest_cannot_read_staff_fulfillment_or_global_inventory",
+        "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_staff_endpoints_project_same_details_without_changing_stored_ticket"
       ],
       "experiment_ids": [
         "EXP-02"
@@ -66,7 +68,67 @@
         "tests.test_conversation_followup.ConversationFollowupTests.test_request_for_staff_does_not_prevent_explicit_cancellation",
         "tests.test_conversation_followup.ConversationFollowupTests.test_staff_and_member_questions_do_not_swallow_real_service",
         "tests.test_guest_history_ui.LocalGuestHistoryUITests.test_missing_local_profile_uses_unverified_academic_facilities",
-        "tests.test_guest_history_ui.LocalGuestHistoryUITests.test_explicit_standard_profile_keeps_demo_facility_fixture"
+        "tests.test_guest_history_ui.LocalGuestHistoryUITests.test_explicit_standard_profile_keeps_demo_facility_fixture",
+        "tests.test_facility_intents.FacilityIntentTests.test_F01_closing",
+        "tests.test_facility_intents.FacilityIntentTests.test_F02_closing",
+        "tests.test_facility_intents.FacilityIntentTests.test_F03_closing",
+        "tests.test_facility_intents.FacilityIntentTests.test_F04_closing",
+        "tests.test_facility_intents.FacilityIntentTests.test_F05_closing",
+        "tests.test_facility_intents.FacilityIntentTests.test_F06_closing",
+        "tests.test_facility_intents.FacilityIntentTests.test_F07_closing",
+        "tests.test_facility_intents.FacilityIntentTests.test_F08_closing",
+        "tests.test_facility_intents.FacilityIntentTests.test_F09_opening",
+        "tests.test_facility_intents.FacilityIntentTests.test_F10_opening",
+        "tests.test_facility_intents.FacilityIntentTests.test_F11_opening",
+        "tests.test_facility_intents.FacilityIntentTests.test_F12_opening",
+        "tests.test_facility_intents.FacilityIntentTests.test_F13_opening",
+        "tests.test_facility_intents.FacilityIntentTests.test_F14_opening",
+        "tests.test_facility_intents.FacilityIntentTests.test_F15_fields",
+        "tests.test_facility_intents.FacilityIntentTests.test_F16_fields",
+        "tests.test_facility_intents.FacilityIntentTests.test_F17_fields",
+        "tests.test_facility_intents.FacilityIntentTests.test_F18_fields",
+        "tests.test_facility_intents.FacilityIntentTests.test_F19_fields",
+        "tests.test_facility_intents.FacilityIntentTests.test_F20_fields",
+        "tests.test_facility_intents.FacilityIntentTests.test_F21_fields",
+        "tests.test_facility_intents.FacilityIntentTests.test_F22_fields",
+        "tests.test_facility_intents.FacilityIntentTests.test_F23_multi",
+        "tests.test_facility_intents.FacilityIntentTests.test_F24_multi",
+        "tests.test_facility_intents.FacilityIntentTests.test_F25_multi",
+        "tests.test_facility_intents.FacilityIntentTests.test_F26_multi",
+        "tests.test_facility_intents.FacilityIntentTests.test_F27_multi",
+        "tests.test_facility_intents.FacilityIntentTests.test_F28_multi",
+        "tests.test_facility_intents.FacilityIntentTests.test_F29_multi",
+        "tests.test_facility_intents.FacilityIntentTests.test_F30_multi",
+        "tests.test_facility_intents.FacilityIntentTests.test_F31_multi",
+        "tests.test_facility_intents.FacilityIntentTests.test_F32_multi",
+        "tests.test_facility_intents.FacilityIntentTests.test_F33_academic",
+        "tests.test_facility_intents.FacilityIntentTests.test_F34_academic",
+        "tests.test_facility_intents.FacilityIntentTests.test_F35_academic",
+        "tests.test_facility_intents.FacilityIntentTests.test_F36_academic",
+        "tests.test_facility_intents.FacilityIntentTests.test_F37_academic",
+        "tests.test_facility_intents.FacilityIntentTests.test_F38_academic",
+        "tests.test_facility_intents.FacilityIntentTests.test_F39_academic",
+        "tests.test_facility_intents.FacilityIntentTests.test_F40_academic",
+        "tests.test_facility_intents.FacilityIntentTests.test_F41_custom",
+        "tests.test_facility_intents.FacilityIntentTests.test_F42_custom",
+        "tests.test_facility_intents.FacilityIntentTests.test_F43_custom",
+        "tests.test_facility_intents.FacilityIntentTests.test_F44_custom",
+        "tests.test_facility_intents.FacilityIntentTests.test_F45_custom",
+        "tests.test_facility_intents.FacilityIntentTests.test_F46_custom",
+        "tests.test_facility_intents.FacilityIntentTests.test_F47_custom",
+        "tests.test_facility_intents.FacilityIntentTests.test_F48_custom",
+        "tests.test_facility_intents.FacilityIntentTests.test_F49_mixed",
+        "tests.test_facility_intents.FacilityIntentTests.test_F50_mixed",
+        "tests.test_facility_intents.FacilityIntentTests.test_F51_mixed",
+        "tests.test_facility_intents.FacilityIntentTests.test_F52_mixed",
+        "tests.test_facility_intents.FacilityIntentTests.test_F53_mixed",
+        "tests.test_facility_intents.FacilityIntentTests.test_F54_mixed",
+        "tests.test_facility_intents.FacilityIntentTests.test_F55_mixed",
+        "tests.test_facility_intents.FacilityIntentTests.test_F56_mixed",
+        "tests.test_facility_intents.FacilityIntentTests.test_F57_negative",
+        "tests.test_facility_intents.FacilityIntentTests.test_F58_negative",
+        "tests.test_facility_intents.FacilityIntentTests.test_F59_negative",
+        "tests.test_facility_intents.FacilityIntentTests.test_F60_negative"
       ],
       "experiment_ids": [
         "EXP-03"
@@ -178,7 +240,22 @@
         "tests.test_conversation_followup.ConversationFollowupTests.test_known_sku_in_same_clause_does_not_hide_an_unknown_measured_noun",
         "tests.test_conversation_followup.ConversationFollowupTests.test_all_unknown_nouns_are_reported_instead_of_only_last_one",
         "tests.test_conversation_followup.ConversationFollowupTests.test_valid_delivery_quantities_and_facility_questions_are_not_unknown_nouns",
-        "tests.test_conversation_followup.ConversationFollowupTests.test_negated_unknown_and_pure_price_faq_do_not_block_a_valid_towel"
+        "tests.test_conversation_followup.ConversationFollowupTests.test_negated_unknown_and_pure_price_faq_do_not_block_a_valid_towel",
+        "tests.test_ticket_fulfillment.DeliveryFulfillmentProjectionTests.test_cancelled_shortage_does_not_request_restock",
+        "tests.test_ticket_fulfillment.DeliveryFulfillmentProjectionTests.test_fully_reserved_delivery_remains_ready_when_unreserved_stock_is_zero",
+        "tests.test_ticket_fulfillment.DeliveryFulfillmentProjectionTests.test_in_transit_delivered_and_change_pending_are_distinct",
+        "tests.test_ticket_fulfillment.DeliveryFulfillmentProjectionTests.test_malformed_legacy_field_types_are_reviewed_instead_of_crashing",
+        "tests.test_ticket_fulfillment.DeliveryFulfillmentProjectionTests.test_non_delivery_has_no_inventory_fulfillment",
+        "tests.test_ticket_fulfillment.DeliveryFulfillmentProjectionTests.test_old_unknown_or_incomplete_details_are_reviewed_without_guessing",
+        "tests.test_ticket_fulfillment.DeliveryFulfillmentProjectionTests.test_ready_line_has_canonical_item_unit_and_all_hand_checked_quantities",
+        "tests.test_ticket_fulfillment.DeliveryFulfillmentProjectionTests.test_replenished_stock_is_not_automatically_reserved_or_dispatched",
+        "tests.test_ticket_fulfillment.DeliveryFulfillmentProjectionTests.test_shortage_line_shows_seven_requested_six_available_one_missing",
+        "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_new_shortage_is_persisted_as_coordination_and_rejected_by_both_actions",
+        "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_shortage_replaced_with_available_quantity_becomes_ready",
+        "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_valid_dispatch_and_completion_never_deduct_stock_twice",
+        "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_named_quantity_change_targets_shortage_among_multiple_active_orders",
+        "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_new_item_only_or_duplicate_target_orders_still_require_clarification",
+        "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_water_alias_before_change_marker_identifies_its_own_order"
       ],
       "experiment_ids": [
         "EXP-06"
@@ -206,7 +283,10 @@
         "tests.test_hotel_readiness.HotelReadinessTests.test_smoke_or_electric_leak_is_high_risk_even_if_model_says_chitchat",
         "tests.test_hotel_readiness.HotelReadinessTests.test_delivery_urgency_is_medium_but_explicitly_not_urgent_remains_low",
         "tests.test_hotel_readiness.HotelReadinessTests.test_explicit_denial_of_smoke_does_not_raise_an_ordinary_light_repair",
-        "tests.test_conversation_followup.ConversationFollowupTests.test_direct_department_cannot_drop_unknown_measured_addition"
+        "tests.test_conversation_followup.ConversationFollowupTests.test_direct_department_cannot_drop_unknown_measured_addition",
+        "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_direct_completion_and_guest_confirmation_do_not_bypass_legacy_review",
+        "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_legacy_erroneous_mixed_ticket_cannot_dispatch_or_complete",
+        "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_pending_change_cannot_be_dispatched_even_if_stock_is_reserved"
       ],
       "experiment_ids": [
         "EXP-07"
@@ -230,7 +310,8 @@
         "tests.test_deployment.DeploymentTests.test_second_writer_is_rejected_instead_of_overwriting",
         "tests.test_deployment.DeploymentTests.test_write_failure_rolls_back_stock_and_does_not_ack_success",
         "tests.test_deployment.DeploymentTests.test_atomic_checkpoint_rolls_back_if_session_write_fails",
-        "tests.test_deployment.DeploymentTests.test_staff_storage_failure_is_unavailable_and_rolls_back"
+        "tests.test_deployment.DeploymentTests.test_staff_storage_failure_is_unavailable_and_rolls_back",
+        "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_shortage_state_and_derived_details_survive_restart"
       ],
       "experiment_ids": [
         "EXP-08"
@@ -359,7 +440,28 @@
       "tests": [
         "tests.test_deployment.DeployedUIBoundaryTests.test_no_credential_does_not_create_unprotected_business_ui",
         "tests.test_deployment.DeployedUIBoundaryTests.test_guest_ui_only_receives_own_service_view",
-        "tests.test_deployment.DeployedUIBoundaryTests.test_staff_ui_shares_api_without_a_second_writer"
+        "tests.test_deployment.DeployedUIBoundaryTests.test_staff_ui_shares_api_without_a_second_writer",
+        "tests.test_operations_ticket_ui.ApiOperationsTicketUITests.test_closed_orders_have_no_active_replenishment_request",
+        "tests.test_operations_ticket_ui.ApiOperationsTicketUITests.test_dynamic_ticket_quote_cannot_inject_html",
+        "tests.test_operations_ticket_ui.ApiOperationsTicketUITests.test_each_order_keeps_its_own_item_quantity_and_in_transit_completion",
+        "tests.test_operations_ticket_ui.ApiOperationsTicketUITests.test_engineering_ticket_keeps_ordinary_completion",
+        "tests.test_operations_ticket_ui.ApiOperationsTicketUITests.test_historical_unknown_and_missing_fields_require_verification",
+        "tests.test_operations_ticket_ui.ApiOperationsTicketUITests.test_pending_change_disables_completion_and_preserves_confirmation",
+        "tests.test_operations_ticket_ui.ApiOperationsTicketUITests.test_reserved_water_shows_canonical_quantities_even_when_available_zero",
+        "tests.test_operations_ticket_ui.ApiOperationsTicketUITests.test_revised_order_recomputes_item_and_removes_old_shortage",
+        "tests.test_operations_ticket_ui.ApiOperationsTicketUITests.test_shortage_is_coordination_with_gap_and_no_dispatch",
+        "tests.test_operations_ticket_ui.ApiOperationsTicketUITests.test_zero_stock_and_recovered_but_unreserved_have_distinct_states",
+        "tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_closed_orders_have_no_active_replenishment_request",
+        "tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_dynamic_ticket_quote_cannot_inject_html",
+        "tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_each_order_keeps_its_own_item_quantity_and_in_transit_completion",
+        "tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_engineering_ticket_keeps_ordinary_completion",
+        "tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_historical_unknown_and_missing_fields_require_verification",
+        "tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_pending_change_disables_completion_and_preserves_confirmation",
+        "tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_reserved_water_shows_canonical_quantities_even_when_available_zero",
+        "tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_revised_order_recomputes_item_and_removes_old_shortage",
+        "tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_shortage_coordination_is_not_counted_as_dispatch_queue_or_eta",
+        "tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_shortage_is_coordination_with_gap_and_no_dispatch",
+        "tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_zero_stock_and_recovered_but_unreserved_have_distinct_states"
       ],
       "experiment_ids": [
         "EXP-13"

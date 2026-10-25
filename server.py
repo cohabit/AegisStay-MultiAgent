@@ -20,6 +20,7 @@ from auth import (Principal, authenticate, enabled, issue_guest_pass, require_se
                   require_staff, validate_configuration)
 from hotel_core import HotelOrchestrator, HotelState, PUBLIC_ASSISTANT_NAME, _room_no
 from persistence import StorageConflict
+from ticket_details import delivery_fulfillment
 
 session_manager = SessionManager()
 _rate_lock = threading.Lock()
@@ -284,6 +285,8 @@ def operations(principal: Principal = Depends(identity)):
                            current_date=session_manager.current_date,
                            checkout_requests=deepcopy(session_manager.shared_checkout_requests) if not _department(principal) else [],
                            agent_conflicts=conflicts if not _department(principal) else [])
+        for ticket in state.tickets:
+            ticket["fulfillment"] = delivery_fulfillment(ticket, session_manager.housekeeping.inventory)
         if _department(principal):
             state.pms_rooms = {number: {key: room[key] for key in ("room_no", "room_status", "checkout_time") if key in room}
                                for number, room in state.pms_rooms.items()}
@@ -310,7 +313,10 @@ def tickets(room_no: str | None = None, status: str | None = None, category: str
         rows = [t for t in session_manager.shared_tickets if (not room_no or t["room_no"] == room_no)
                 and (not status or t["status"] == status) and (not category or t["category"] == category)
                 and (not _department(principal) or t["assigned_dept"] == _department(principal))]
-        return {"total": len(rows), "tickets": deepcopy(rows)}
+        projected = deepcopy(rows)
+        for ticket in projected:
+            ticket["fulfillment"] = delivery_fulfillment(ticket, session_manager.housekeeping.inventory)
+        return {"total": len(rows), "tickets": projected}
 
 
 @app.post("/api/tickets/{ticket_id}/complete")

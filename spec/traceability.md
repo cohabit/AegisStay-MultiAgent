@@ -4,23 +4,23 @@
 
 `implemented` 表示约定范围内的代码和测试存在，`partial` 表示有明确未执行/未交付范围；二者都不代表本次运行PASS。本文定义追溯方案，不嵌入可变成绩；每次执行前为 `PENDING_RUN`，完成后只认对应manifest和独立验收记录。由集成人员在源码稳定后运行统一入口。范围固定 `offline-code-baseline`，`field_readiness=NOT_VERIFIED`，FIELD-01…FIELD-06 均为 `TARGET_NOT_RUN`。
 
-JSON 顶层 `schema_version=1`；`requirements` 恰含REQ-01…REQ-16，每项对应同号AC/EXP，`tests` 仅写真实完整unittest方法，当前合计196个唯一方法；`evidence` 仅写统一目录实际文件名。未来FUT不计入当前16项。机器校验只证明方法可加载且在本次成功的完整套件里实际执行；方法是否支撑业务要求还须检查断言语义。
+JSON 顶层 `schema_version=1`；`requirements` 恰含REQ-01…REQ-16，每项对应同号AC/EXP，`tests` 仅写真实完整unittest方法，当前合计298个唯一方法；`evidence` 仅写统一目录实际文件名。未来FUT不计入当前16项。机器校验只证明方法可加载且在本次成功的完整套件里实际执行；方法是否支撑业务要求还须检查断言语义。
 
 | 要求 / 验收 / 实验 | 内容 | 实现状态 | 方法数 | 覆盖边界 |
 | --- | --- | --- | --- | --- |
 | REQ-01 / AC-01 / EXP-01 | 入住凭证与入住/会话绑定 | `implemented` | 5 | 授权、跨房、过期、撤销、换客与在途撤销；不是SSO联调。 |
-| REQ-02 / AC-02 / EXP-02 | 岗位授权与必要字段 | `implemented` | 3 | 服务端403和字段过滤；页面隐藏不替代授权。 |
-| REQ-03 / AC-03 / EXP-03 | 复合FAQ与学校未知政策 | `implemented` | 20 | standard复合基线与academic核验分开；未知政策模板仍须FIELD-04审核。 |
+| REQ-02 / AC-02 / EXP-02 | 岗位授权与必要字段 | `implemented` | 5 | 服务端403和字段过滤；页面隐藏不替代授权。 |
+| REQ-03 / AC-03 / EXP-03 | 复合FAQ与学校未知政策 | `implemented` | 80 | standard复合基线与academic核验分开；未知政策模板仍须FIELD-04审核。 |
 | REQ-04 / AC-04 / EXP-04 | 补槽与房号边界 | `implemented` | 8 | 演示补槽不授予部署跨房权限；模型提取使用stub。 |
 | REQ-05 / AC-05 / EXP-05 | 异步版本、取消与并发 | `implemented` | 23 | Event/Barrier受控竞态和队列保护；不证明生产容量。 |
-| REQ-06 / AC-06 / EXP-06 | 送物生命周期与目标定位 | `implemented` | 27 | ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒绝。 |
-| REQ-07 / AC-07 / EXP-07 | 提案核验与风险升级 | `implemented` | 12 | 错物/错房/虚构库存/风险降级拒绝；人工核验不补派被拒工单。 |
-| REQ-08 / AC-08 / EXP-08 | 单写入、原子检查点与回滚 | `implemented` | 4 | 单库第二writer拒绝、聊天/员工故障回滚；非真实断电实验。 |
+| REQ-06 / AC-06 / EXP-06 | 送物生命周期与目标定位 | `implemented` | 42 | ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒绝。 |
+| REQ-07 / AC-07 / EXP-07 | 提案核验与风险升级 | `implemented` | 15 | 错物/错房/虚构库存/风险降级拒绝；人工核验不补派被拒工单。 |
+| REQ-08 / AC-08 / EXP-08 | 单写入、原子检查点与回滚 | `implemented` | 5 | 单库第二writer拒绝、聊天/员工故障回滚；非真实断电实验。 |
 | REQ-09 / AC-09 / EXP-09 | 持久幂等与重试 | `implemented` | 4 | 同载荷复用run_id，重启/裁剪仍不重复；改载荷409。 |
 | REQ-10 / AC-10 / EXP-10 | 消息归档、日期恢复与隔离 | `implemented` | 28 | 模型窗口与完整归档分层；112条分页身份/顺序/去重、116条重启恢复及两端UI历史页隔离均有断言。 |
 | REQ-11 / AC-11 / EXP-11 | 学术待遇人工核验与已知餐券保护 | `implemented` | 9 | 已知餐券表达、保洁直调/改券保护已实现；有4方法红绿和81项焦点回归。不是任意语言或真实发券证明。 |
 | REQ-12 / AC-12 / EXP-12 | 部门回执、夜审与回收待检 | `implemented` | 5 | 夜审日期、借用品通知和回收待检；不等价外部财务夜审。 |
-| REQ-13 / AC-13 / EXP-13 | API工作台与岗位视图 | `implemented` | 3 | AppTest经HotelApi/TestClient访问唯一临时API；两进程/容器仍须FIELD-01。 |
+| REQ-13 / AC-13 / EXP-13 | API工作台与岗位视图 | `implemented` | 24 | AppTest经HotelApi/TestClient访问唯一临时API；两进程/容器仍须FIELD-01。 |
 | REQ-14 / AC-14 / EXP-14 | 配置、备份、部署与硅基流动连接预检 | `partial` | 8 | 本地配置/备份和 MODEL-CONN-01 代码预检有测试；当前镜像、Compose、卷权限、连续现场探测、聊天 canary 与现场恢复未执行。 |
 | REQ-15 / AC-15 / EXP-15 | 固定Harness与Few-Shot证据边界 | `implemented` | 5 | 固定20条离线规则、字符相似度Few-Shot；没有模型泛化或提升结论。 |
 | REQ-16 / AC-16 / EXP-16 | 可复现证据与反假通过 | `implemented` | 38 | 包含额外Harness行（H21 SKIP、H100 ERROR、重复H01 SKIP）、子进程依赖回执和发布控制文件哈希反例；负向夹具不等价完整发布通过，最终须核验本次全部映射方法实际执行。 |
@@ -60,6 +60,8 @@ REQ-11焦点证据：已忽略的`.artifacts/verification/task1-coupon/red.log`�
 - `tests.test_deployment.DeploymentTests.test_missing_auth_and_shared_guest_token_cannot_access`
 - `tests.test_deployment.DeploymentTests.test_department_cannot_complete_other_department_ticket`
 - `tests.test_deployment.DeploymentTests.test_new_guest_does_not_read_previous_room_orders`
+- `tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_guest_cannot_read_staff_fulfillment_or_global_inventory`
+- `tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_staff_endpoints_project_same_details_without_changing_stored_ticket`
 
 ### REQ-03 / AC-03 / EXP-03
 
@@ -87,6 +89,66 @@ standard复合基线与academic核验分开；未知政策模板仍须FIELD-04�
 - `tests.test_conversation_followup.ConversationFollowupTests.test_staff_and_member_questions_do_not_swallow_real_service`
 - `tests.test_guest_history_ui.LocalGuestHistoryUITests.test_missing_local_profile_uses_unverified_academic_facilities`
 - `tests.test_guest_history_ui.LocalGuestHistoryUITests.test_explicit_standard_profile_keeps_demo_facility_fixture`
+- `tests.test_facility_intents.FacilityIntentTests.test_F01_closing`
+- `tests.test_facility_intents.FacilityIntentTests.test_F02_closing`
+- `tests.test_facility_intents.FacilityIntentTests.test_F03_closing`
+- `tests.test_facility_intents.FacilityIntentTests.test_F04_closing`
+- `tests.test_facility_intents.FacilityIntentTests.test_F05_closing`
+- `tests.test_facility_intents.FacilityIntentTests.test_F06_closing`
+- `tests.test_facility_intents.FacilityIntentTests.test_F07_closing`
+- `tests.test_facility_intents.FacilityIntentTests.test_F08_closing`
+- `tests.test_facility_intents.FacilityIntentTests.test_F09_opening`
+- `tests.test_facility_intents.FacilityIntentTests.test_F10_opening`
+- `tests.test_facility_intents.FacilityIntentTests.test_F11_opening`
+- `tests.test_facility_intents.FacilityIntentTests.test_F12_opening`
+- `tests.test_facility_intents.FacilityIntentTests.test_F13_opening`
+- `tests.test_facility_intents.FacilityIntentTests.test_F14_opening`
+- `tests.test_facility_intents.FacilityIntentTests.test_F15_fields`
+- `tests.test_facility_intents.FacilityIntentTests.test_F16_fields`
+- `tests.test_facility_intents.FacilityIntentTests.test_F17_fields`
+- `tests.test_facility_intents.FacilityIntentTests.test_F18_fields`
+- `tests.test_facility_intents.FacilityIntentTests.test_F19_fields`
+- `tests.test_facility_intents.FacilityIntentTests.test_F20_fields`
+- `tests.test_facility_intents.FacilityIntentTests.test_F21_fields`
+- `tests.test_facility_intents.FacilityIntentTests.test_F22_fields`
+- `tests.test_facility_intents.FacilityIntentTests.test_F23_multi`
+- `tests.test_facility_intents.FacilityIntentTests.test_F24_multi`
+- `tests.test_facility_intents.FacilityIntentTests.test_F25_multi`
+- `tests.test_facility_intents.FacilityIntentTests.test_F26_multi`
+- `tests.test_facility_intents.FacilityIntentTests.test_F27_multi`
+- `tests.test_facility_intents.FacilityIntentTests.test_F28_multi`
+- `tests.test_facility_intents.FacilityIntentTests.test_F29_multi`
+- `tests.test_facility_intents.FacilityIntentTests.test_F30_multi`
+- `tests.test_facility_intents.FacilityIntentTests.test_F31_multi`
+- `tests.test_facility_intents.FacilityIntentTests.test_F32_multi`
+- `tests.test_facility_intents.FacilityIntentTests.test_F33_academic`
+- `tests.test_facility_intents.FacilityIntentTests.test_F34_academic`
+- `tests.test_facility_intents.FacilityIntentTests.test_F35_academic`
+- `tests.test_facility_intents.FacilityIntentTests.test_F36_academic`
+- `tests.test_facility_intents.FacilityIntentTests.test_F37_academic`
+- `tests.test_facility_intents.FacilityIntentTests.test_F38_academic`
+- `tests.test_facility_intents.FacilityIntentTests.test_F39_academic`
+- `tests.test_facility_intents.FacilityIntentTests.test_F40_academic`
+- `tests.test_facility_intents.FacilityIntentTests.test_F41_custom`
+- `tests.test_facility_intents.FacilityIntentTests.test_F42_custom`
+- `tests.test_facility_intents.FacilityIntentTests.test_F43_custom`
+- `tests.test_facility_intents.FacilityIntentTests.test_F44_custom`
+- `tests.test_facility_intents.FacilityIntentTests.test_F45_custom`
+- `tests.test_facility_intents.FacilityIntentTests.test_F46_custom`
+- `tests.test_facility_intents.FacilityIntentTests.test_F47_custom`
+- `tests.test_facility_intents.FacilityIntentTests.test_F48_custom`
+- `tests.test_facility_intents.FacilityIntentTests.test_F49_mixed`
+- `tests.test_facility_intents.FacilityIntentTests.test_F50_mixed`
+- `tests.test_facility_intents.FacilityIntentTests.test_F51_mixed`
+- `tests.test_facility_intents.FacilityIntentTests.test_F52_mixed`
+- `tests.test_facility_intents.FacilityIntentTests.test_F53_mixed`
+- `tests.test_facility_intents.FacilityIntentTests.test_F54_mixed`
+- `tests.test_facility_intents.FacilityIntentTests.test_F55_mixed`
+- `tests.test_facility_intents.FacilityIntentTests.test_F56_mixed`
+- `tests.test_facility_intents.FacilityIntentTests.test_F57_negative`
+- `tests.test_facility_intents.FacilityIntentTests.test_F58_negative`
+- `tests.test_facility_intents.FacilityIntentTests.test_F59_negative`
+- `tests.test_facility_intents.FacilityIntentTests.test_F60_negative`
 
 ### REQ-04 / AC-04 / EXP-04
 
@@ -166,6 +228,21 @@ ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒�
 - `tests.test_conversation_followup.ConversationFollowupTests.test_all_unknown_nouns_are_reported_instead_of_only_last_one`
 - `tests.test_conversation_followup.ConversationFollowupTests.test_valid_delivery_quantities_and_facility_questions_are_not_unknown_nouns`
 - `tests.test_conversation_followup.ConversationFollowupTests.test_negated_unknown_and_pure_price_faq_do_not_block_a_valid_towel`
+- `tests.test_ticket_fulfillment.DeliveryFulfillmentProjectionTests.test_cancelled_shortage_does_not_request_restock`
+- `tests.test_ticket_fulfillment.DeliveryFulfillmentProjectionTests.test_fully_reserved_delivery_remains_ready_when_unreserved_stock_is_zero`
+- `tests.test_ticket_fulfillment.DeliveryFulfillmentProjectionTests.test_in_transit_delivered_and_change_pending_are_distinct`
+- `tests.test_ticket_fulfillment.DeliveryFulfillmentProjectionTests.test_malformed_legacy_field_types_are_reviewed_instead_of_crashing`
+- `tests.test_ticket_fulfillment.DeliveryFulfillmentProjectionTests.test_non_delivery_has_no_inventory_fulfillment`
+- `tests.test_ticket_fulfillment.DeliveryFulfillmentProjectionTests.test_old_unknown_or_incomplete_details_are_reviewed_without_guessing`
+- `tests.test_ticket_fulfillment.DeliveryFulfillmentProjectionTests.test_ready_line_has_canonical_item_unit_and_all_hand_checked_quantities`
+- `tests.test_ticket_fulfillment.DeliveryFulfillmentProjectionTests.test_replenished_stock_is_not_automatically_reserved_or_dispatched`
+- `tests.test_ticket_fulfillment.DeliveryFulfillmentProjectionTests.test_shortage_line_shows_seven_requested_six_available_one_missing`
+- `tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_new_shortage_is_persisted_as_coordination_and_rejected_by_both_actions`
+- `tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_shortage_replaced_with_available_quantity_becomes_ready`
+- `tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_valid_dispatch_and_completion_never_deduct_stock_twice`
+- `tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_named_quantity_change_targets_shortage_among_multiple_active_orders`
+- `tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_new_item_only_or_duplicate_target_orders_still_require_clarification`
+- `tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_water_alias_before_change_marker_identifies_its_own_order`
 
 ### REQ-07 / AC-07 / EXP-07
 
@@ -185,6 +262,9 @@ ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒�
 - `tests.test_hotel_readiness.HotelReadinessTests.test_delivery_urgency_is_medium_but_explicitly_not_urgent_remains_low`
 - `tests.test_hotel_readiness.HotelReadinessTests.test_explicit_denial_of_smoke_does_not_raise_an_ordinary_light_repair`
 - `tests.test_conversation_followup.ConversationFollowupTests.test_direct_department_cannot_drop_unknown_measured_addition`
+- `tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_direct_completion_and_guest_confirmation_do_not_bypass_legacy_review`
+- `tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_legacy_erroneous_mixed_ticket_cannot_dispatch_or_complete`
+- `tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_pending_change_cannot_be_dispatched_even_if_stock_is_reserved`
 
 ### REQ-08 / AC-08 / EXP-08
 
@@ -196,6 +276,7 @@ ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒�
 - `tests.test_deployment.DeploymentTests.test_write_failure_rolls_back_stock_and_does_not_ack_success`
 - `tests.test_deployment.DeploymentTests.test_atomic_checkpoint_rolls_back_if_session_write_fails`
 - `tests.test_deployment.DeploymentTests.test_staff_storage_failure_is_unavailable_and_rolls_back`
+- `tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_shortage_state_and_derived_details_survive_restart`
 
 ### REQ-09 / AC-09 / EXP-09
 
@@ -280,6 +361,27 @@ AppTest经HotelApi/TestClient访问唯一临时API；两进程/容器仍须FIELD
 - `tests.test_deployment.DeployedUIBoundaryTests.test_no_credential_does_not_create_unprotected_business_ui`
 - `tests.test_deployment.DeployedUIBoundaryTests.test_guest_ui_only_receives_own_service_view`
 - `tests.test_deployment.DeployedUIBoundaryTests.test_staff_ui_shares_api_without_a_second_writer`
+- `tests.test_operations_ticket_ui.ApiOperationsTicketUITests.test_closed_orders_have_no_active_replenishment_request`
+- `tests.test_operations_ticket_ui.ApiOperationsTicketUITests.test_dynamic_ticket_quote_cannot_inject_html`
+- `tests.test_operations_ticket_ui.ApiOperationsTicketUITests.test_each_order_keeps_its_own_item_quantity_and_in_transit_completion`
+- `tests.test_operations_ticket_ui.ApiOperationsTicketUITests.test_engineering_ticket_keeps_ordinary_completion`
+- `tests.test_operations_ticket_ui.ApiOperationsTicketUITests.test_historical_unknown_and_missing_fields_require_verification`
+- `tests.test_operations_ticket_ui.ApiOperationsTicketUITests.test_pending_change_disables_completion_and_preserves_confirmation`
+- `tests.test_operations_ticket_ui.ApiOperationsTicketUITests.test_reserved_water_shows_canonical_quantities_even_when_available_zero`
+- `tests.test_operations_ticket_ui.ApiOperationsTicketUITests.test_revised_order_recomputes_item_and_removes_old_shortage`
+- `tests.test_operations_ticket_ui.ApiOperationsTicketUITests.test_shortage_is_coordination_with_gap_and_no_dispatch`
+- `tests.test_operations_ticket_ui.ApiOperationsTicketUITests.test_zero_stock_and_recovered_but_unreserved_have_distinct_states`
+- `tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_closed_orders_have_no_active_replenishment_request`
+- `tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_dynamic_ticket_quote_cannot_inject_html`
+- `tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_each_order_keeps_its_own_item_quantity_and_in_transit_completion`
+- `tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_engineering_ticket_keeps_ordinary_completion`
+- `tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_historical_unknown_and_missing_fields_require_verification`
+- `tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_pending_change_disables_completion_and_preserves_confirmation`
+- `tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_reserved_water_shows_canonical_quantities_even_when_available_zero`
+- `tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_revised_order_recomputes_item_and_removes_old_shortage`
+- `tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_shortage_coordination_is_not_counted_as_dispatch_queue_or_eta`
+- `tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_shortage_is_coordination_with_gap_and_no_dispatch`
+- `tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_zero_stock_and_recovered_but_unreserved_have_distinct_states`
 
 ### REQ-14 / AC-14 / EXP-14
 

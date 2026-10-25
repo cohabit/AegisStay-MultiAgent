@@ -113,8 +113,16 @@ class MultiAgentFlowTests(unittest.TestCase):
         required = {"ticket_id", "room_no", "category", "item_detail", "priority", "assigned_dept", "status"}
         self.assertTrue(required.issubset(ticket))
         flow = HotelOrchestrator(HotelState(tickets=[ticket]))
-        flow.complete_ticket(ticket["ticket_id"])
-        self.assertEqual(flow.state.tickets[0]["status"], "已结单")
+        # A raw historical request is not proof that goods were reserved.
+        with self.assertRaises(ValueError):
+            flow.complete_ticket(ticket["ticket_id"])
+        self.assertEqual(flow.state.tickets[0]["status"], "处理中")
+        verified = HotelOrchestrator(HotelState())
+        verified.process("808 送两瓶水")
+        executable = verified.state.tickets[0]
+        self.assertEqual(executable["reserved_quantity"], 2)
+        verified.complete_ticket(executable["ticket_id"])
+        self.assertEqual(verified.state.tickets[0]["status"], "已结单")
 
     def test_compound_intent_faq_and_late_checkout_with_room(self):
         flow = HotelOrchestrator(HotelState())

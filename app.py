@@ -12,8 +12,9 @@ import streamlit as st
 
 from hotel_core import HotelOrchestrator
 from agent_runtime import RuntimeBusy, SessionManager
-from deployed_ui import _navigate_guest_history, guest_history_controls, guest_history_page
+from deployed_ui import _navigate_guest_history, guest_history_controls, guest_history_page, render_ticket_fulfillment
 from hotel_catalog import ITEM_CATALOG
+from ticket_details import delivery_fulfillment
 
 GUEST_SESSION = "streamlit-guest"
 
@@ -192,6 +193,7 @@ __THEME_VARS__
         [data-testid="stChatInput"] { display: none !important; }
         .stBottom { display: none !important; }
         .stApp label, [data-testid="stMarkdownContainer"], [data-testid="stCaptionContainer"] { color: var(--as-text); }
+        .stApp [data-testid="stText"], .stApp [data-testid="stText"] * { color:var(--as-text) !important; -webkit-text-fill-color:var(--as-text) !important; }
         [data-testid="stAlert"], [data-testid="stExpander"] { border-color: var(--as-border); }
         [data-testid="stExpander"] details,
         [data-testid="stExpander"] details > summary,
@@ -1096,16 +1098,16 @@ def _render_staff(orchestrator: HotelOrchestrator) -> None:
             danger = ticket.get("risk_level") == "红色"
             card_class = "ticket-card danger" if danger else "ticket-card"
             st.markdown(
-                f"<div class='{card_class}'><b>{'🚨 ' if danger else ''}{ticket['category']} · {ticket['room_no']} 房</b><br>"
-                f"{ticket['item_detail']}<br><span class='muted'>{ticket['assigned_dept']} · 优先级 {ticket['priority']} · {ticket['status']} · {ticket['ticket_id']}</span><br>"
-                f"<small class='muted'>接管 Agent：{ticket.get('agent', 'DispatchAgent')}</small></div>",
+                f"<div class='{card_class}'><b>{'🚨 ' if danger else ''}{html.escape(str(ticket['category']))} · {html.escape(str(ticket['room_no']))} 房</b><br>"
+                f"<span class='muted'>{html.escape(str(ticket['assigned_dept']))} · 优先级 {html.escape(str(ticket['priority']))} · {html.escape(str(ticket['status']))} · {html.escape(str(ticket['ticket_id']))}</span><br>"
+                f"<small class='muted'>接管 Agent：{html.escape(str(ticket.get('agent', 'DispatchAgent')))}</small></div>",
                 unsafe_allow_html=True,
             )
+            fulfillment = render_ticket_fulfillment(ticket, orchestrator.housekeeping.inventory)
             if ticket.get("category") == "送物":
-                st.caption(f"派送进度：{ticket.get('delivery_status', '待派送')}")
                 change = ticket.get("change_request", {})
                 if change.get("status") == "待部门确认":
-                    st.warning(f"住客申请{ '取消' if change['action'] == 'cancel' else '更换为 ' + str(change.get('quantity', 1)) + ' 件' + str(change.get('item', '')) }，请核实实际派送情况。")
+                    st.warning(html.escape(f"住客申请{ '取消' if change['action'] == 'cancel' else '更换为 ' + str(change.get('quantity', 1)) + ' 件' + str(change.get('item', '')) }，请核实实际派送情况。"))
                     delivered = ticket.get("delivery_status") == "已送达" or ticket["status"] == "已结单"
                     returned = st.checkbox("已确认取回原物品", key=f"returned-{ticket['ticket_id']}") if delivered else False
                     approve, reject = st.columns(2)
@@ -1118,15 +1120,15 @@ def _render_staff(orchestrator: HotelOrchestrator) -> None:
                     if reject.button("确认无法撤回", key=f"reject-change-{ticket['ticket_id']}"):
                         runtime.confirm_delivery_change(ticket["ticket_id"], approved=False)
                         st.rerun()
-                elif ticket["status"] == "处理中" and ticket.get("delivery_status") == "待派送":
-                    if st.button("确认开始派送", key=f"dispatch-{ticket['ticket_id']}"):
+                elif ticket["status"] == "处理中" and fulfillment["state"] != "in_transit":
+                    if st.button("确认开始派送", key=f"dispatch-{ticket['ticket_id']}", disabled=not fulfillment["can_dispatch"]):
                         try:
                             runtime.dispatch_delivery(ticket["ticket_id"])
                             st.rerun()
                         except ValueError as error:
                             st.warning(str(error))
-            stock_missing = ticket.get("inventory_item") in orchestrator.housekeeping.inventory and ticket.get("reserved_quantity", 0) != ticket.get("quantity", 1)
-            if ticket["status"] == "处理中" and st.button("完成结单", key=f"close-{ticket['ticket_id']}", disabled=stock_missing):
+            cannot_complete = fulfillment is not None and not fulfillment["can_complete"]
+            if ticket["status"] == "处理中" and st.button("完成结单", key=f"close-{ticket['ticket_id']}", disabled=cannot_complete):
                 try:
                     _staff_action(canonical, "complete_ticket", ticket["ticket_id"])
                     st.rerun()
@@ -1143,12 +1145,18 @@ def _render_staff(orchestrator: HotelOrchestrator) -> None:
                 st.rerun()
 
         # Live Inventory & Queue ETA Monitor
-        active_deliveries = sum(t.get("category") == "送物" and t.get("status") == "处理中" for t in tickets)
+        delivery_states = [delivery_fulfillment(t, orchestrator.housekeeping.inventory)
+                           for t in tickets if t.get("category") == "送物"]
+        active_deliveries = sum(detail["state"] in {"ready", "in_transit"} for detail in delivery_states)
+        stock_coordination = sum(detail["state"] == "awaiting_stock" for detail in delivery_states)
         current_eta = 5 if active_deliveries <= 1 else min(10, 8 + active_deliveries - 2)
         st.markdown("#### 📦 物料库存与实时派单队列 (Atomic Inventory & ETA)")
         inv_c1, inv_c2 = st.columns(2)
         inv_c1.metric("送物队列排队深度", f"{active_deliveries} 单待送")
-        inv_c2.metric("当前动态推导 ETA", f"{current_eta} 分钟", delta="根据拥堵自适应推导")
+        inv_c2.metric("当前动态推导 ETA", f"{current_eta} 分钟" if active_deliveries else "—",
+                      delta="根据拥堵自适应推导" if active_deliveries else "暂无已确认送物队列")
+        if stock_coordination:
+            st.caption(f"待库存协调：{stock_coordination} 单，未确认派送，不计入送物队列。")
         with st.expander("查看保洁部物资实时库存 (支持原子扣减防超卖)", expanded=True):
             _render_inventory_board(orchestrator, state)
 

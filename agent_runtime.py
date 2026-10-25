@@ -25,6 +25,7 @@ from hotel_core import (
     PMS_ROOMS, _room_no, _rules_extract, _security_boundary_kind, run_pms_night_audit,
 )
 from persistence import SQLiteStateStore
+from ticket_details import delivery_fulfillment
 
 
 class RuntimeBusy(RuntimeError):
@@ -852,6 +853,9 @@ class SessionManager:
                 raise KeyError(ticket_id)
             if ticket.get("category") != "送物" or ticket.get("status") != "处理中":
                 raise ValueError("只有未完成的送物工单可以派送")
+            fulfillment = delivery_fulfillment(ticket, self.housekeeping.inventory)
+            if fulfillment["needs_verification"] or fulfillment["state"] == "change_pending":
+                raise ValueError(fulfillment["message"])
             if ticket.get("reserved_quantity", 0) != ticket.get("quantity", 1):
                 raise ValueError("库存尚未预留，不能确认派送")
             if ticket.get("delivery_status") not in {"待派送", "配送中"}:
@@ -947,6 +951,9 @@ class SessionManager:
             raise ValueError("待确认的变更必须先处理，不能直接结单")
         if ticket["status"] == "已结单":
             return deepcopy(ticket)
+        fulfillment = delivery_fulfillment(ticket, self.housekeeping.inventory)
+        if fulfillment and not fulfillment["can_complete"]:
+            raise ValueError(fulfillment["message"])
         flow = self.get_session(ticket.get("owner_session_id", ""))
         if flow is None:
             flow = HotelOrchestrator(HotelState(pms_rooms=self.shared_pms, tickets=self.shared_tickets), force_rules=True)

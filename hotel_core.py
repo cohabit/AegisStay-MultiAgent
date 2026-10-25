@@ -18,6 +18,8 @@ from typing import Any, Callable
 
 from agent_protocol import AgentConflict, TaskInterrupted, parse_delivery_command, validate_department_ticket
 from hotel_catalog import ITEM_CATALOG, load_service_catalog
+from facility_answers import answer_facility, question_fields, topic_scopes
+from ticket_details import delivery_fulfillment
 
 ROOT = Path(__file__).resolve().parent
 DEPARTMENTS = {"送物": "楼层保洁", "工程报修": "工程部", "客诉紧急": "大堂经理", "续住申请": "前台接待", "票券服务": "礼宾部"}
@@ -163,10 +165,25 @@ class HotelKnowledge:
         self.entries = payload["entries"]
         self.fallback = payload["fallback"]
 
+    def facility_topics(self) -> list[dict]:
+        topics = [topic for entry in self.entries for topic in entry.get("facility_topics", [
+            {"topic": entry.get("topic", entry["id"]), "aliases": entry["keywords"]}])]
+        return [*topics, *({"topic": service["name"], "aliases": service.get("aliases", [service["name"]])}
+                          for service in load_service_catalog().get("services", []))]
+
     def match_all(self, text: str) -> list[dict[str, Any]]:
         query = normalized(text)
+        scopes = topic_scopes(text, self.facility_topics())
         ranked = []
         for entry in self.entries:
+            if entry.get("facility_topics"):
+                for topic in entry["facility_topics"]:
+                    if topic["topic"] in scopes:
+                        answer = answer_facility(topic["topic"], topic.get("fields", {}), scopes[topic["topic"]],
+                                                 topic["topic"] + "：" + entry["answer"])
+                        ranked.append((2, {**entry, "id": entry["id"] + ":" + topic["topic"],
+                                           "keywords": topic["aliases"], "answer": answer}))
+                continue
             hits = [k for k in entry["keywords"] if normalized(k) in query]
             examples = entry.get("semantic_phrases", [])
             fuzzy = max((SequenceMatcher(None, query, normalized(p)).ratio() for p in examples), default=0)
@@ -886,7 +903,7 @@ class HousekeepingAgent:
                 is_borrowable=is_borrow,
                 quantity=quantity,
                 reserved_quantity=reserved,
-                delivery_status="待派送",
+                delivery_status="待派送" if reserved == quantity else "待库存协调",
             )
             if is_borrow and reserved:
                 state.borrowed_items.append({
@@ -933,6 +950,7 @@ class HousekeepingAgent:
                 inventory_item=command.item, quantity=desired_quantity, reserved_quantity=desired_quantity,
                 inventory_remaining=self.inventory[command.item], inventory_status="库存充足",
                 item_detail=f"送 {desired_quantity} 件{command.item}",
+                delivery_status="待派送",
                 is_borrowable=command.item in self.BORROWABLE_ITEMS,
                 revision=ticket.get("revision", 1) + 1,
             )
@@ -1119,7 +1137,7 @@ class HotelOrchestrator:
                         or ticket.get("inventory_remaining") != before - reserved
                         or child.inventory.get(item) != before - reserved
                         or ticket.get("inventory_status") != ("库存充足" if before >= quantity else "库存不足，已转前台协调")
-                        or ticket.get("delivery_status") != "待派送"):
+                        or ticket.get("delivery_status") != ("待派送" if reserved == quantity else "待库存协调")):
                     raise AgentConflict("部门库存判断与库存账本不一致")
                 if any(child.inventory.get(other) != value for other, value in self.housekeeping.inventory.items() if other != item):
                     raise AgentConflict("部门结果修改了任务以外的物品库存")
@@ -1166,6 +1184,12 @@ class HotelOrchestrator:
         active = [t for t in tickets if t["status"] == "处理中"]
         completed = [t for t in tickets if t["status"] == "已结单"]
         old_items = set(command.references) - {command.item}
+        if not old_items and command.action == "replace":
+            marker = re.search(r"改(?:成|为|送|要)|换(?:成|为)", text)
+            if marker:
+                # A noun before the change marker names the original order;
+                # a replacement noun alone must not silently select that order.
+                old_items = set(parse_delivery_command(text[:marker.start()]).references)
         if old_items:
             matching = [t for t in active if t.get("inventory_item") in old_items]
             if len(matching) == 1:
@@ -1271,16 +1295,20 @@ class HotelOrchestrator:
         return None
 
     def _catalog_reply(self, text: str) -> str | None:
-        if re.search(r"坏|故障|漏水|报修|维修|冒烟|漏电|着火|被困", text):
-            return None
         answers = []
+        scopes = topic_scopes(text, self.knowledge.facility_topics())
         for service in load_service_catalog().get("services", []):
             if not any(re.search(r"\b" + re.escape(alias) + r"\b", text, re.IGNORECASE) if alias.isascii()
                        else alias in text for alias in service.get("aliases", [service["name"]])):
                 continue
             name, status = service["name"], service["status"]
+            scope = scopes.get(name, "")
+            if re.search(r"坏|故障|漏水|报修|维修|冒烟|漏电|着火|被困", scope) and not question_fields(scope):
+                continue
             if status == "available":
-                answers.append(f"酒店当前配置显示可提供{name}；具体时段、房型、费用和预约请由前台确认，尚未为您创建预约。")
+                fields = {**service.get("fields", {}), "availability": "可提供"}
+                answers.append(answer_facility(name, fields, scope,
+                    f"酒店当前配置显示可提供{name}；具体时段、房型、费用和预约请由前台确认，尚未为您创建预约。"))
                 continue
             record = next((r for r in self.state.service_feedback if r["topic"] == name), None)
             if record is None:
@@ -1291,7 +1319,9 @@ class HotelOrchestrator:
             if status == "unavailable":
                 answers.append(f"酒店当前不提供{name}。已记录这类需求供酒店评估；不会据此自动开放服务或为您预约。")
             else:
-                answers.append(f"{name}的可用情况尚未核验，请联系前台按实际设施和房型确认。已记录为待酒店核验需求，尚未创建该项服务工单。")
+                answers.append(answer_facility(name, {}, scope,
+                    f"{name}的可用情况尚未核验，请联系前台按实际设施和房型确认。")
+                    + "已记录为待酒店核验需求，尚未创建该项服务工单。")
         if answers:
             return " ".join(answers)
         if re.search(r"能送哪些|可送哪些|有哪些(?:物品|用品)|有什么(?:用品|物品)|物品清单", text):
@@ -1362,7 +1392,8 @@ class HotelOrchestrator:
             parts = [part for part in (local_reply, catalog_reply) if part]
             for entry in self.knowledge.match_all(text):
                 topics = [word for word in entry["keywords"] if word in text]
-                parts.append(("、".join(topics) + "：" if topics else "") + entry["answer"])
+                prefix = "、".join(topics) + "：" if topics and not entry.get("facility_topics") else ""
+                parts.append(prefix + entry["answer"])
             state.active_agent, state.intent, state.model_mode = "ReceptionAgent", "酒店咨询", "规则护栏 · 服务目录"
             return self._finish(" ".join(parts), [{"agent": "ReceptionAgent", "event": "service_catalog_checked" if catalog_reply else "local_guest_context",
                                                "detail": "读取配置服务与实时库存；需求计数不自动改变服务事实"}])
@@ -1494,8 +1525,8 @@ class HotelOrchestrator:
                 ticket = open_tickets[-1]
             state.intent = "服务完结"
             if ticket:
-                if (ticket.get("inventory_item") in self.housekeeping.inventory
-                        and ticket.get("reserved_quantity", 0) != ticket.get("quantity", 1)):
+                fulfillment = delivery_fulfillment(ticket, self.housekeeping.inventory)
+                if fulfillment and not fulfillment["can_complete"]:
                     trace.append({"agent": "Supervisor", "event": "delivery_stock_unconfirmed", "detail": "尚无完整库存预留，需核实实际派送"})
                     return self._finish("收到您的反馈，这张服务单仍需保洁核验实际派送和库存记录，暂未标记完成。", trace)
                 ticket["status"] = "已结单"
@@ -1796,6 +1827,9 @@ class HotelOrchestrator:
         ticket = next(t for t in self.state.tickets if t["ticket_id"] == ticket_id)
         if ticket["status"] == "已取消":
             raise ValueError("已取消工单不能标记为完成")
+        fulfillment = delivery_fulfillment(ticket, self.housekeeping.inventory)
+        if fulfillment and not fulfillment["can_complete"]:
+            raise ValueError(fulfillment["message"])
         if ticket.get("inventory_item") in self.housekeeping.inventory and ticket.get("reserved_quantity", 0) != ticket.get("quantity", 1):
             raise ValueError("库存尚未预留，不能确认送达")
         ticket.update(status="已结单", completed_at=datetime.now().isoformat(timespec="seconds"))

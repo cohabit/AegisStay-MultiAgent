@@ -37,9 +37,9 @@ def normalize_delivery_text(text: str) -> str:
     text = re.sub(r"瓶装水|饮用水|纯净水", "矿泉水", text)
     # A standalone service noun is an alias. Do not replace every 水 character:
     # 热水、漏水、洗发水 and 水管 must retain their original meaning.
-    lead = r"(?P<lead>(?:^|[，,。；;!?！？]\s*|(?<!\d)\d{3,4}(?!\d)\s*)(?:(?:我(?:的)?|那(?:个)?|这(?:个)?|刚才(?:要的|的)?)\s*)?|(?:送|拿|来|给我|我要|要|取消|不需要|不用|不要|别送|改成|换成|和|还有)\s*)"
+    lead = r"(?P<lead>(?:^|[，,。；;!?！？]\s*|(?<!\d)\d{3,4}(?!\d)\s*)(?:(?:我(?:的)?|那(?:个)?|这(?:个)?|刚才(?:要的|的)?)\s*)?|(?:送|拿|来|给我|我要|要|把|催一下|催催|取消|不需要|不用|不要|别送|改成|换成|和|还有)\s*)"
     quantity = r"(?P<quantity>(?:(?:\d+|一|两|二|三|四|五|六|七|八|九|十)?\s*瓶\s*)?)"
-    suffix = r"(?=\s*(?:(?:就|先)?不(?:用|要|需要)(?:再送|送)?(?:了)?|(?:都|各)(?:只)?要|改(?:成|为|送|要)|换(?:成|为)|取消|别送|了|和|跟|以及|[，,。；;!?！？]|$))"
+    suffix = r"(?=\s*(?:(?:就|先)?不(?:用|要|需要)(?:再送|送)?(?:了)?|(?:都|各)(?:只)?要|改(?:成|为|送|要)|换(?:成|为)|取消|别(?:送|催)|了|和|跟|以及|再(?:拿|送|加|来)|送(?:来|到|过来)|怎么|还没|还要多久|" + DELIVERY_NUMBER + DELIVERY_UNIT + r"|[，,。；;!?！？]|$))"
     return re.sub(lead + quantity + r"水" + suffix,
                   lambda match: match["lead"] + match["quantity"] + "矿泉水", text)
 
@@ -76,6 +76,10 @@ def _unknown_requested_items(text: str) -> tuple[str, ...]:
             continue
         if re.fullmatch(r"\s*(?:请|麻烦)?(?:给我|帮我)?(?:再)?(?:来|送|拿)(?:一下|过来|到房间|就好|就行)[。！？!?\s]*", part):
             continue
+        if re.fullmatch(r"\s*(?:(?:请|麻烦|帮我|给我)\s*)*(?:(?:快点|快一点|尽快|马上|加急)\s*)?(?:送|拿)(?:来|一下|过来|到房间|快点|快一点)?[。！？!?\s]*", part):
+            continue
+        if re.fullmatch(r"\s*(?:我)?(?:很|有点|太)?(?:饿|口渴|渴)(?:了)?[。！？!?\s]*", part):
+            continue
         explicit = bool(re.search(r"(?:送|拿|来|借|给我|我要|只要|需要|再加|补)", part))
         measured_item = bool(re.search(measured, part))
         if not explicit and not (known and (coordinated or measured_item)):
@@ -84,7 +88,7 @@ def _unknown_requested_items(text: str) -> tuple[str, ...]:
             continue
         candidate = re.sub(r"(?<!\d)\d{3,4}(?!\d)", "", part).strip()
         candidate = re.sub(r"(?:可以吗|好吗|好么|行吗|吗|么)[。！？!?\s]*$", "", candidate)
-        candidate = re.sub(r"^(?:(?:请|麻烦|帮我|给我|我|再|顺便|只|需要|想|要|送|拿|来|借|补|加|到房间)\s*)+", "", candidate)
+        candidate = re.sub(r"^(?:(?:请|麻烦|帮我|给我|我|再|顺便|只|需要|想|要|快点|快一点|尽快|马上|加急|送|拿|来|借|补|加|到房间)\s*)+", "", candidate)
         candidate = re.sub(r"^" + DELIVERY_NUMBER + r"\s*(?:" + DELIVERY_UNIT + r")?", "", candidate)
         candidate = re.split(r"(?:都|各|只要|只需|需要|数量|\d+|" + measured + r"|里(?:面)?(?:装|放|加))", candidate)[0]
         candidate = candidate.strip(" 。！？!?了吧啦的 ")

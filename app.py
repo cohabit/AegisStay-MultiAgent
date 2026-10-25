@@ -194,6 +194,9 @@ __THEME_VARS__
         .stBottom { display: none !important; }
         .stApp label, [data-testid="stMarkdownContainer"], [data-testid="stCaptionContainer"] { color: var(--as-text); }
         .stApp [data-testid="stText"], .stApp [data-testid="stText"] * { color:var(--as-text) !important; -webkit-text-fill-color:var(--as-text) !important; }
+        /* Native help is portaled to body, outside .stApp and sidebar scopes. */
+        [data-testid="stTooltipContent"], [data-testid="stTooltipErrorContent"] { background:var(--as-surface) !important; color:var(--as-text) !important; -webkit-text-fill-color:var(--as-text) !important; border:1px solid var(--as-border); max-width:calc(100vw - 16px) !important; box-sizing:border-box; overflow-wrap:anywhere; }
+        [data-testid="stTooltipContent"] *, [data-testid="stTooltipErrorContent"] * { color:var(--as-text) !important; -webkit-text-fill-color:var(--as-text) !important; background:transparent !important; }
         [data-testid="stAlert"], [data-testid="stExpander"] { border-color: var(--as-border); }
         [data-testid="stExpander"] details,
         [data-testid="stExpander"] details > summary,

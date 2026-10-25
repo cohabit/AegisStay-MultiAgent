@@ -540,7 +540,7 @@ def _positive_complaint_text(text: str) -> str:
 
 
 def _delivery_priority(text: str) -> str:
-    urgency = r"(?:急用|急需|尽快|马上|加急|赶时间|着急|很急)"
+    urgency = r"(?:急用|急需|尽快|马上|加急|赶时间|着急|很急|快点|快一点)"
     positive = re.sub(r"(?:不用|不必|不要|无需|不需要)(?:那么|很|再)?" + urgency + r"|不(?:着)?急", "", text)
     return "中" if re.search(urgency, positive) else "低"
 
@@ -1169,6 +1169,52 @@ class HotelOrchestrator:
         trace.append({"agent": "Supervisor", "event": "agent_conflict", "detail": str(error)})
         return "部门处理结果与您的需求或业务规则不一致，暂未派单，已记录待核验事项，请联系前台确认。"
 
+    def _delivery_reminder(self, text: str, trace: list[dict[str, str]]) -> str | None:
+        """Record a reminder against one own open order, never reserve again."""
+        command = parse_delivery_command(text)
+        if (command.action != "create" or command.quantity is not None or command.unknown_items
+                or command.ambiguous):
+            return None
+        positive = re.sub(r"(?:不用|不必|不要|不需要|无需|别)(?:再|给我|帮我)?催(?:一下|催|促)?(?:了)?", "", text)
+        explicit_followup = bool(re.search(r"催(?:一下|催|促)?|还没送到|还未送到|还要多久|多久能到|进度如何", positive))
+        ba_delivery = bool(re.search(r"把.+?送(?:来|过来)", text))
+        if positive != text and not explicit_followup and not ba_delivery:
+            trace.append({"agent": "ReceptionAgent", "event": "delivery_reminder_declined",
+                          "detail": "住客明确表示不用催；未改变工单和库存"})
+            return "好的，暂不催送，已有工单保持原状态。"
+        if not (explicit_followup or ba_delivery):
+            return None
+        state = self.state
+        own_open = [ticket for ticket in state.tickets
+                  if ticket.get("status") == "处理中" and ticket.get("room_no") == state.room_no
+                  and (not state.session_id or ticket.get("owner_session_id") == state.session_id)
+                  and (not state.authorized_room or ticket.get("stay_id") == state.stay_id)]
+        if not command.item and not re.search(r"送|送物|配送", text):
+            if not own_open or any(ticket.get("category") != "送物" for ticket in own_open):
+                return None
+        active = [ticket for ticket in own_open if ticket.get("category") == "送物"
+                  and (not command.references or ticket.get("inventory_item") in command.references)]
+        if len(active) != 1:
+            trace.append({"agent": "ReceptionAgent", "event": "delivery_reminder_target_required",
+                          "detail": "未找到唯一的当前会话有效送物单；未改变工单或库存"})
+            if active:
+                return "当前有多张对应的送物工单，请说明需要催送的单号；暂未修改任何工单。"
+            return "未找到本次会话对应的有效送物工单。如需新增送物，请说明物品和数量；本次尚未新建工单。"
+        ticket = active[0]
+        ticket["reminder_count"] = ticket.get("reminder_count", 0) + 1
+        ticket["last_reminded_at"] = datetime.now().isoformat(timespec="seconds")
+        if _delivery_priority(text) == "中" and ticket.get("priority") == "低":
+            ticket["priority"] = "中"
+        state.intent, state.active_agent = "送物", ticket.get("agent", "HousekeepingAgent")
+        trace.append({"agent": "ReceptionAgent", "event": "delivery_reminder_recorded",
+                      "detail": f"{ticket['ticket_id']} · 第{ticket['reminder_count']}次催送；未新增工单或扣库"})
+        if ticket.get("change_request", {}).get("status") == "待部门确认":
+            return "已在原工单记录催送需求；该单仍待保洁确认变更，目前未确认撤回或更换成功。"
+        if ticket.get("reserved_quantity", 0) != ticket.get("quantity", 1):
+            return "已在原工单记录催送需求；该物品仍待库存协调，未确认派送，请联系前台。"
+        return (f"已在原{ticket.get('inventory_item', '送物')}工单记录催送需求，"
+                "由前台或保洁查看处理；实际派送进度以工作人员确认为准。本次未重复下单。")
+
     def delivery_target(self, text: str, command: Any = None) -> tuple[dict[str, Any] | None, str | None]:
         """Resolve one business order consistently for both scheduling and execution."""
         command = command or parse_delivery_command(text)
@@ -1477,15 +1523,27 @@ class HotelOrchestrator:
         if cancellation_check and cancellation_check():
             raise TaskInterrupted()
 
+        reminder_reply = (None if analysis["intent"] in {"工程报修", "客诉紧急"}
+                          else self._delivery_reminder(text, trace))
+        if reminder_reply is not None:
+            return self._finish(f"{faq_part} 另外，{reminder_reply}" if faq_part else reminder_reply, trace)
+
         pacing_keywords = (
             "还没好", "还没修好", "怎么回事", "还要多久", "多久能到",
             "催一下", "有人来吗", "进度如何", "还没送到",
         )
-        if any(keyword in text for keyword in pacing_keywords) and state.room_no:
+        pacing_command = parse_delivery_command(text)
+        if (any(keyword in text for keyword in pacing_keywords) and state.room_no
+                and not pacing_command.references and not pacing_command.unknown_items
+                and pacing_command.quantity is None and pacing_command.action == "create"):
             active_tickets = [
                 ticket for ticket in state.tickets
                 if ticket.get("room_no") == state.room_no and ticket.get("status") == "处理中"
+                and (not state.session_id or ticket.get("owner_session_id") == state.session_id)
+                and (not state.authorized_room or ticket.get("stay_id") == state.stay_id)
             ]
+            if len(active_tickets) > 1:
+                return self._finish("当前有多项服务正在处理，请说明要查询哪一项；暂未修改工单。", trace)
             if active_tickets:
                 ticket = active_tickets[-1]
                 state.pending = None

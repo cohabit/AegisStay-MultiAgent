@@ -10,6 +10,8 @@
 
 员工工单逐项展示标准物品、数量、预留库存、当前可用库存、缺口和补货建议；缺货为“待库存协调”，与可派送单分开。旧记录含未知物品或缺少有效明细时须人工核验。设施咨询按地点、开门、关门、费用等问项直接答复，多设施同问逐项保留；没有批准配置的时间与地点不补造。具体契约见 [运营工单与设施问答规格](spec/operations_ticket_and_facility.md)。
 
+已有送物的催送会关联当前会话原单，记录提醒次数与时间，不重复下单或扣库；带明确数量的新需求仍独立核验。“水”和时效修饰分开解析，未知物品整次拒绝派送。边界见 [送物与催送规格](spec/service_reliability.md#sr-06-口语饮用水与已有订单催送)。
+
 工作台默认进入住客端，只显示当前入住会话的对话和服务进度；员工通过侧栏工作区进入运营中枢、质量验收或难例回归。住客端不展示房态、库存、酒店仿真和内部黑板，服务权限由入住凭证绑定 `room_no`、`stay_id` 与 `session_id`，不能靠聊天切换到其他房间。界面对比度、对话动画、全楼仿真和响应式房态布局见 [界面视觉规格](spec/ui_visual_quality.md)。
 
 住客对话以“学术之家住客服务助手”作为公开服务身份；已覆盖的内部提示、模型和权限探询在本地处理，不外呼模型或修改订单。入住授权、限定工具、提案核验和原子提交共同约束业务写入，安全边界见 [对话安全规格](spec/security_prompt_injection.md)。本地工作区选择器供开发和值班使用，不承担鉴权；公网住客入口必须使用受凭证保护的 API 工作台。
@@ -171,6 +173,8 @@ docker compose up -d --build
 本机运行的来源、实测结果与适用边界见 [服务可靠性验收记录](spec/service_reliability_verification_2026-10-25.md)；早期基线保留在 [规格体系验收记录](spec/specification_verification_2026-10-23.md)。
 
 本轮湖景入口、24 项物资、8 位住客库存竞争及 17 轮实际模型联调的结果见 [酒店服务完善验收记录](spec/hotel_readiness_verification_2026-10-25.md)。
+
+最新口语送物/催送与帮助提示修复：完整 397 项、核心 43 项、原始 127 项及固定 Harness 全通过；12 轮硅基流动合成联调和三主题浏览器证据见 [送物催送验收记录](spec/delivery_followup_verification_2026-10-25.md)。这些是指定运行的代码与联调证据，现场验收仍待执行。
 
 ~~~powershell
 .\.venv\Scripts\python.exe -B -X utf8 scripts/verify_release.py --output-dir .artifacts/verification/local-001

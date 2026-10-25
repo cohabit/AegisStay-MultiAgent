@@ -23,25 +23,13 @@ def _contrast(first: str, second: str) -> float:
     return (lighter + 0.05) / (darker + 0.05)
 
 
-def _button_styles(css, palette, *, sidebar, submit, disabled):
-    """Evaluate the descendant-selector cascade for our native button DOM.
+def _computed_styles(css, palette, nodes):
+    """Evaluate the descendant-selector cascade for a native control DOM.
 
     This deliberately checks specificity, source order, inheritance and the
     text-fill override; actual browser rendering is a separate release check.
     Selectors outside this small contract are ignored rather than guessed.
     """
-    nodes = [{"tag": "div", "class": "stApp"}]
-    if sidebar:
-        nodes.append({"tag": "section", "data-testid": "stSidebar"})
-    nodes.extend([
-        {"tag": "div", "data-testid": "stExpander"}, {"tag": "details"},
-        {"tag": "div", "class": "stFormSubmitButton" if submit else "stButton",
-         "data-testid": "stFormSubmitButton" if submit else "stButton"},
-        {"tag": "button", "kind": "primary", "disabled": disabled},
-        {"tag": "div", "data-testid": "stMarkdownContainer"},
-        {"tag": "p"}, {"tag": "span"},
-    ])
-
     def matches(token, node):
         attributes = re.findall(r'\[([\w-]+)(?:="([^"]*)")?\]', token)
         classes = re.findall(r'\.([\w-]+)', token)
@@ -67,6 +55,7 @@ def _button_styles(css, palette, *, sidebar, submit, disabled):
             ancestor -= 1
         return True
 
+    css = re.sub(r'/\*.*?\*/', '', css, flags=re.DOTALL)
     rules = []
     for selectors, declarations in re.findall(r'([^{}]+)\{([^{}]*)\}', css.replace("<style>", "").replace("</style>", "")):
         for selector in selectors.split(","):
@@ -97,10 +86,65 @@ def _button_styles(css, palette, *, sidebar, submit, disabled):
                 computed[name] = variables[variable[1]] if variable else value
         inherited = {name: computed[name] for name in ("color", "-webkit-text-fill-color")}
         results.append(computed)
-    return results[-4:]
+    return results
+
+
+def _button_styles(css, palette, *, sidebar, submit, disabled):
+    nodes = [{"tag": "div", "class": "stApp"}]
+    if sidebar:
+        nodes.append({"tag": "section", "data-testid": "stSidebar"})
+    nodes.extend([
+        {"tag": "div", "data-testid": "stExpander"}, {"tag": "details"},
+        {"tag": "div", "class": "stFormSubmitButton" if submit else "stButton",
+         "data-testid": "stFormSubmitButton" if submit else "stButton"},
+        {"tag": "button", "kind": "primary", "disabled": disabled},
+        {"tag": "div", "data-testid": "stMarkdownContainer"},
+        {"tag": "p"}, {"tag": "span"},
+    ])
+    return _computed_styles(css, palette, nodes)[-4:]
 
 
 class VisualContractTests(unittest.TestCase):
+    def test_native_help_portal_and_descendants_have_theme_contrast(self):
+        # Streamlit 1.66 Tooltip creates a body portal, outside .stApp. Start
+        # from a light framework theme, including explicit Markdown/code colors,
+        # so an app-only selector or an inherited color cannot hide this bug.
+        framework_css = '''
+            [role="tooltip"] { color: #31333f; }
+            [data-testid="stTooltipContent"],
+            [data-testid="stTooltipErrorContent"] { background: #ffffff; }
+            [role="tooltip"] p, [role="tooltip"] span,
+            [role="tooltip"] code, [role="tooltip"] a,
+            [role="tooltip"] strong, [role="tooltip"] em {
+                color: #31333f; -webkit-text-fill-color: #31333f;
+            }
+            [role="tooltip"] code { background: #f0f2f6; }
+        '''
+        for theme, palette in THEME_PALETTES.items():
+            with patch("app.st.markdown") as markdown:
+                _style(theme)
+            css = framework_css + markdown.call_args.args[0]
+            for content_id in ("stTooltipContent", "stTooltipErrorContent"):
+                for leaf in ("span", "strong", "em", "code", "a"):
+                    with self.subTest(theme=theme, content=content_id, leaf=leaf):
+                        nodes = [
+                            {"tag": "body"}, {"tag": "div", "data-overlay-container": "true"},
+                            {"tag": "div", "role": "tooltip"},
+                            {"tag": "div", "data-testid": content_id},
+                            {"tag": "div", "data-testid": "stMarkdownContainer"},
+                            {"tag": "p"}, {"tag": leaf},
+                        ]
+                        styles = _computed_styles(css, palette, nodes)[3:]
+                        self.assertEqual(styles[0]["background"], palette["surface"])
+                        painted_background = styles[0]["background"]
+                        for computed in styles:
+                            if computed["background"] != "transparent":
+                                painted_background = computed["background"]
+                            self.assertEqual(computed["color"], palette["text"])
+                            self.assertEqual(computed["-webkit-text-fill-color"], palette["text"])
+                            self.assertGreaterEqual(_contrast(computed["color"], painted_background), 4.5)
+                            self.assertGreaterEqual(_contrast(computed["-webkit-text-fill-color"], painted_background), 4.5)
+
     def test_all_themes_meet_text_and_button_contrast(self):
         self.assertEqual(set(THEME_PALETTES), {"日间", "护眼", "夜间"})
         for theme, palette in THEME_PALETTES.items():

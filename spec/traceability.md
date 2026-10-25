@@ -4,23 +4,23 @@
 
 `implemented` 表示约定范围内的代码和测试存在，`partial` 表示有明确未执行/未交付范围；二者都不代表本次运行PASS。本文定义追溯方案，不嵌入可变成绩；每次执行前为 `PENDING_RUN`，完成后只认对应manifest和独立验收记录。由集成人员在源码稳定后运行统一入口。范围固定 `offline-code-baseline`，`field_readiness=NOT_VERIFIED`，FIELD-01…FIELD-06 均为 `TARGET_NOT_RUN`。
 
-JSON 顶层 `schema_version=1`；`requirements` 恰含REQ-01…REQ-16，每项对应同号AC/EXP，`tests` 仅写真实完整unittest方法，当前合计298个唯一方法；`evidence` 仅写统一目录实际文件名。未来FUT不计入当前16项。机器校验只证明方法可加载且在本次成功的完整套件里实际执行；方法是否支撑业务要求还须检查断言语义。
+JSON 顶层 `schema_version=1`；`requirements` 恰含REQ-01…REQ-16，每项对应同号AC/EXP，`tests` 仅写真实完整unittest方法，当前合计326个唯一方法；`evidence` 仅写统一目录实际文件名。未来FUT不计入当前16项。机器校验只证明方法可加载且在本次成功的完整套件里实际执行；方法是否支撑业务要求还须检查断言语义。
 
 | 要求 / 验收 / 实验 | 内容 | 实现状态 | 方法数 | 覆盖边界 |
 | --- | --- | --- | --- | --- |
 | REQ-01 / AC-01 / EXP-01 | 入住凭证与入住/会话绑定 | `implemented` | 5 | 授权、跨房、过期、撤销、换客与在途撤销；不是SSO联调。 |
-| REQ-02 / AC-02 / EXP-02 | 岗位授权与必要字段 | `implemented` | 5 | 服务端403和字段过滤；页面隐藏不替代授权。 |
+| REQ-02 / AC-02 / EXP-02 | 岗位授权与必要字段 | `implemented` | 6 | 服务端403和字段过滤；页面隐藏不替代授权。 |
 | REQ-03 / AC-03 / EXP-03 | 复合FAQ与学校未知政策 | `implemented` | 80 | standard复合基线与academic核验分开；未知政策模板仍须FIELD-04审核。 |
 | REQ-04 / AC-04 / EXP-04 | 补槽与房号边界 | `implemented` | 8 | 演示补槽不授予部署跨房权限；模型提取使用stub。 |
 | REQ-05 / AC-05 / EXP-05 | 异步版本、取消与并发 | `implemented` | 23 | Event/Barrier受控竞态和队列保护；不证明生产容量。 |
-| REQ-06 / AC-06 / EXP-06 | 送物生命周期与目标定位 | `implemented` | 42 | ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒绝。 |
-| REQ-07 / AC-07 / EXP-07 | 提案核验与风险升级 | `implemented` | 15 | 错物/错房/虚构库存/风险降级拒绝；人工核验不补派被拒工单。 |
-| REQ-08 / AC-08 / EXP-08 | 单写入、原子检查点与回滚 | `implemented` | 5 | 单库第二writer拒绝、聊天/员工故障回滚；非真实断电实验。 |
-| REQ-09 / AC-09 / EXP-09 | 持久幂等与重试 | `implemented` | 4 | 同载荷复用run_id，重启/裁剪仍不重复；改载荷409。 |
+| REQ-06 / AC-06 / EXP-06 | 送物生命周期与目标定位 | `implemented` | 65 | ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒绝。 |
+| REQ-07 / AC-07 / EXP-07 | 提案核验与风险升级 | `implemented` | 16 | 错物/错房/虚构库存/风险降级拒绝；人工核验不补派被拒工单。 |
+| REQ-08 / AC-08 / EXP-08 | 单写入、原子检查点与回滚 | `implemented` | 6 | 单库第二writer拒绝、聊天/员工故障回滚；非真实断电实验。 |
+| REQ-09 / AC-09 / EXP-09 | 持久幂等与重试 | `implemented` | 5 | 同载荷复用run_id，重启/裁剪仍不重复；改载荷409。 |
 | REQ-10 / AC-10 / EXP-10 | 消息归档、日期恢复与隔离 | `implemented` | 28 | 模型窗口与完整归档分层；112条分页身份/顺序/去重、116条重启恢复及两端UI历史页隔离均有断言。 |
 | REQ-11 / AC-11 / EXP-11 | 学术待遇人工核验与已知餐券保护 | `implemented` | 9 | 已知餐券表达、保洁直调/改券保护已实现；有4方法红绿和81项焦点回归。不是任意语言或真实发券证明。 |
 | REQ-12 / AC-12 / EXP-12 | 部门回执、夜审与回收待检 | `implemented` | 5 | 夜审日期、借用品通知和回收待检；不等价外部财务夜审。 |
-| REQ-13 / AC-13 / EXP-13 | API工作台与岗位视图 | `implemented` | 24 | AppTest经HotelApi/TestClient访问唯一临时API；两进程/容器仍须FIELD-01。 |
+| REQ-13 / AC-13 / EXP-13 | API工作台与岗位视图 | `implemented` | 25 | AppTest经HotelApi/TestClient访问唯一临时API；两进程/容器仍须FIELD-01。 |
 | REQ-14 / AC-14 / EXP-14 | 配置、备份、部署与硅基流动连接预检 | `partial` | 8 | 本地配置/备份和 MODEL-CONN-01 代码预检有测试；当前镜像、Compose、卷权限、连续现场探测、聊天 canary 与现场恢复未执行。 |
 | REQ-15 / AC-15 / EXP-15 | 固定Harness与Few-Shot证据边界 | `implemented` | 5 | 固定20条离线规则、字符相似度Few-Shot；没有模型泛化或提升结论。 |
 | REQ-16 / AC-16 / EXP-16 | 可复现证据与反假通过 | `implemented` | 38 | 包含额外Harness行（H21 SKIP、H100 ERROR、重复H01 SKIP）、子进程依赖回执和发布控制文件哈希反例；负向夹具不等价完整发布通过，最终须核验本次全部映射方法实际执行。 |
@@ -62,6 +62,7 @@ REQ-11焦点证据：已忽略的`.artifacts/verification/task1-coupon/red.log`�
 - `tests.test_deployment.DeploymentTests.test_new_guest_does_not_read_previous_room_orders`
 - `tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_guest_cannot_read_staff_fulfillment_or_global_inventory`
 - `tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_staff_endpoints_project_same_details_without_changing_stored_ticket`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_same_room_different_session_cannot_remind_someone_elses_order`
 
 ### REQ-03 / AC-03 / EXP-03
 
@@ -243,6 +244,29 @@ ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒�
 - `tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_named_quantity_change_targets_shortage_among_multiple_active_orders`
 - `tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_new_item_only_or_duplicate_target_orders_still_require_clarification`
 - `tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_water_alias_before_change_marker_identifies_its_own_order`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_adjacent_quantities_and_conjunctions_normalize_water`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_ba_water_reminder_is_a_known_noun_not_an_unknown_phrase`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_cancelled_order_cannot_be_revived_by_reminder`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_completed_order_cannot_be_revived_by_reminder`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_fast_delivery_does_not_hide_unknown_products`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_followup_keeps_facility_answer_in_same_turn`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_more_water_with_quantity_remains_a_new_request`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_named_progress_question_does_not_choose_latest_towel_order`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_negated_reminder_does_not_change_order_or_inventory`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_negative_speed_modifier_keeps_new_order_at_normal_priority`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_new_quantity_with_cui_phrase_is_not_swallowed_by_legacy_pacing`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_pacing_and_hunger_are_not_stock_items`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_plumbing_and_toiletry_water_is_not_drinking_water`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_quantityless_cui_targets_only_own_order_even_if_other_room_exists`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_reminder_never_reduces_existing_high_priority`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_reminder_targets_water_preserving_other_tickets_and_stock`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_reminder_without_order_does_not_create_phantom_order`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_repeat_reminder_is_recorded_without_duplicate_reservation`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_shortage_reminder_keeps_unconfirmed_delivery_status`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_two_water_orders_require_clarification`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_unknown_addition_with_existing_order_progress_is_not_dropped`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_user_compound_reports_only_the_real_unknown_item`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_user_sequence_keeps_staff_confirmed_replacement_and_single_water_order`
 
 ### REQ-07 / AC-07 / EXP-07
 
@@ -265,6 +289,7 @@ ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒�
 - `tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_direct_completion_and_guest_confirmation_do_not_bypass_legacy_review`
 - `tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_legacy_erroneous_mixed_ticket_cannot_dispatch_or_complete`
 - `tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_pending_change_cannot_be_dispatched_even_if_stock_is_reserved`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_delivery_followup_cannot_swallow_smoke_emergency`
 
 ### REQ-08 / AC-08 / EXP-08
 
@@ -277,6 +302,7 @@ ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒�
 - `tests.test_deployment.DeploymentTests.test_atomic_checkpoint_rolls_back_if_session_write_fails`
 - `tests.test_deployment.DeploymentTests.test_staff_storage_failure_is_unavailable_and_rolls_back`
 - `tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_shortage_state_and_derived_details_survive_restart`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_reminder_record_survives_sqlite_restart`
 
 ### REQ-09 / AC-09 / EXP-09
 
@@ -288,6 +314,7 @@ ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒�
 - `tests.test_deployment.DeploymentTests.test_request_retry_survives_restart_without_second_order`
 - `tests.test_deployment.DeploymentTests.test_pruned_run_keeps_durable_idempotency_record`
 - `tests.test_api.FastAPISessionTests.test_async_submit_accepts_replacement_and_poll_enforces_session`
+- `tests.test_delivery_followup.DeliveryFollowupTests.test_reminder_request_id_replay_is_idempotent`
 
 ### REQ-10 / AC-10 / EXP-10
 
@@ -382,6 +409,7 @@ AppTest经HotelApi/TestClient访问唯一临时API；两进程/容器仍须FIELD
 - `tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_shortage_coordination_is_not_counted_as_dispatch_queue_or_eta`
 - `tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_shortage_is_coordination_with_gap_and_no_dispatch`
 - `tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_zero_stock_and_recovered_but_unreserved_have_distinct_states`
+- `tests.test_visual_contract.VisualContractTests.test_native_help_portal_and_descendants_have_theme_contrast`
 
 ### REQ-14 / AC-14 / EXP-14
 

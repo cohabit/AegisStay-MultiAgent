@@ -32,7 +32,8 @@
         "tests.test_deployment.DeploymentTests.test_department_cannot_complete_other_department_ticket",
         "tests.test_deployment.DeploymentTests.test_new_guest_does_not_read_previous_room_orders",
         "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_guest_cannot_read_staff_fulfillment_or_global_inventory",
-        "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_staff_endpoints_project_same_details_without_changing_stored_ticket"
+        "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_staff_endpoints_project_same_details_without_changing_stored_ticket",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_same_room_different_session_cannot_remind_someone_elses_order"
       ],
       "experiment_ids": [
         "EXP-02"
@@ -255,7 +256,30 @@
         "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_valid_dispatch_and_completion_never_deduct_stock_twice",
         "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_named_quantity_change_targets_shortage_among_multiple_active_orders",
         "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_new_item_only_or_duplicate_target_orders_still_require_clarification",
-        "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_water_alias_before_change_marker_identifies_its_own_order"
+        "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_water_alias_before_change_marker_identifies_its_own_order",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_adjacent_quantities_and_conjunctions_normalize_water",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_ba_water_reminder_is_a_known_noun_not_an_unknown_phrase",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_cancelled_order_cannot_be_revived_by_reminder",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_completed_order_cannot_be_revived_by_reminder",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_fast_delivery_does_not_hide_unknown_products",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_followup_keeps_facility_answer_in_same_turn",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_more_water_with_quantity_remains_a_new_request",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_named_progress_question_does_not_choose_latest_towel_order",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_negated_reminder_does_not_change_order_or_inventory",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_negative_speed_modifier_keeps_new_order_at_normal_priority",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_new_quantity_with_cui_phrase_is_not_swallowed_by_legacy_pacing",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_pacing_and_hunger_are_not_stock_items",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_plumbing_and_toiletry_water_is_not_drinking_water",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_quantityless_cui_targets_only_own_order_even_if_other_room_exists",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_reminder_never_reduces_existing_high_priority",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_reminder_targets_water_preserving_other_tickets_and_stock",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_reminder_without_order_does_not_create_phantom_order",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_repeat_reminder_is_recorded_without_duplicate_reservation",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_shortage_reminder_keeps_unconfirmed_delivery_status",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_two_water_orders_require_clarification",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_unknown_addition_with_existing_order_progress_is_not_dropped",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_user_compound_reports_only_the_real_unknown_item",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_user_sequence_keeps_staff_confirmed_replacement_and_single_water_order"
       ],
       "experiment_ids": [
         "EXP-06"
@@ -286,7 +310,8 @@
         "tests.test_conversation_followup.ConversationFollowupTests.test_direct_department_cannot_drop_unknown_measured_addition",
         "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_direct_completion_and_guest_confirmation_do_not_bypass_legacy_review",
         "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_legacy_erroneous_mixed_ticket_cannot_dispatch_or_complete",
-        "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_pending_change_cannot_be_dispatched_even_if_stock_is_reserved"
+        "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_pending_change_cannot_be_dispatched_even_if_stock_is_reserved",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_delivery_followup_cannot_swallow_smoke_emergency"
       ],
       "experiment_ids": [
         "EXP-07"
@@ -311,7 +336,8 @@
         "tests.test_deployment.DeploymentTests.test_write_failure_rolls_back_stock_and_does_not_ack_success",
         "tests.test_deployment.DeploymentTests.test_atomic_checkpoint_rolls_back_if_session_write_fails",
         "tests.test_deployment.DeploymentTests.test_staff_storage_failure_is_unavailable_and_rolls_back",
-        "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_shortage_state_and_derived_details_survive_restart"
+        "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_shortage_state_and_derived_details_survive_restart",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_reminder_record_survives_sqlite_restart"
       ],
       "experiment_ids": [
         "EXP-08"
@@ -331,7 +357,8 @@
         "tests.test_task_runtime.TaskRuntimeTests.test_request_id_retry_does_not_duplicate_delivery",
         "tests.test_deployment.DeploymentTests.test_request_retry_survives_restart_without_second_order",
         "tests.test_deployment.DeploymentTests.test_pruned_run_keeps_durable_idempotency_record",
-        "tests.test_api.FastAPISessionTests.test_async_submit_accepts_replacement_and_poll_enforces_session"
+        "tests.test_api.FastAPISessionTests.test_async_submit_accepts_replacement_and_poll_enforces_session",
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_reminder_request_id_replay_is_idempotent"
       ],
       "experiment_ids": [
         "EXP-09"
@@ -461,7 +488,8 @@
         "tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_revised_order_recomputes_item_and_removes_old_shortage",
         "tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_shortage_coordination_is_not_counted_as_dispatch_queue_or_eta",
         "tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_shortage_is_coordination_with_gap_and_no_dispatch",
-        "tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_zero_stock_and_recovered_but_unreserved_have_distinct_states"
+        "tests.test_operations_ticket_ui.LocalOperationsTicketUITests.test_zero_stock_and_recovered_but_unreserved_have_distinct_states",
+        "tests.test_visual_contract.VisualContractTests.test_native_help_portal_and_descendants_have_theme_contrast"
       ],
       "experiment_ids": [
         "EXP-13"

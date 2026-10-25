@@ -54,6 +54,7 @@
 | `tests/test_service_reliability.py` / `test_guest_history_ui.py` | 完整归档与两端分页、批量取消代际、未知物品和情绪/称呼边界 |
 | `tests/test_hotel_readiness.py` | 目录事实、口语风险、设施需求记录、8 位住客抢库存及换客空上下文 |
 | `tests/test_conversation_followup.py` | 用户实测原句、混合未知物品/量词、档案会员查询、人工澄清与多设施完整答复 |
+| `tests/test_delivery_followup.py` | 连写物品与时效修饰、已有订单催送、否定/新增需求、会话隔离、重启与重复预留守卫 |
 | `tests/test_ticket_fulfillment.py` / `test_operations_ticket_ui.py` / `test_facility_intents.py` | 可执行物品清单、缺货/旧工单写入守卫、两端运营卡片及编号设施问答 |
 | `tests/test_evolution.py` / `test_streamlit.py` / `test_visual_contract.py` | 示例检索、记忆与本地界面、主题对比度回归 |
 | `tests/test_release_verification.py` | 证据工具负向测试，拒绝假通过 |

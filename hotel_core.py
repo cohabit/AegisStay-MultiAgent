@@ -20,6 +20,7 @@ from agent_protocol import AgentConflict, TaskInterrupted, parse_delivery_comman
 from hotel_catalog import ITEM_CATALOG, load_service_catalog
 from facility_answers import answer_facility, question_fields, topic_scopes
 from ticket_details import delivery_fulfillment
+from guest_requests import DEVICE_CONTROL_REPLY, is_device_control, request_parts
 
 ROOT = Path(__file__).resolve().parent
 DEPARTMENTS = {"送物": "楼层保洁", "工程报修": "工程部", "客诉紧急": "大堂经理", "续住申请": "前台接待", "票券服务": "礼宾部"}
@@ -777,7 +778,7 @@ class ReceptionAgent:
             max_tokens=100,
         )
         if (not raw or _contains_private_model_detail(raw, self.model.model)
-                or re.search(r"卡号|联系方式|身份证|证件号|(?:手机|电话)(?:号码|号)", raw)):
+                or re.search(r"卡号|联系方式|身份证|证件号|(?:手机|电话)(?:号码|号)|敏感话题|请保持冷静", raw)):
             return fallback
         return raw.strip()[:70]
 
@@ -1177,6 +1178,8 @@ class HotelOrchestrator:
             return None
         positive = re.sub(r"(?:不用|不必|不要|不需要|无需|别)(?:再|给我|帮我)?催(?:一下|催|促)?(?:了)?", "", text)
         explicit_followup = bool(re.search(r"催(?:一下|催|促)?|还没送到|还未送到|还要多久|多久能到|进度如何", positive))
+        if command.item and _delivery_priority(positive) == "中" and not re.search(r"送|拿|借|给我|我要|需要|再来|再加", positive):
+            explicit_followup = True
         ba_delivery = bool(re.search(r"把.+?送(?:来|过来)", text))
         if positive != text and not explicit_followup and not ba_delivery:
             trace.append({"agent": "ReceptionAgent", "event": "delivery_reminder_declined",
@@ -1386,8 +1389,70 @@ class HotelOrchestrator:
                 return "；".join(status_reply(name) for name in items) + "。查询本身不创建送物工单。"
         return None
 
+    def _process_request_parts(self, text: str, parts: tuple, trace: list, cancellation_check: Callable | None) -> str:
+        """Execute clauses inside this worker snapshot; runtime commits all deltas."""
+        state = self.state
+        state.intent = "送物" if any(part.kind in {"delivery", "reminder", "clarify"} for part in parts) else "酒店咨询"
+        if any(part.kind == "clarify" for part in parts):
+            trace.append({"agent": "Supervisor", "event": "delivery_target_required", "detail": "复合需求无法唯一分解，未执行"})
+            return self._finish(parts[0].source, trace)
+        if not state.room_no and any(part.kind == "service" or part.kind == "delivery"
+                                     and not parse_delivery_command(part.source).unknown_items for part in parts):
+            state.pending = {"intent": "送物", "detail": text, "compound_detail": text,
+                             "sentiment": state.sentiment, "requested_time": None, "nights": 1}
+            trace.append({"agent": "ReceptionAgent", "event": "compound_room_required", "detail": "保留完整分项请求等待房号"})
+            return self._finish("请问您的房间号是多少呢？确认后会分别处理各项需求。", trace)
+        replies, original_messages = [], deepcopy(state.messages)
+        for part in parts:
+            if cancellation_check and cancellation_check():
+                raise TaskInterrupted()
+            before = {ticket["ticket_id"] for ticket in state.tickets}
+            if part.kind == "device":
+                replies.append(DEVICE_CONTROL_REPLY)
+                trace.append({"agent": "Supervisor", "event": "device_control_unsupported", "detail": "未连接客房设备控制；未创建维修或控制工单"})
+                continue
+            if part.kind == "reminder":
+                if any(p.kind == "service" and re.search(r"冒烟|漏电|着火|火警|被困", p.source) for p in parts):
+                    replies.append("送物催送：当前优先处理安全报修，原送物单保持原状态。")
+                else:
+                    replies.append(self._delivery_reminder(part.source, trace) or "送物催送：请说明对应物品或工单，暂未新增送物。")
+                continue
+            command = parse_delivery_command(part.source)
+            if part.kind == "delivery" and command.unknown_items:
+                names = "、".join(command.unknown_items)
+                replies.append(f"目前配送清单中未找到{names}，本项尚未创建工单、未扣库存，请联系前台确认。")
+                trace.append({"agent": "Supervisor", "event": "delivery_catalog_required", "detail": f"分项拒绝目录外物品：{names}"})
+                continue
+            child = part.source
+            label = ""
+            if part.kind == "delivery" and command.item:
+                quantity = command.quantity if command.quantity is not None else 1
+                unit = ITEM_CATALOG.get(command.item, {}).get("unit", "件")
+                label = f"{command.item}{quantity}{unit}："
+                # Only this source clause defines the SKU and quantity. Original
+                # wording stays in source_request; no unknown noun is erased.
+                child = f"送{quantity}{unit}{command.item}"
+            state.pending = None
+            reply = self.process(child, record_user=False, cancellation_check=cancellation_check,
+                                 _split_requests=False, _new_delivery=part.kind == "delivery")
+            trace.extend(deepcopy(state.last_trace))
+            state.messages = deepcopy(original_messages)
+            address = (state.guest_profile or {}).get("guest_name") if not state.neutral_address else None
+            if address and reply.startswith(address + "，"):
+                reply = reply[len(address) + 1:]
+            replies.append(label + reply)
+            for ticket in state.tickets:
+                if ticket["ticket_id"] not in before:
+                    ticket["source_request"] = text
+                    if part.kind == "delivery" and _delivery_priority(text) == "中" and ticket.get("priority") == "低":
+                        ticket["priority"] = "中"
+        state.pending = None
+        trace.append({"agent": "Supervisor", "event": "compound_request_completed", "detail": f"{len(parts)}项逐项答复；提交仍由runtime核验"})
+        return self._finish("\n\n".join(replies), trace)
+
     def process(
         self, text: str, *, record_user: bool = True, cancellation_check: Callable[[], bool] | None = None,
+        _split_requests: bool = True, _new_delivery: bool = False,
     ) -> str:
         text = text.strip()
         if not text:
@@ -1411,8 +1476,28 @@ class HotelOrchestrator:
             }]
             return self._finish(_public_boundary_reply(boundary_kind), trace)
 
+        can_split = _split_requests and not _rules_extract(text, self.knowledge).get("is_resolution")
+        initial_parts = request_parts(text, service_detector=lambda clause:
+                                      _rules_extract(clause, self.knowledge)["intent"] in {"工程报修", "客诉紧急", "票券服务"}) if can_split else ()
+        targeted_rooms = {match[0] for match in re.finditer(r"(?<!\d)\d{3,4}(?!\d)(?!\s*(?:条|瓶|个|件|份|块|桶|罐))", text)}
+        if len(targeted_rooms) > 1 and initial_parts:
+            if record_user:
+                state.messages.append({"role": "user", "content": text, "room_no": state.room_no})
+            return self._finish("本次需求涉及多个房间，请先核验并确认本次入住的房间；暂未执行任何送物或房间操作。",
+                                [{"agent": "Supervisor", "event": "跨房安全拦截", "detail": "复合需求不合并多个房间目标"}])
+        if initial_parts and is_device_control(text) and all(part.kind == "device" for part in initial_parts):
+            if record_user:
+                state.messages.append({"role": "user", "content": text, "room_no": state.room_no})
+            return self._finish(DEVICE_CONTROL_REPLY, [{"agent": "Supervisor", "event": "device_control_unsupported", "detail": "未连接客房设备控制"}])
+
         name = (state.guest_profile or {}).get("guest_name")
         compact_text = normalized(text)
+        if re.fullmatch(r"(?:我的意思是|其实|我是说)?我姓[\u4e00-\u9fff]{1,2}[。！!]?", compact_text):
+            if record_user:
+                state.messages.append({"role": "user", "content": text, "room_no": state.room_no})
+            state.neutral_address = True
+            return self._finish("好的，已了解您的称呼更正，接下来使用中性称呼；入住登记姓名仍需前台核验。",
+                                [{"agent": "ReceptionAgent", "event": "neutral_address_requested", "detail": "聊天姓氏更正不改登记、房间或权限"}])
         if ((name and any(normalized(prefix + name) in compact_text for prefix in ("我不是", "我不叫", "别叫我", "不要叫我")))
                 or name and any(term in text for term in ("认错人了", "不要这样称呼我"))):
             if record_user:
@@ -1515,6 +1600,17 @@ class HotelOrchestrator:
             self._bind_room(room)
         state.sentiment, state.active_agent = analysis["sentiment"], "ReceptionAgent"
         trace = [{"agent": "ReceptionAgent", "event": "关联档案", "detail": f"房间 {state.room_no or '待补全'}；{'已关联 CRM' if state.guest_profile else '档案待核实'}"}]
+        if can_split:
+            slot_only = bool(room and re.fullmatch(r"(?:我是|我住在?|房间号是?|房号是?|房间是?)?\s*\d{3,4}\s*(?:房|号房|房间|的?住客|的?用户)?[。！!]?", text))
+            source = state.pending.get("compound_detail", text) if state.pending and slot_only else text
+            if state.pending and state.pending.get("compound_detail") and not slot_only and (
+                    delivery_command.references or delivery_command.unknown_items or delivery_command.action != "create"):
+                state.pending = None
+            parts = request_parts(source, service_detector=lambda clause:
+                                  _rules_extract(clause, self.knowledge)["intent"] in {"工程报修", "客诉紧急", "票券服务"})
+            if parts:
+                reply = self._process_request_parts(source, parts, trace, cancellation_check)
+                return (f"{faq_part} {reply}" if faq_part else reply)
         change_reply, delivery_detail = self._delivery_change(text, trace)
         if change_reply is not None:
             return self._finish(f"{faq_part} 另外，{change_reply}" if faq_part else change_reply, trace)
@@ -1736,7 +1832,8 @@ class HotelOrchestrator:
                 else "早餐券申请需要前台核验您的在住档案或配额，请稍候联系前台。"
             )
         else:
-            existing = next((t for t in state.tickets if t["room_no"] == state.room_no and t["item_detail"] == pending["detail"] and t["status"] == "处理中"), None)
+            existing = (None if _new_delivery and state.intent == "送物" else
+                        next((t for t in state.tickets if t["room_no"] == state.room_no and t["item_detail"] == pending["detail"] and t["status"] == "处理中"), None))
             if existing:
                 ticket, dispatch_mode = existing, "重复申请复用"
             else:

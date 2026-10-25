@@ -485,7 +485,8 @@ class SessionManager:
                     latest = previous_tasks[-1] if previous_tasks else None
                 if latest:
                     task_id, version = latest["task_id"], latest["version"] + 1
-                    origin, kind = latest.get("goal_detail", latest.get("message", "")), "送物"
+                    origin, kind = (target_ticket["item_detail"] if target_ticket else
+                                    latest.get("goal_detail", latest.get("message", ""))), "送物"
                 elif target_ticket:
                     origin = target_ticket["item_detail"]
             goal_detail = message
@@ -709,7 +710,11 @@ class SessionManager:
                     originals = {t["ticket_id"]: t for t in baseline.tickets}
                     for ticket in worker.state.tickets:
                         if ticket != originals.get(ticket["ticket_id"]):
-                            if not (parse_delivery_command(run.message).cancel_all and ticket["ticket_id"] in originals):
+                            original = originals.get(ticket["ticket_id"])
+                            reminder_only = original is not None and {
+                                key for key in set(original) | set(ticket) if original.get(key) != ticket.get(key)
+                            } <= {"reminder_count", "last_reminded_at", "priority"}
+                            if not reminder_only and not (parse_delivery_command(run.message).cancel_all and ticket["ticket_id"] in originals):
                                 ticket.update(task_id=run.task_id, task_version=run.version)
                             if ticket["ticket_id"] not in originals:
                                 ticket.update(owner_session_id=run.session_id,

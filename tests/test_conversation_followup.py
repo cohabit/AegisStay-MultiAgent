@@ -23,16 +23,23 @@ class ConversationFollowupTests(unittest.TestCase):
         return flow
 
     def test_measured_unknown_compounds_never_partially_order_water(self):
-        cases = ("我要两瓶水，两桶泡面，一桶泡面里装水", "我要两瓶水，两桶泡面",
-                 "送1瓶矿泉水，2盒饼干", "送1条毛巾，1袋薯片", "送水两瓶、两杯奶茶",
-                 "送1条浴巾，再加1箱红牛", "送两瓶水，1听啤酒", "送一瓶水，两支口红")
-        for text in cases:
+        # Historical method ID retained. CR-01 v2 permits explicitly separated
+        # known requests, while unknown clauses get their own rejection.
+        cases = (("我要两瓶水，两桶泡面，一桶泡面里装水", "矿泉水", 2),
+                 ("我要两瓶水，两桶泡面", "矿泉水", 2), ("送1瓶矿泉水，2盒饼干", "矿泉水", 1),
+                 ("送1条毛巾，1袋薯片", "毛巾", 1), ("送水两瓶、两杯奶茶", None, 0),
+                 ("送1条浴巾，再加1箱红牛", "浴巾", 1), ("送两瓶水，1听啤酒", "矿泉水", 2),
+                 ("送一瓶水，两支口红", "矿泉水", 1))
+        for text, item, quantity in cases:
             with self.subTest(text=text):
                 flow = self.flow()
                 stock = deepcopy(flow.housekeeping.inventory)
                 self.assertTrue(parse_delivery_command(text).unknown_items)
                 reply = flow.process(text)
-                self.assertEqual(flow.state.tickets, [])
+                self.assertEqual(len(flow.state.tickets), int(item is not None))
+                if item:
+                    self.assertEqual((flow.state.tickets[0]["inventory_item"], flow.state.tickets[0]["quantity"]), (item, quantity))
+                    stock[item] -= quantity
                 self.assertEqual(flow.housekeeping.inventory, stock)
                 self.assertIn("尚未创建", reply)
 

@@ -37,11 +37,13 @@ def normalize_delivery_text(text: str) -> str:
     text = re.sub(r"瓶装水|饮用水|纯净水", "矿泉水", text)
     # A standalone service noun is an alias. Do not replace every 水 character:
     # 热水、漏水、洗发水 and 水管 must retain their original meaning.
-    lead = r"(?P<lead>(?:^|[，,。；;!?！？]\s*|(?<!\d)\d{3,4}(?!\d)\s*)(?:(?:我(?:的)?|那(?:个)?|这(?:个)?|刚才(?:要的|的)?)\s*)?|(?:送|拿|来|给我|我要|要|把|催一下|催催|取消|不需要|不用|不要|别送|改成|换成|和|还有)\s*)"
-    quantity = r"(?P<quantity>(?:(?:\d+|一|两|二|三|四|五|六|七|八|九|十)?\s*瓶\s*)?)"
-    suffix = r"(?=\s*(?:(?:就|先)?不(?:用|要|需要)(?:再送|送)?(?:了)?|(?:都|各)(?:只)?要|改(?:成|为|送|要)|换(?:成|为)|取消|别(?:送|催)|了|和|跟|以及|再(?:拿|送|加|来)|送(?:来|到|过来)|怎么|还没|还要多久|" + DELIVERY_NUMBER + DELIVERY_UNIT + r"|[，,。；;!?！？]|$))"
+    lead = r"(?P<lead>(?:^|[，,。；;!?！？]\s*|(?<!\d)\d{3,4}(?!\d)\s*)(?:(?:我(?:的)?|那(?:个)?|这(?:个)?|刚才(?:要的|的)?)\s*)?|(?:送|拿|来|加|补|给我|我要|要|把|催一下|催催|取消|不需要|不用|不要|别送|改成|换成|和|还有)\s*)"
+    # Soft quantities carry no numeric promise. Remove them with the alias so
+    # that the existing negation check still sees e.g. 不要送矿泉水.
+    quantity = r"(?:(?P<quantity>(?:\d+|一|两|二|三|四|五|六|七|八|九|十)?\s*瓶\s*)|(?:一?点|一?些)\s*)?"
+    suffix = r"(?=\s*(?:(?:就|先)?不(?:用|要|需要)(?:再送|送)?(?:了)?|(?:都|各)(?:只)?要|改(?:成|为|送|要)|换(?:成|为)|取消|别(?:送|催)|了|[吧啦](?=\s*(?:[，,。；;!?！？]|$))|和|跟|以及|再(?:拿|送|加|来)|送(?:来|到|过来)|怎么|还没|还要多久|" + DELIVERY_NUMBER + DELIVERY_UNIT + r"|[，,。；;!?！？]|$))"
     return re.sub(lead + quantity + r"水" + suffix,
-                  lambda match: match["lead"] + match["quantity"] + "矿泉水", text)
+                  lambda match: match["lead"] + (match["quantity"] or "") + "矿泉水", text)
 
 
 def _ignored_quantity_context(text: str, start: int, end: int) -> bool:
@@ -56,13 +58,13 @@ def _ignored_quantity_context(text: str, start: int, end: int) -> bool:
 def _unknown_requested_items(text: str) -> tuple[str, ...]:
     """Find explicit uncatalogued nouns without treating polite/FAQ clauses as SKUs."""
     known = any(item in text for item in DELIVERY_ITEMS)
-    separator = r"以及|还有|和|跟|(?<!以)及(?!时)|、|[，,；;]|(?=再(?:加|拿|送|借|要|来))"
+    separator = r"以及|还有|和|跟|(?<!以)及(?!时)|、|[，,；;]|(?=再(?:加|拿|送|借|要|来)|还要(?!多久))"
     coordinated = bool(re.search(r"以及|还有|和|跟|(?<!以)及(?!时)|、", text))
     unknown = []
     # Inspect every quantified noun before skipping clauses containing a known
     # SKU. Otherwise "1瓶矿泉水2桶泡面" silently loses the second request.
     measured = DELIVERY_NUMBER + r"\s*" + DELIVERY_UNIT
-    noun_end = r"(?=" + measured + r"|[，,。；;!?！？、]|再(?:加|拿|送|借|要|来)|以及|和|跟|$)"
+    noun_end = r"(?=" + measured + r"|[，,。；;!?！？、]|再(?:加|拿|送|借|要|来)|还要(?!多久)|以及|和|跟|$)"
     for match in re.finditer(measured + r"\s*([\u4e00-\u9fffA-Za-z][\u4e00-\u9fffA-Za-z0-9-]*?)" + noun_end, text):
         if _ignored_quantity_context(text, match.start(), match.end()):
             continue
@@ -80,7 +82,7 @@ def _unknown_requested_items(text: str) -> tuple[str, ...]:
             continue
         if re.fullmatch(r"\s*(?:我)?(?:很|有点|太)?(?:饿|口渴|渴)(?:了)?[。！？!?\s]*", part):
             continue
-        explicit = bool(re.search(r"(?:送|拿|来|借|给我|我要|只要|需要|再加|补)", part))
+        explicit = bool(re.search(r"(?:送|拿|来|借|给我|我要|只要|需要|还要(?!多久)|再加|补)", part))
         measured_item = bool(re.search(measured, part))
         if not explicit and not (known and (coordinated or measured_item)):
             continue
@@ -88,7 +90,8 @@ def _unknown_requested_items(text: str) -> tuple[str, ...]:
             continue
         candidate = re.sub(r"(?<!\d)\d{3,4}(?!\d)", "", part).strip()
         candidate = re.sub(r"(?:可以吗|好吗|好么|行吗|吗|么)[。！？!?\s]*$", "", candidate)
-        candidate = re.sub(r"^(?:(?:请|麻烦|帮我|给我|我|再|顺便|只|需要|想|要|快点|快一点|尽快|马上|加急|送|拿|来|借|补|加|到房间)\s*)+", "", candidate)
+        candidate = re.sub(r"^那(?:么)?(?=请|麻烦|给我|帮我|再|送|拿|来|借|要)", "", candidate)
+        candidate = re.sub(r"^(?:(?:请|麻烦|帮我|给我|我|再|还要|顺便|只|需要|想|要|快点|快一点|尽快|马上|加急|送|拿|来|借|补|加|到房间)\s*)+", "", candidate)
         candidate = re.sub(r"^" + DELIVERY_NUMBER + r"\s*(?:" + DELIVERY_UNIT + r")?", "", candidate)
         candidate = re.split(r"(?:都|各|只要|只需|需要|数量|\d+|" + measured + r"|里(?:面)?(?:装|放|加))", candidate)[0]
         candidate = candidate.strip(" 。！？!?了吧啦的 ")

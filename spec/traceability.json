@@ -11,7 +11,8 @@
         "tests.test_deployment.DeploymentTests.test_revocation_and_expiry_invalidate_pass",
         "tests.test_deployment.DeploymentTests.test_turnover_revokes_previous_occupant",
         "tests.test_deployment.DeploymentTests.test_revoked_inflight_request_cannot_commit",
-        "tests.test_hotel_readiness.ConcurrentGuestApiTests.test_new_stay_has_new_history_and_preferences_old_pass_is_invalid"
+        "tests.test_hotel_readiness.ConcurrentGuestApiTests.test_new_stay_has_new_history_and_preferences_old_pass_is_invalid",
+        "tests.test_compound_requests.CompoundRequestTests.test_multiple_room_targets_cannot_be_merged_into_one_room"
       ],
       "experiment_ids": [
         "EXP-01"
@@ -129,7 +130,13 @@
         "tests.test_facility_intents.FacilityIntentTests.test_F57_negative",
         "tests.test_facility_intents.FacilityIntentTests.test_F58_negative",
         "tests.test_facility_intents.FacilityIntentTests.test_F59_negative",
-        "tests.test_facility_intents.FacilityIntentTests.test_F60_negative"
+        "tests.test_facility_intents.FacilityIntentTests.test_F60_negative",
+        "tests.test_compound_requests.CompoundRequestTests.test_distinct_unknown_part_does_not_block_verified_water",
+        "tests.test_compound_requests.CompoundRequestTests.test_harmless_out_of_scope_reply_does_not_label_topic_sensitive",
+        "tests.test_compound_requests.CompoundRequestTests.test_single_unknown_item_is_specific_even_if_model_says_other",
+        "tests.test_compound_requests.CompoundRequestTests.test_surname_correction_does_not_delegate_verified_identity_to_cloud",
+        "tests.test_compound_requests.CompoundRequestTests.test_user_mineral_water_variant_does_not_lose_unknown_or_device",
+        "tests.test_compound_requests.CompoundRequestTests.test_user_water_noodles_temperature_has_three_explicit_outcomes"
       ],
       "experiment_ids": [
         "EXP-03"
@@ -157,7 +164,8 @@
         "tests.test_deployment.DeploymentTests.test_guest_is_bound_to_own_session_room_and_stay",
         "tests.test_service_reliability.DeliveryReliabilityTests.test_denied_guest_name_switches_to_neutral_address_without_rebinding",
         "tests.test_conversation_followup.ConversationFollowupTests.test_unbound_profile_does_not_invent_identity_or_collect_membership_details",
-        "tests.test_conversation_followup.ConversationFollowupTests.test_disputed_name_is_not_asserted_as_identity"
+        "tests.test_conversation_followup.ConversationFollowupTests.test_disputed_name_is_not_asserted_as_identity",
+        "tests.test_compound_requests.CompoundRequestTests.test_room_slot_keeps_all_three_requests"
       ],
       "experiment_ids": [
         "EXP-04"
@@ -198,7 +206,8 @@
         "tests.test_service_reliability.DeliveryReliabilityTests.test_cross_room_batch_command_cannot_interrupt_current_request",
         "tests.test_service_reliability.DeliveryReliabilityTests.test_cancel_all_checkout_is_not_interpreted_as_delivery_cancellation",
         "tests.test_hotel_readiness.HotelReadinessTests.test_new_regular_item_cancellation_restores_only_reserved_stock",
-        "tests.test_hotel_readiness.ConcurrentGuestApiTests.test_eight_guest_clients_share_stock_and_cancel_only_their_own_reservation"
+        "tests.test_hotel_readiness.ConcurrentGuestApiTests.test_eight_guest_clients_share_stock_and_cancel_only_their_own_reservation",
+        "tests.test_compound_requests.CompoundRequestTests.test_blocked_compound_is_fenced_by_cancel_all"
       ],
       "experiment_ids": [
         "EXP-05"
@@ -279,7 +288,27 @@
         "tests.test_delivery_followup.DeliveryFollowupTests.test_two_water_orders_require_clarification",
         "tests.test_delivery_followup.DeliveryFollowupTests.test_unknown_addition_with_existing_order_progress_is_not_dropped",
         "tests.test_delivery_followup.DeliveryFollowupTests.test_user_compound_reports_only_the_real_unknown_item",
-        "tests.test_delivery_followup.DeliveryFollowupTests.test_user_sequence_keeps_staff_confirmed_replacement_and_single_water_order"
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_user_sequence_keeps_staff_confirmed_replacement_and_single_water_order",
+        "tests.test_compound_requests.CompoundRequestTests.test_ambiguous_items_are_not_silently_replaced_by_device_only_reply",
+        "tests.test_compound_requests.CompoundRequestTests.test_blowdryer_reminder_with_one_order_records_only_reminder",
+        "tests.test_compound_requests.CompoundRequestTests.test_blowdryer_reminder_with_two_orders_never_creates_third",
+        "tests.test_compound_requests.CompoundRequestTests.test_cancel_one_child_keeps_the_other_reserved",
+        "tests.test_compound_requests.CompoundRequestTests.test_child_item_change_inherits_its_own_quantity",
+        "tests.test_compound_requests.CompoundRequestTests.test_explicit_room_and_quantity_correction_is_not_a_second_request",
+        "tests.test_compound_requests.CompoundRequestTests.test_mixed_new_delivery_and_repair_cancel_requires_clarification",
+        "tests.test_compound_requests.CompoundRequestTests.test_new_compounds_with_same_canonical_sku_are_not_false_success_replays",
+        "tests.test_compound_requests.CompoundRequestTests.test_pending_compound_is_not_replayed_over_cancellation_with_room",
+        "tests.test_compound_requests.CompoundRequestTests.test_pending_compound_is_replaced_by_explicit_new_room_request",
+        "tests.test_compound_requests.CompoundRequestTests.test_reminder_preserves_original_task_ownership",
+        "tests.test_compound_requests.CompoundRequestTests.test_shared_quantity_still_requires_clarification",
+        "tests.test_compound_requests.CompoundRequestTests.test_two_known_items_keep_separate_quantities",
+        "tests.test_language_modifiers.LanguageModifierTests.test_add_and_supplement_water_verbs_preserve_explicit_quantity",
+        "tests.test_language_modifiers.LanguageModifierTests.test_discourse_marker_is_not_an_unknown_product",
+        "tests.test_language_modifiers.LanguageModifierTests.test_hairdryer_reminder_does_not_invent_product_or_quantity",
+        "tests.test_language_modifiers.LanguageModifierTests.test_soft_water_alias_does_not_rewrite_other_water_nouns",
+        "tests.test_language_modifiers.LanguageModifierTests.test_soft_water_quantity_and_final_particle_are_not_products",
+        "tests.test_language_modifiers.LanguageModifierTests.test_unquantified_unknown_addition_is_not_lost_alongside_known_item",
+        "tests.test_language_modifiers.LanguageModifierTests.test_water_quantity_and_order_controls_keep_their_meaning"
       ],
       "experiment_ids": [
         "EXP-06"
@@ -311,7 +340,11 @@
         "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_direct_completion_and_guest_confirmation_do_not_bypass_legacy_review",
         "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_legacy_erroneous_mixed_ticket_cannot_dispatch_or_complete",
         "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_pending_change_cannot_be_dispatched_even_if_stock_is_reserved",
-        "tests.test_delivery_followup.DeliveryFollowupTests.test_delivery_followup_cannot_swallow_smoke_emergency"
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_delivery_followup_cannot_swallow_smoke_emergency",
+        "tests.test_compound_requests.CompoundRequestTests.test_device_control_cannot_be_invented_by_a_cloud_label",
+        "tests.test_compound_requests.CompoundRequestTests.test_direct_department_still_rejects_unseparated_unknown_product",
+        "tests.test_compound_requests.CompoundRequestTests.test_fault_is_not_dismissed_as_unsupported_remote_control",
+        "tests.test_compound_requests.CompoundRequestTests.test_power_and_lock_incidents_are_not_dropped_from_compound"
       ],
       "experiment_ids": [
         "EXP-07"
@@ -337,7 +370,8 @@
         "tests.test_deployment.DeploymentTests.test_atomic_checkpoint_rolls_back_if_session_write_fails",
         "tests.test_deployment.DeploymentTests.test_staff_storage_failure_is_unavailable_and_rolls_back",
         "tests.test_ticket_fulfillment.TicketFulfillmentIntegrationTests.test_shortage_state_and_derived_details_survive_restart",
-        "tests.test_delivery_followup.DeliveryFollowupTests.test_reminder_record_survives_sqlite_restart"
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_reminder_record_survives_sqlite_restart",
+        "tests.test_compound_requests.CompoundRequestTests.test_compound_results_and_original_request_survive_restart"
       ],
       "experiment_ids": [
         "EXP-08"
@@ -358,7 +392,8 @@
         "tests.test_deployment.DeploymentTests.test_request_retry_survives_restart_without_second_order",
         "tests.test_deployment.DeploymentTests.test_pruned_run_keeps_durable_idempotency_record",
         "tests.test_api.FastAPISessionTests.test_async_submit_accepts_replacement_and_poll_enforces_session",
-        "tests.test_delivery_followup.DeliveryFollowupTests.test_reminder_request_id_replay_is_idempotent"
+        "tests.test_delivery_followup.DeliveryFollowupTests.test_reminder_request_id_replay_is_idempotent",
+        "tests.test_compound_requests.CompoundRequestTests.test_compound_request_id_replay_reserves_once"
       ],
       "experiment_ids": [
         "EXP-09"
@@ -402,7 +437,8 @@
         "tests.test_guest_history_ui.LocalGuestHistoryUITests.test_local_return_latest_recreates_viewport_with_unchanged_messages",
         "tests.test_guest_history_ui.DeployedGuestHistoryUITests.test_deployed_polling_and_latest_keep_accumulated_archive",
         "tests.test_guest_history_ui.DeployedGuestHistoryUITests.test_deployed_return_latest_recreates_viewport_with_unchanged_messages",
-        "tests.test_guest_history_ui.CumulativeHistoryStateTests.test_latest_keeps_native_scroll_observer_enabled_until_reading_older"
+        "tests.test_guest_history_ui.CumulativeHistoryStateTests.test_latest_keeps_native_scroll_observer_enabled_until_reading_older",
+        "tests.test_compound_requests.CompoundRequestTests.test_split_execution_archives_only_one_assistant_reply"
       ],
       "experiment_ids": [
         "EXP-10"

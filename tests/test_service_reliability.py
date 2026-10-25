@@ -297,7 +297,15 @@ class DeliveryReliabilityTests(unittest.TestCase):
                 flow = HotelOrchestrator(force_rules=True)
                 before = deepcopy(flow.housekeeping.inventory)
                 reply = flow.process(text)
-                self.assertEqual(flow.state.tickets, [])
+                # CR-01 v2: the comma-separated, independently quantified water
+                # clause is executable; conjunction/shared targets stay blocked.
+                if "，再加" in text:
+                    self.assertEqual(len(flow.state.tickets), 1)
+                    self.assertEqual((flow.state.tickets[0]["inventory_item"], flow.state.tickets[0]["quantity"]), ("矿泉水", 1))
+                    before["矿泉水"] -= 1
+                    self.assertIn("可乐", reply)
+                else:
+                    self.assertEqual(flow.state.tickets, [])
                 self.assertEqual(flow.housekeeping.inventory, before)
                 self.assertIn("尚未创建", reply)
 

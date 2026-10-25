@@ -123,6 +123,10 @@ class DeliveryFollowupTests(unittest.TestCase):
         before = deepcopy(manager.shared_tickets), deepcopy(manager.housekeeping.inventory)
         result = self.chat(manager, "矿泉水还没送到，快点送两罐红牛")
         self.assertIn("未找到红牛", result.reply)
+        # CR-01 v2 allows a source-grounded reminder while rejecting the separate
+        # unknown item; it must still never create a second water delivery.
+        before[0][0]["reminder_count"] = 1
+        before[0][0]["last_reminded_at"] = manager.shared_tickets[0]["last_reminded_at"]
         self.assertEqual((manager.shared_tickets, manager.housekeeping.inventory), before)
 
     def test_named_progress_question_does_not_choose_latest_towel_order(self):

@@ -22,6 +22,8 @@
 | 湖景入口、常规物品、设施核验与风险分级 | [酒店服务完善规格](spec/hotel_readiness.md) |
 | 工单执行明细、库存缺口与设施问项 | [运营工单与设施问答规格](spec/operations_ticket_and_facility.md) |
 | 逐项复合需求、设备能力、默认数量与原子提交 | [复合住客需求规格](spec/compound_guest_requests.md) |
+| 模型实测连接、切换保留状态、语义提案与称呼 | [模型运行与语义规格](spec/model_runtime_and_semantics.md) |
+| 运行底座与评测、记忆/工具/中断的关系 | [Harness 说明](docs/agent_harness.md) |
 | WiFi 入口、每次入住刷新、数据库与 Redis 方案 | [入住数据与运营说明](docs/stay_data_and_operations.md) |
 | 旧专题及旧验收适用范围 | [历史索引](spec/legacy_specs.md) |
 | 安装、启动和值班操作 | [README](README.md)、[运维手册](docs/operations.md)、[部署子规格](spec/design/deployment.md) |
@@ -36,6 +38,7 @@
 | `hotel_core.py` | `HotelState` 黑板；FAQ、意图、补槽；接待/保洁/工程/礼宾/经理处理器；提案核验与业务 |
 | `agent_protocol.py` | 送物口语命令、部门提案约束、`AgentConflict` / `TaskInterrupted` |
 | `guest_requests.py` | 从原句分隔独立子请求、设备控制能力边界；不执行库存或设备写入 |
+| `semantic_intents.py` | 验证模型提出的原文分项；检查来源、覆盖和业务参数，不执行写入 |
 | `agent_runtime.py` | `SessionManager`、任务版本、取消/替换、差量提交、共享库存、入住授权与幂等 |
 | `persistence.py` | 单写入者锁、SQLite WAL、业务/会话/任务/消息/审计原子检查点 |
 | `auth.py` / `server.py` | 凭证、岗位和会话授权、FastAPI 路由、安全字段投影 |
@@ -58,6 +61,7 @@
 | `tests/test_conversation_followup.py` | 用户实测原句、混合未知物品/量词、档案会员查询、人工澄清与多设施完整答复 |
 | `tests/test_delivery_followup.py` | 连写物品与时效修饰、已有订单催送、否定/新增需求、会话隔离、重启与重复预留守卫 |
 | `tests/test_compound_requests.py` / `tests/test_language_modifiers.py` | 多项结果、设备能力、旧 pending 替换、房间与取消边界、口语修饰和追加数量 |
+| `tests/test_model_runtime.py` / `tests/test_semantic_intents.py` | 实际推理状态、连接回滚、切换不丢会话、一次理解、称呼恢复与模型提案反例 |
 | `tests/test_ticket_fulfillment.py` / `test_operations_ticket_ui.py` / `test_facility_intents.py` | 可执行物品清单、缺货/旧工单写入守卫、两端运营卡片及编号设施问答 |
 | `tests/test_evolution.py` / `test_streamlit.py` / `test_visual_contract.py` | 示例检索、记忆与本地界面、主题对比度回归 |
 | `tests/test_release_verification.py` | 证据工具负向测试，拒绝假通过 |

@@ -154,7 +154,7 @@ class SessionManager:
         "last_trace", "model_mode", "guest_profile", "pending", "late_checkout",
         "current_date", "borrowed_items", "audit_logs", "rolling_summary", "tasks",
         "agent_conflicts",
-        "authorized_room", "stay_id", "session_id", "neutral_address", "service_feedback",
+        "authorized_room", "stay_id", "session_id", "neutral_address", "preferred_address", "service_feedback",
     )
 
     def _business_payload(self) -> dict[str, Any]:
@@ -335,6 +335,17 @@ class SessionManager:
         if run.request_id:
             self._requests[(session_id, run.request_id)] = run.run_id
         return run
+
+    def configure_model(self, session_id: str, model: Any) -> None:
+        """Switch only the verified model; the session and business stay intact."""
+        with self.lock:
+            flow = self.get_session(session_id)
+            if flow is None:
+                raise KeyError(session_id)
+            if session_id in self._active or self._queues.get(session_id):
+                raise RuntimeBusy("当前有任务正在处理，请完成或取消后再切换模型。")
+            flow.model, flow.force_rules = model, bool(model.disabled)
+            flow.reception.model = flow.dispatcher.model = model
 
     def adopt(self, session_id: str, flow: HotelOrchestrator) -> None:
         """Attach the existing Streamlit demo state without losing its business data."""
@@ -620,7 +631,7 @@ class SessionManager:
         additions: list[tuple[list, dict[str, Any]]] = []
         private_changes: dict[str, Any] = {}
         for name in ("room_no", "intent", "sentiment", "active_agent", "request_detail", "pending",
-                     "late_checkout", "current_date", "borrowed_items", "audit_logs", "agent_conflicts", "neutral_address", "service_feedback"):
+                     "late_checkout", "current_date", "borrowed_items", "audit_logs", "agent_conflicts", "neutral_address", "preferred_address", "service_feedback"):
             before, proposed = getattr(baseline, name), getattr(candidate, name)
             if before != proposed:
                 if getattr(state, name) != before:

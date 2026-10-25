@@ -27,6 +27,8 @@ class _FakeOpenAI:
         self.timeout = timeout
         self.max_retries = max_retries
         self.models = _FakeModels(["Qwen/Qwen2.5-7B-Instruct"])
+        self.chat = SimpleNamespace(completions=SimpleNamespace(create=lambda **kwargs:
+            SimpleNamespace(choices=[SimpleNamespace(message=SimpleNamespace(content='{"ok":true}'))])))
 
 
 class ModelConnectionTests(unittest.TestCase):
@@ -47,12 +49,13 @@ class ModelConnectionTests(unittest.TestCase):
             orchestrator, probe = app._connect_cloud_model(
                 "new-key", "https://api.siliconflow.cn/v1", "Qwen/Qwen2.5-7B-Instruct"
             )
-            self.assertNotIn("AEGIS_FORCE_RULES", os.environ)
+            self.assertEqual(os.environ.get("AEGIS_FORCE_RULES"), "1")
 
         self.assertEqual(os.environ.get("AEGIS_FORCE_RULES"), original_force_rules)
         self.assertFalse(orchestrator.model.disabled)
         self.assertEqual(orchestrator.model.model, "Qwen/Qwen2.5-7B-Instruct")
         self.assertTrue(probe["ok"])
+        self.assertTrue(probe["inference_verified"])
         self.assertEqual(probe["code"], "ok")
 
     def test_missing_openai_sdk_is_reported_instead_of_silent_fallback(self):

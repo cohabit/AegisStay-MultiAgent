@@ -74,11 +74,11 @@
 
 ### 3.3 硅基流动/OpenAI 兼容连接预检
 
-硅基流动的 OpenAI 兼容配置使用 `https://api.siliconflow.cn/v1` 形式的 Base URL、准确的模型 ID 和 Bearer API Key。应用启动时不发送模型请求；用户在工作台明确点击云端连接后，才临时清除本进程的 `AEGIS_FORCE_RULES`，创建客户端并执行只读 `GET /v1/models` 预检。预检验证 API Key、Base URL 可达、服务端返回合法模型列表且选定模型存在；成功前工作台保持规则模式。
+硅基流动的 OpenAI 兼容配置使用 `https://api.siliconflow.cn/v1` 形式的 Base URL、准确的模型 ID 和 Bearer API Key。应用启动时不发送模型请求；仅客户端已配置时显示“待实测”。用户明确点击连接后，验证 `GET /v1/models` 和所选模型的一次短 JSON 推理，临时环境恢复后再接管原会话的模型客户端。成功才保存已忽略的 `config.json`，失败保留原配置和客户端；不重建会话、库存和工单。运行中任务阻止切换，详细契约见 [MR-01～03](../model_runtime_and_semantics.md)。
 
 客户端优先使用 `openai` SDK；当前受限环境若 SDK 不可导入但已有 `httpx`，则使用仓库内的最小 HTTP 兼容传输，覆盖 `/models`、`/chat/completions` 和工具调用所需字段。两种传输的错误都转换为不含密钥的错误码（如 `openai_sdk_missing`、`http_401`、`http_429`、`model_not_listed`、`timeout`），不能吞掉异常后显示“已成功加载”。
 
-**MODEL-CONN-01 连接指标与阻断条件**：在批准的测试配置和合成环境中连续执行 3 次 `/v1/models` 预检；每次必须 HTTP 200、选定模型 ID 命中、端到端耗时 ≤12 秒，连接成功率为 `3/3=100%`，且日志/证据中不出现 API Key。任一失败、模型未列出、依赖缺失、超时或静默回退都阻断云端上线，并保持 `AEGIS_FORCE_RULES=1`/`NOT_VERIFIED`。若要承诺完整推理能力，另执行 1 次不含住客资料、`max_tokens≤8` 的合成 `chat/completions` canary；该 canary 失败不能用 `/models` 成功替代。
+**MODEL-CONN-01 连接指标与阻断条件**：现场在批准的配置和合成环境连续执行 3 轮，每轮 `/v1/models` 和短 JSON 推理均须 HTTP 200、模型 ID 命中且返回可解析的预期 JSON；每个请求 ≤12 秒，三轮成功率 `3/3=100%`。推理输出上限 512 tokens，Qwen3 硅基流动请求关闭思考；记录每轮两个请求耗时，不能把总耗时写成单个请求耗时。任一失败、模型未列出、超时、格式错误或静默回退均阻断云端现场验收，状态保持 `NOT_VERIFIED`，旧有效连接保留。侧栏必须区分未验证、最近推理成功与调用失败/规则保底，不能用 `/models` 成功替代推理成功。本地按钮每次执行一轮，不自动执行三轮收费探测。
 
 证据只保存 `base_url`（去掉凭据）、模型 ID、传输方式、HTTP 状态、耗时、错误码和时间戳；禁止保存完整请求头、API Key、住客消息或模型响应中的敏感资料。连接探测不计入业务成功率，也不改变当前离线发布范围。
 

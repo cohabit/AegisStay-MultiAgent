@@ -21,6 +21,7 @@ from hotel_catalog import ITEM_CATALOG, load_service_catalog
 from facility_answers import answer_facility, question_fields, topic_scopes
 from ticket_details import delivery_fulfillment
 from guest_requests import DEVICE_CONTROL_REPLY, is_device_control, request_parts
+from semantic_intents import validated_model_parts
 
 ROOT = Path(__file__).resolve().parent
 DEPARTMENTS = {"送物": "楼层保洁", "工程报修": "工程部", "客诉紧急": "大堂经理", "续住申请": "前台接待", "票券服务": "礼宾部"}
@@ -239,6 +240,7 @@ class HotelState:
     stay_id: str | None = None
     session_id: str | None = None
     neutral_address: bool = False
+    preferred_address: str | None = None
     service_feedback: list[dict[str, Any]] = field(default_factory=list)
 
 
@@ -310,6 +312,7 @@ class _HttpxOpenAICompatClient:
 
     def _create_completion(self, **kwargs: Any) -> SimpleNamespace:
         payload = {key: value for key, value in kwargs.items() if value is not None}
+        payload.update(payload.pop("extra_body", {}) or {})
         response = self._request("POST", "/chat/completions", payload)
         choices: list[SimpleNamespace] = []
         for raw_choice in response.get("choices", []) if isinstance(response.get("choices", []), list) else []:
@@ -340,6 +343,8 @@ class OpenAICompatibleClient:
         self.client: Any = None
         self.initialization_error: str | None = None
         self.last_probe: dict[str, Any] | None = None
+        self.last_call: dict[str, Any] | None = None
+        self.call_count = 0
         self.transport: str | None = None
         self.disabled = disabled or os.getenv("AEGIS_FORCE_RULES", "").lower() in {"1", "true", "yes"}
         if self.disabled:
@@ -352,6 +357,7 @@ class OpenAICompatibleClient:
         self.model = os.getenv("OPENAI_MODEL") or ("Qwen/Qwen2.5-7B-Instruct" if "siliconflow" in (base or "") else "Qwen/Qwen2.5-7B-Instruct")
         if base:
             base = base.rstrip("/").removesuffix("/chat/completions")
+        self.base_url = base
         if key:
             try:
                 from openai import OpenAI
@@ -378,12 +384,34 @@ class OpenAICompatibleClient:
             status_code = getattr(response, "status_code", None)
         if isinstance(status_code, int):
             return f"http_{status_code}"
-        if isinstance(error, (TimeoutError,)) or error.__class__.__name__.lower().endswith("timeout"):
+        if isinstance(error, (TimeoutError,)) or "timeout" in error.__class__.__name__.lower():
             return "timeout"
         return error.__class__.__name__.lower()
 
-    def probe(self) -> dict[str, Any]:
-        """Check credentials and selected model without sending a chat completion."""
+    def _completion_options(self) -> dict[str, Any]:
+        from urllib.parse import urlparse
+        if (urlparse(self.base_url).hostname in {"api.siliconflow.cn", "api.siliconflow.com"}
+                and self.model.startswith("Qwen/Qwen3")):
+            return {"extra_body": {"enable_thinking": False}}
+        return {}
+
+    def _complete(self, purpose: str, **kwargs: Any) -> Any:
+        started = time.perf_counter()
+        self.call_count += 1
+        result = {"purpose": purpose, "model": self.model, "ok": False, "code": "pending", "checked_at": time.time()}
+        try:
+            response = self.client.chat.completions.create(model=self.model, **self._completion_options(), **kwargs)
+            result.update(ok=True, code="ok")
+            return response
+        except Exception as error:
+            result["code"] = self._error_code(error)
+            raise
+        finally:
+            result["elapsed_ms"] = round((time.perf_counter() - started) * 1000, 1)
+            self.last_call = result
+
+    def probe(self, *, inference: bool = False) -> dict[str, Any]:
+        """Check model availability; inference=True also requires a real completion."""
         started = time.perf_counter()
 
         def finish(ok: bool, code: str, *, model_listed: bool | None = None) -> dict[str, Any]:
@@ -393,6 +421,7 @@ class OpenAICompatibleClient:
                 "model": self.model,
                 "model_listed": model_listed,
                 "elapsed_ms": round((time.perf_counter() - started) * 1000, 1),
+                "inference_verified": bool(ok and inference),
             }
             self.last_probe = result
             return result
@@ -411,6 +440,16 @@ class OpenAICompatibleClient:
                 return finish(False, "model_list_empty", model_listed=False)
             if self.model not in model_ids:
                 return finish(False, "model_not_listed", model_listed=False)
+            if inference:
+                reply = self.json_extract('Return JSON only: {"ok":true}.', "connection check")
+                if self.last_call:
+                    self.last_call["purpose"] = "probe"
+                if not reply or reply.get("ok") is not True:
+                    code = (self.last_call or {}).get("code", "invalid_response")
+                    if code == "ok":
+                        code = "invalid_response"
+                        self.last_call.update(ok=False, code=code)
+                    return finish(False, code, model_listed=True)
             return finish(True, "ok", model_listed=True)
         except Exception as error:
             return finish(False, self._error_code(error))
@@ -419,8 +458,8 @@ class OpenAICompatibleClient:
         if self.disabled or not self.client:
             return None
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
+            response = self._complete(
+                "understand", max_tokens=512,
                 messages=[
                     {"role": "system", "content": f"{LLM_UNTRUSTED_INPUT_RULES}\n{system}"},
                     {"role": "user", "content": user},
@@ -428,7 +467,13 @@ class OpenAICompatibleClient:
                 response_format={"type": "json_object"}, temperature=0,
             )
             result = json.loads(response.choices[0].message.content or "{}")
-            return result if isinstance(result, dict) else None
+            if not isinstance(result, dict):
+                raise ValueError("invalid_json")
+            return result
+        except (ValueError, TypeError, IndexError, AttributeError):
+            if self.last_call and self.last_call["ok"]:
+                self.last_call.update(ok=False, code="invalid_json")
+            return None
         except Exception:
             return None
 
@@ -437,8 +482,8 @@ class OpenAICompatibleClient:
         if self.disabled or not self.client:
             return None
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
+            response = self._complete(
+                "reply",
                 messages=messages,
                 max_tokens=max_tokens,
                 temperature=0.4,
@@ -452,8 +497,8 @@ class OpenAICompatibleClient:
         if not self.client:
             return None
         try:
-            response = self.client.chat.completions.create(
-                model=self.model,
+            response = self._complete(
+                "tool", max_tokens=512,
                 messages=[
                     {"role": "system", "content": f"{LLM_UNTRUSTED_INPUT_RULES}\n只调用 create_hotel_ticket，遵循给定工单字段，不得改变房号、类别和部门。"},
                     {"role": "user", "content": prompt},
@@ -687,6 +732,9 @@ class ReceptionAgent:
             "设备故障、水管漏水、电器损坏（如‘空调坏了’、‘花洒漏水’）主意图属于【工程报修】；若语气生气则 sentiment 标为‘愤怒’，但 intent 仍然是【工程报修】；"
             "只有住客表达严重恶劣指责、卫生极差（如‘臭死了’、‘怎么做卫生的’）或明确要求管理层介入（如‘让大堂经理给我解释’、‘找经理’）主意图才属于【客诉紧急】；"
             "确认服务已完成（如‘修好了’、‘送到了’、‘搞定了’）不属于工程报修或送物。"
+            "另输出actions数组，每项只能有kind和source两个字段；kind为delivery/device/service/reminder，source必须逐字引用原话中的连续片段。"
+            "多项请求分别列出，不遗漏未知物品、设备或故障；不要输出SKU、数量、权限或执行成功等额外字段。"
+            "纯咨询或闲聊可提供reply短答（70字内），不宣称已操作或索取证件；没有动作时actions为空数组。"
         )
         try:
             from harness.self_evolution import DynamicExemplarCurator
@@ -757,11 +805,16 @@ class ReceptionAgent:
         elif cloud_sentiment == "愤怒":
             result["sentiment"] = "愤怒"
         result["item_detail"] = text if result["intent"] in SERVICE_INTENTS else None
+        result["model_parts"] = validated_model_parts(text, cloud)
+        draft = cloud.get("reply")
+        if (isinstance(draft, str) and len(draft) <= 100 and not _contains_private_model_detail(draft, self.model.model)
+                and not re.search(r"已(?:为您|安排|创建|取消|调|派)|卡号|身份证|证件号|手机号|联系方式|敏感话题", draft)):
+            result["draft_reply"] = draft.strip()
         return result, "云模型 + 规则校验"
 
-    def generate_chitchat_reply(self, text: str, guest_name: str | None = None) -> str:
+    def generate_chitchat_reply(self, text: str, guest_name: str | None = None, *, allow_model: bool = True) -> str:
         fallback = "我可以帮您办理酒店客房服务或解答设施政策，请告诉我您的具体需求。"
-        if getattr(self.model, "disabled", False) or not self.model.client:
+        if not allow_model or getattr(self.model, "disabled", False) or not self.model.client:
             return fallback
         raw = self.model.chat(
             [
@@ -1180,7 +1233,8 @@ class HotelOrchestrator:
         explicit_followup = bool(re.search(r"催(?:一下|催|促)?|还没送到|还未送到|还要多久|多久能到|进度如何", positive))
         if command.item and _delivery_priority(positive) == "中" and not re.search(r"送|拿|借|给我|我要|需要|再来|再加", positive):
             explicit_followup = True
-        ba_delivery = bool(re.search(r"把.+?送(?:来|过来)", text))
+        ba_delivery = bool(re.search(r"把.+?送(?:来|过来)", text)
+                           or command.item and re.search(r"(?:快点|快一点|尽快|马上|加急)送(?:来|过来)", positive))
         if positive != text and not explicit_followup and not ba_delivery:
             trace.append({"agent": "ReceptionAgent", "event": "delivery_reminder_declined",
                           "detail": "住客明确表示不用催；未改变工单和库存"})
@@ -1434,10 +1488,10 @@ class HotelOrchestrator:
                 child = f"送{quantity}{unit}{command.item}"
             state.pending = None
             reply = self.process(child, record_user=False, cancellation_check=cancellation_check,
-                                 _split_requests=False, _new_delivery=part.kind == "delivery")
+                                 _split_requests=False, _new_delivery=part.kind == "delivery", _model_understanding=False)
             trace.extend(deepcopy(state.last_trace))
             state.messages = deepcopy(original_messages)
-            address = (state.guest_profile or {}).get("guest_name") if not state.neutral_address else None
+            address = state.preferred_address or ((state.guest_profile or {}).get("guest_name") if not state.neutral_address else None)
             if address and reply.startswith(address + "，"):
                 reply = reply[len(address) + 1:]
             replies.append(label + reply)
@@ -1452,12 +1506,13 @@ class HotelOrchestrator:
 
     def process(
         self, text: str, *, record_user: bool = True, cancellation_check: Callable[[], bool] | None = None,
-        _split_requests: bool = True, _new_delivery: bool = False,
+        _split_requests: bool = True, _new_delivery: bool = False, _model_understanding: bool = True,
     ) -> str:
         text = text.strip()
         if not text:
             return "请告诉我您需要的服务。"
         state = self.state
+        state.model_mode = "规则处理 · 本回合未调用云端"
         if cancellation_check and cancellation_check():
             raise TaskInterrupted()
 
@@ -1475,6 +1530,16 @@ class HotelOrchestrator:
                 "detail": "拦截模型/提示注入探询，未调用云端模型且未执行写操作",
             }]
             return self._finish(_public_boundary_reply(boundary_kind), trace)
+
+        address_match = re.search(r"(?:叫我|称呼我(?:为)?)\s*[‘“\"]?([\u4e00-\u9fffA-Za-z][\u4e00-\u9fffA-Za-z0-9·]{0,15}?)(?=顺便|另外|并且|给我|再(?:送|拿)|[’”\"，,。；;！!？?\s]|$)", text)
+        if address_match and not re.search(r"(?:别|不要|不用|不必)\s*$", text[:address_match.start()]):
+            state.preferred_address = address_match[1]
+            preference_only = re.fullmatch(r"(?:我姓[\u4e00-\u9fff]{1,2}[，,\s]*)?(?:请|以后|就|可以)?(?:叫我|称呼我(?:为)?)\s*[‘“\"]?" + re.escape(address_match[1]) + r"[’”\"]?[。！!\s]*", text)
+            if preference_only:
+                if record_user:
+                    state.messages.append({"role": "user", "content": text, "room_no": state.room_no})
+                state.model_mode = "规则护栏 · 称呼偏好"
+                return self._finish("好的，接下来这样称呼您。", [{"agent": "ReceptionAgent", "event": "preferred_address_saved", "detail": "仅保存会话称呼，不更改入住身份或权限"}])
 
         can_split = _split_requests and not _rules_extract(text, self.knowledge).get("is_resolution")
         initial_parts = request_parts(text, service_detector=lambda clause:
@@ -1496,13 +1561,16 @@ class HotelOrchestrator:
             if record_user:
                 state.messages.append({"role": "user", "content": text, "room_no": state.room_no})
             state.neutral_address = True
+            state.preferred_address = None
             return self._finish("好的，已了解您的称呼更正，接下来使用中性称呼；入住登记姓名仍需前台核验。",
                                 [{"agent": "ReceptionAgent", "event": "neutral_address_requested", "detail": "聊天姓氏更正不改登记、房间或权限"}])
-        if ((name and any(normalized(prefix + name) in compact_text for prefix in ("我不是", "我不叫", "别叫我", "不要叫我")))
+        address = state.preferred_address or name
+        if ((address and any(normalized(prefix + address) in compact_text for prefix in ("我不是", "我不叫", "别叫我", "不要叫我")))
                 or name and any(term in text for term in ("认错人了", "不要这样称呼我"))):
             if record_user:
                 state.messages.append({"role": "user", "content": text, "room_no": state.room_no})
             state.neutral_address = True
+            state.preferred_address = None
             trace = [{"agent": "ReceptionAgent", "event": "neutral_address_requested", "detail": "停止使用档案称呼，入住信息更正仍须前台核验"}]
             return self._finish("好的，接下来我将使用中性称呼。入住姓名如需更正，请联系前台核验；当前房间和服务权限绑定保持不变。", trace)
 
@@ -1529,6 +1597,17 @@ class HotelOrchestrator:
             return self._finish(" ".join(parts), [{"agent": "ReceptionAgent", "event": "service_catalog_checked" if catalog_reply else "local_guest_context",
                                                "detail": "读取配置服务与实时库存；需求计数不自动改变服务事实"}])
 
+        if (state.room_no and preview.get("room_no") in {None, state.room_no}
+                and preview["intent"] not in {"工程报修", "客诉紧急"}
+                and not preview.get("faq_entries") and not initial_parts and not is_device_control(text)):
+            reminder_trace = []
+            reminder = self._delivery_reminder(text, reminder_trace)
+            if reminder is not None:
+                if record_user:
+                    state.messages.append({"role": "user", "content": text, "room_no": state.room_no})
+                state.model_mode = "规则护栏 · 原单催送"
+                return self._finish(reminder, reminder_trace)
+
         # If a bound session explicitly names another room for a write intent,
         # keep the cloud model out of that decision. The deterministic preview
         # is enough to invoke the cross-room guard below and avoids exposing
@@ -1542,7 +1621,9 @@ class HotelOrchestrator:
             and preview.get("intent") in SERVICE_INTENTS
             and not preview_is_correction
         )
-        if parse_delivery_command(text).cancel_all:
+        if not _model_understanding:
+            analysis, state.model_mode = preview, "已核验分项"
+        elif parse_delivery_command(text).cancel_all:
             analysis, state.model_mode = preview, "规则护栏 · 批量取消"
         elif preview_cross_room:
             analysis, state.model_mode = preview, "规则护栏 · 跨房预检"
@@ -1608,6 +1689,9 @@ class HotelOrchestrator:
                 state.pending = None
             parts = request_parts(source, service_detector=lambda clause:
                                   _rules_extract(clause, self.knowledge)["intent"] in {"工程报修", "客诉紧急", "票券服务"})
+            model_parts = analysis.get("model_parts", ())
+            if source == text and model_parts and analysis["intent"] not in {"客诉紧急", "票券服务", "延迟退房", "续住申请"}:
+                parts = model_parts
             if parts:
                 reply = self._process_request_parts(source, parts, trace, cancellation_check)
                 return (f"{faq_part} {reply}" if faq_part else reply)
@@ -1743,7 +1827,7 @@ class HotelOrchestrator:
                 if state.intent in {"闲聊", "其他"}:
                     state.active_agent = "ReceptionAgent · 软引流"
                     trace.append({"agent": "ReceptionAgent", "event": "闲聊软引流", "detail": "范围外话题已短答并转回酒店服务"})
-                    reply = self.reception.generate_chitchat_reply(text, state.guest_profile.get("guest_name") if state.guest_profile else None)
+                    reply = analysis.get("draft_reply") or self.reception.generate_chitchat_reply(text, state.guest_profile.get("guest_name") if state.guest_profile else None, allow_model=False)
                 else:
                     reply = "您好，已关联您的房间。有什么可以帮您？" if room and state.guest_profile else "我可以帮您办理酒店服务或解答设施政策，请告诉我具体需求。"
             return self._finish(reply, trace)
@@ -1871,7 +1955,7 @@ class HotelOrchestrator:
         return self._finish(reply, trace)
 
     def _finish(self, reply: str, trace: list[dict[str, str]]) -> str:
-        guest_name = self.state.guest_profile.get("guest_name") if self.state.guest_profile and not self.state.neutral_address else None
+        guest_name = self.state.preferred_address or (self.state.guest_profile.get("guest_name") if self.state.guest_profile and not self.state.neutral_address else None)
         reply = _format_greeting(guest_name, reply)
         self.state.request_detail = self.state.pending["detail"] if self.state.pending else None
         self.state.messages.append({"role": "assistant", "content": reply, "room_no": self.state.room_no})

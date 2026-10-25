@@ -3,6 +3,7 @@ __pycache__/
 .venv/
 .env
 config.json
+config.json.tmp
 .streamlit/
 *.sqlite3
 *.sqlite3-wal

@@ -41,7 +41,7 @@ def normalize_delivery_text(text: str) -> str:
     # Soft quantities carry no numeric promise. Remove them with the alias so
     # that the existing negation check still sees e.g. 不要送矿泉水.
     quantity = r"(?:(?P<quantity>(?:\d+|一|两|二|三|四|五|六|七|八|九|十)?\s*瓶\s*)|(?:一?点|一?些)\s*)?"
-    suffix = r"(?=\s*(?:(?:就|先)?不(?:用|要|需要)(?:再送|送)?(?:了)?|(?:都|各)(?:只)?要|改(?:成|为|送|要)|换(?:成|为)|取消|别(?:送|催)|了|[吧啦](?=\s*(?:[，,。；;!?！？]|$))|和|跟|以及|再(?:拿|送|加|来)|送(?:来|到|过来)|怎么|还没|还要多久|" + DELIVERY_NUMBER + DELIVERY_UNIT + r"|[，,。；;!?！？]|$))"
+    suffix = r"(?=\s*(?:(?:就|先)?不(?:用|要|需要)(?:再送|送)?(?:了)?|(?:都|各)(?:只)?要|改(?:成|为|送|要)|换(?:成|为)|取消|别(?:送|催)|了|[吧啦](?=\s*(?:[，,。；;!?！？]|$))|和|跟|以及|再(?:拿|送|加|来)|(?:快点|快一点|尽快|马上|加急)?送(?:来|到|过来)|怎么|还没|还要多久|" + DELIVERY_NUMBER + DELIVERY_UNIT + r"|[，,。；;!?！？]|$))"
     return re.sub(lead + quantity + r"水" + suffix,
                   lambda match: match["lead"] + (match["quantity"] or "") + "矿泉水", text)
 

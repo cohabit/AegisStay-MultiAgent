@@ -4,24 +4,24 @@
 
 `implemented` 表示约定范围内的代码和测试存在，`partial` 表示有明确未执行/未交付范围；二者都不代表本次运行PASS。本文定义追溯方案，不嵌入可变成绩；每次执行前为 `PENDING_RUN`，完成后只认对应manifest和独立验收记录。由集成人员在源码稳定后运行统一入口。范围固定 `offline-code-baseline`，`field_readiness=NOT_VERIFIED`，FIELD-01…FIELD-06 均为 `TARGET_NOT_RUN`。
 
-JSON 顶层 `schema_version=1`；`requirements` 恰含REQ-01…REQ-16，每项对应同号AC/EXP，`tests` 仅写真实完整unittest方法，当前合计362个唯一方法；`evidence` 仅写统一目录实际文件名。未来FUT不计入当前16项。机器校验只证明方法可加载且在本次成功的完整套件里实际执行；方法是否支撑业务要求还须检查断言语义。
+JSON 顶层 `schema_version=1`；`requirements` 恰含REQ-01…REQ-16，每项对应同号AC/EXP，`tests` 仅写真实完整unittest方法，当前合计401个唯一方法；`evidence` 仅写统一目录实际文件名。未来FUT不计入当前16项。机器校验只证明方法可加载且在本次成功的完整套件里实际执行；方法是否支撑业务要求还须检查断言语义。
 
 | 要求 / 验收 / 实验 | 内容 | 实现状态 | 方法数 | 覆盖边界 |
 | --- | --- | --- | --- | --- |
 | REQ-01 / AC-01 / EXP-01 | 入住凭证与入住/会话绑定 | `implemented` | 6 | 授权、跨房、过期、撤销、换客与在途撤销；不是SSO联调。 |
 | REQ-02 / AC-02 / EXP-02 | 岗位授权与必要字段 | `implemented` | 6 | 服务端403和字段过滤；页面隐藏不替代授权。 |
-| REQ-03 / AC-03 / EXP-03 | 复合FAQ与学校未知政策 | `implemented` | 86 | standard复合基线与academic核验分开；未知政策模板仍须FIELD-04审核。 |
+| REQ-03 / AC-03 / EXP-03 | 复合FAQ与学校未知政策 | `implemented` | 90 | standard复合基线与academic核验分开；未知政策模板仍须FIELD-04审核。 |
 | REQ-04 / AC-04 / EXP-04 | 补槽与房号边界 | `implemented` | 9 | 演示补槽不授予部署跨房权限；模型提取使用stub。 |
 | REQ-05 / AC-05 / EXP-05 | 异步版本、取消与并发 | `implemented` | 24 | Event/Barrier受控竞态和队列保护；不证明生产容量。 |
-| REQ-06 / AC-06 / EXP-06 | 送物生命周期与目标定位 | `implemented` | 85 | ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒绝。 |
-| REQ-07 / AC-07 / EXP-07 | 提案核验与风险升级 | `implemented` | 20 | 错物/错房/虚构库存/风险降级拒绝；人工核验不补派被拒工单。 |
+| REQ-06 / AC-06 / EXP-06 | 送物生命周期与目标定位 | `implemented` | 87 | ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒绝。 |
+| REQ-07 / AC-07 / EXP-07 | 提案核验与风险升级 | `implemented` | 33 | 错物/错房/虚构库存/风险降级拒绝；人工核验不补派被拒工单。 |
 | REQ-08 / AC-08 / EXP-08 | 单写入、原子检查点与回滚 | `implemented` | 7 | 单库第二writer拒绝、聊天/员工故障回滚；非真实断电实验。 |
 | REQ-09 / AC-09 / EXP-09 | 持久幂等与重试 | `implemented` | 6 | 同载荷复用run_id，重启/裁剪仍不重复；改载荷409。 |
-| REQ-10 / AC-10 / EXP-10 | 消息归档、日期恢复与隔离 | `implemented` | 29 | 模型窗口与完整归档分层；112条分页身份/顺序/去重、116条重启恢复及两端UI历史页隔离均有断言。 |
+| REQ-10 / AC-10 / EXP-10 | 消息归档、日期恢复与隔离 | `implemented` | 32 | 模型窗口与完整归档分层；112条分页身份/顺序/去重、116条重启恢复及两端UI历史页隔离均有断言。 |
 | REQ-11 / AC-11 / EXP-11 | 学术待遇人工核验与已知餐券保护 | `implemented` | 9 | 已知餐券表达、保洁直调/改券保护已实现；有4方法红绿和81项焦点回归。不是任意语言或真实发券证明。 |
 | REQ-12 / AC-12 / EXP-12 | 部门回执、夜审与回收待检 | `implemented` | 5 | 夜审日期、借用品通知和回收待检；不等价外部财务夜审。 |
 | REQ-13 / AC-13 / EXP-13 | API工作台与岗位视图 | `implemented` | 25 | AppTest经HotelApi/TestClient访问唯一临时API；两进程/容器仍须FIELD-01。 |
-| REQ-14 / AC-14 / EXP-14 | 配置、备份、部署与硅基流动连接预检 | `partial` | 8 | 本地配置/备份和 MODEL-CONN-01 代码预检有测试；当前镜像、Compose、卷权限、连续现场探测、聊天 canary 与现场恢复未执行。 |
+| REQ-14 / AC-14 / EXP-14 | 配置、备份、部署与硅基流动连接预检 | `partial` | 25 | 本地配置/备份和 MODEL-CONN-01 代码预检有测试；当前镜像、Compose、卷权限、连续现场探测、聊天 canary 与现场恢复未执行。 |
 | REQ-15 / AC-15 / EXP-15 | 固定Harness与Few-Shot证据边界 | `implemented` | 5 | 固定20条离线规则、字符相似度Few-Shot；没有模型泛化或提升结论。 |
 | REQ-16 / AC-16 / EXP-16 | 可复现证据与反假通过 | `implemented` | 38 | 包含额外Harness行（H21 SKIP、H100 ERROR、重复H01 SKIP）、子进程依赖回执和发布控制文件哈希反例；负向夹具不等价完整发布通过，最终须核验本次全部映射方法实际执行。 |
 
@@ -157,6 +157,10 @@ standard复合基线与academic核验分开；未知政策模板仍须FIELD-04�
 - `tests.test_compound_requests.CompoundRequestTests.test_surname_correction_does_not_delegate_verified_identity_to_cloud`
 - `tests.test_compound_requests.CompoundRequestTests.test_user_mineral_water_variant_does_not_lose_unknown_or_device`
 - `tests.test_compound_requests.CompoundRequestTests.test_user_water_noodles_temperature_has_three_explicit_outcomes`
+- `tests.test_model_runtime.ModelRuntimeTests.test_acceptable_first_json_reply_avoids_second_generation`
+- `tests.test_model_runtime.ModelRuntimeTests.test_model_parts_are_understood_once_per_compound`
+- `tests.test_model_runtime.ModelRuntimeTests.test_address_and_business_in_same_turn_both_apply`
+- `tests.test_model_runtime.ModelRuntimeTests.test_unpunctuated_address_does_not_swallow_delivery`
 
 ### REQ-04 / AC-04 / EXP-04
 
@@ -296,6 +300,8 @@ ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒�
 - `tests.test_language_modifiers.LanguageModifierTests.test_soft_water_quantity_and_final_particle_are_not_products`
 - `tests.test_language_modifiers.LanguageModifierTests.test_unquantified_unknown_addition_is_not_lost_alongside_known_item`
 - `tests.test_language_modifiers.LanguageModifierTests.test_water_quantity_and_order_controls_keep_their_meaning`
+- `tests.test_model_runtime.ModelRuntimeTests.test_water_before_urgency_is_reminder_without_new_reservation`
+- `tests.test_model_runtime.ModelRuntimeTests.test_known_order_reminder_is_local_and_does_not_wait_for_model`
 
 ### REQ-07 / AC-07 / EXP-07
 
@@ -323,6 +329,19 @@ ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒�
 - `tests.test_compound_requests.CompoundRequestTests.test_direct_department_still_rejects_unseparated_unknown_product`
 - `tests.test_compound_requests.CompoundRequestTests.test_fault_is_not_dismissed_as_unsupported_remote_control`
 - `tests.test_compound_requests.CompoundRequestTests.test_power_and_lock_incidents_are_not_dropped_from_compound`
+- `tests.test_model_runtime.ModelRuntimeTests.test_incomplete_model_proposal_cannot_drop_urgent_complaint`
+- `tests.test_semantic_intents.SemanticIntentTests.test_unpunctuated_sources_keep_distinct_catalog_quantities`
+- `tests.test_semantic_intents.SemanticIntentTests.test_explicit_unknown_is_preserved_alongside_known_delivery`
+- `tests.test_semantic_intents.SemanticIntentTests.test_missing_item_or_quantity_invalidates_whole_proposal`
+- `tests.test_semantic_intents.SemanticIntentTests.test_malformed_model_shapes_fall_back_without_exception`
+- `tests.test_semantic_intents.SemanticIntentTests.test_source_must_be_verbatim_ordered_unique_and_nonoverlapping`
+- `tests.test_semantic_intents.SemanticIntentTests.test_mutation_negative_and_correction_context_cannot_create_delivery`
+- `tests.test_semantic_intents.SemanticIntentTests.test_actual_source_coerces_delivery_device_and_fault_labels`
+- `tests.test_semantic_intents.SemanticIntentTests.test_model_cannot_invent_noun_permission_or_operation`
+- `tests.test_semantic_intents.SemanticIntentTests.test_uncatalogued_alias_stays_unknown_and_cannot_be_truncated_to_water`
+- `tests.test_semantic_intents.SemanticIntentTests.test_shared_or_conflicting_quantities_and_merged_items_fall_back`
+- `tests.test_semantic_intents.SemanticIntentTests.test_readonly_questions_do_not_deliver_and_reminders_stay_reminders`
+- `tests.test_semantic_intents.SemanticIntentTests.test_uncovered_device_fault_and_root_authority_fields`
 
 ### REQ-08 / AC-08 / EXP-08
 
@@ -386,6 +405,9 @@ ticket/task/version身份、库存、歧义和已派出确认；旧change_id拒�
 - `tests.test_guest_history_ui.DeployedGuestHistoryUITests.test_deployed_return_latest_recreates_viewport_with_unchanged_messages`
 - `tests.test_guest_history_ui.CumulativeHistoryStateTests.test_latest_keeps_native_scroll_observer_enabled_until_reading_older`
 - `tests.test_compound_requests.CompoundRequestTests.test_split_execution_archives_only_one_assistant_reply`
+- `tests.test_model_runtime.ModelRuntimeTests.test_preferred_address_is_independent_from_verified_identity`
+- `tests.test_model_runtime.ModelRuntimeTests.test_address_objection_clears_only_preference`
+- `tests.test_model_runtime.ModelRuntimeTests.test_address_survives_sqlite_restart`
 
 ### REQ-11 / AC-11 / EXP-11
 
@@ -461,6 +483,23 @@ AppTest经HotelApi/TestClient访问唯一临时API；两进程/容器仍须FIELD
 - `tests.test_model_connection.ModelConnectionTests.test_missing_openai_sdk_is_reported_instead_of_silent_fallback`
 - `tests.test_model_connection.ModelConnectionTests.test_missing_openai_sdk_uses_http_compatibility_transport`
 - `tests.test_model_connection.ModelConnectionTests.test_probe_rejects_a_model_that_is_not_listed`
+- `tests.test_model_runtime.ModelRuntimeTests.test_qwen35_intent_uses_bounded_non_thinking_request`
+- `tests.test_model_runtime.ModelRuntimeTests.test_qwen25_and_other_provider_do_not_receive_siliconflow_options`
+- `tests.test_model_runtime.ModelRuntimeTests.test_http_transport_flattens_sdk_extra_body`
+- `tests.test_model_runtime.ModelRuntimeTests.test_http_failure_is_observable_without_exception_body_or_key`
+- `tests.test_model_runtime.ModelRuntimeTests.test_invalid_json_is_reported_as_format_failure`
+- `tests.test_model_runtime.ModelRuntimeTests.test_connection_probe_requires_actual_selected_model_inference`
+- `tests.test_model_runtime.ModelRuntimeTests.test_listed_model_with_timed_out_inference_is_not_online`
+- `tests.test_model_runtime.ModelRuntimeTests.test_probe_rejects_valid_json_without_expected_acknowledgement`
+- `tests.test_model_runtime.ModelRuntimeTests.test_sidebar_distinguishes_configuration_success_and_failure`
+- `tests.test_model_runtime.ModelRuntimeTests.test_failed_connection_restores_all_previous_environment_settings`
+- `tests.test_model_runtime.ModelRuntimeTests.test_successful_ui_switch_persists_settings_without_resetting_session`
+- `tests.test_model_runtime.ModelRuntimeTests.test_streamlit_connect_button_retains_history_and_feedback_after_rerun`
+- `tests.test_model_runtime.ModelRuntimeTests.test_config_write_failure_keeps_old_client_and_environment`
+- `tests.test_model_runtime.ModelRuntimeTests.test_running_task_blocks_model_switch_and_then_finishes_normally`
+- `tests.test_model_runtime.ModelRuntimeTests.test_verified_model_replacement_preserves_business_and_history`
+- `tests.test_model_runtime.ModelRuntimeTests.test_failed_or_replyless_understanding_does_not_trigger_second_request`
+- `tests.test_model_runtime.ModelRuntimeTests.test_local_identity_turn_does_not_reuse_previous_cloud_mode`
 
 ### REQ-15 / AC-15 / EXP-15
 

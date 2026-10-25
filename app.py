@@ -4,6 +4,7 @@ from __future__ import annotations
 import os
 import base64
 import html
+import json
 import mimetypes
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -136,16 +137,24 @@ def _connect_cloud_model(api_key: str, base_url: str, model: str) -> tuple[Hotel
     if not model.strip():
         raise ValueError("请先填写模型名称。")
 
-    previous_force_rules = os.environ.get("AEGIS_FORCE_RULES")
-    os.environ.pop("AEGIS_FORCE_RULES", None)
-    os.environ["OPENAI_API_KEY"] = api_key.strip()
-    os.environ["OPENAI_BASE_URL"] = base_url.strip()
-    os.environ["OPENAI_MODEL"] = model.strip()
-    orchestrator = HotelOrchestrator(force_rules=False)
-    probe = orchestrator.model.probe()
+    settings = {"AEGIS_FORCE_RULES": None, "OPENAI_API_KEY": api_key.strip(),
+                "OPENAI_BASE_URL": base_url.strip(), "OPENAI_MODEL": model.strip()}
+    previous = {name: os.environ.get(name) for name in settings}
+    try:
+        for name, value in settings.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
+        orchestrator = HotelOrchestrator(force_rules=False)
+        probe = orchestrator.model.probe(inference=True)
+    finally:
+        for name, value in previous.items():
+            if value is None:
+                os.environ.pop(name, None)
+            else:
+                os.environ[name] = value
     if not probe["ok"]:
-        if previous_force_rules is not None:
-            os.environ["AEGIS_FORCE_RULES"] = previous_force_rules
         messages = {
             "openai_sdk_missing": "当前虚拟环境未安装 openai SDK，请运行：.\\.venv\\Scripts\\python.exe -m pip install -r requirements.txt",
             "api_key_missing": "没有读取到 API Key。",
@@ -154,8 +163,57 @@ def _connect_cloud_model(api_key: str, base_url: str, model: str) -> tuple[Hotel
             "timeout": "连接超时，请检查网络、代理和 Base URL。",
         }
         detail = messages.get(probe["code"], f"服务端探测失败（{probe['code']}）。")
-        raise ValueError(f"硅基流动连接失败：{detail} 探测耗时 {probe['elapsed_ms']} ms。")
+        raise ValueError(f"模型实测失败：{detail} 耗时 {probe['elapsed_ms']} ms。原连接保持不变。")
     return orchestrator, probe
+
+
+def _activate_cloud_model(runtime: SessionManager, current: HotelOrchestrator, candidate: HotelOrchestrator,
+                          api_key: str, base_url: str, model: str, *, config_path: Path | None = None) -> None:
+    """Apply a tested client without replacing business state; persist explicit local settings."""
+    path = config_path if config_path is not None else Path(__file__).resolve().parent / "config.json"
+    with runtime.lock:
+        old_model = current.model
+        runtime.configure_model(GUEST_SESSION, candidate.model)
+        try:
+            config = json.loads(path.read_text(encoding="utf-8")) if path.exists() else {}
+            if not isinstance(config, dict):
+                raise ValueError("invalid_config")
+            config.update(api_key=api_key.strip(), base_url=base_url.strip(), model=model.strip())
+            temporary = path.with_suffix(".json.tmp")
+            temporary.write_text(json.dumps(config, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+            temporary.replace(path)
+        except (OSError, ValueError, TypeError):
+            runtime.configure_model(GUEST_SESSION, old_model)
+            raise ValueError("本地配置保存失败，原连接保持不变。") from None
+        os.environ.pop("AEGIS_FORCE_RULES", None)
+        os.environ.update(OPENAI_API_KEY=api_key.strip(), OPENAI_BASE_URL=base_url.strip(), OPENAI_MODEL=model.strip())
+
+
+def _model_status(orchestrator: HotelOrchestrator) -> dict[str, str]:
+    model = orchestrator.model
+    if model.disabled or not model.client:
+        error = model.initialization_error
+        return {"level": "info", "title": "离线规则处理", "detail": f"未调用云端 · {error or '确定性模式'}"}
+    call = model.last_call or {}
+    if call:
+        level, title = ("success", "最近云端调用成功") if call.get("ok") else ("warning", "最近云端调用失败 · 规则保底")
+        detail = f"{call.get('purpose')} · {call.get('code')} · {call.get('elapsed_ms')} ms"
+    else:
+        level, title, detail = "info", "云端已配置 · 待实测", "请点击连接按钮，验证所选模型实际推理。"
+    return {"level": level, "title": title,
+            "detail": f"{detail}\n\n当前回合：{orchestrator.state.model_mode}"}
+
+
+@st.fragment(run_every=1.0)
+def _render_model_status(orchestrator: HotelOrchestrator) -> None:
+    runtime = _runtime_for_ui(orchestrator)
+    with runtime.lock:
+        status = _model_status(orchestrator)
+        model_name = orchestrator.model.model
+        pending = any(task["status"] in {"running", "queued"} for task in orchestrator.state.tasks.values())
+    getattr(st, status["level"])(f"**{status['title']}**\n\n`{model_name}`\n\n{status['detail']}")
+    if pending:
+        st.caption("正在处理当前请求，完成后自动更新调用结果与耗时。")
 
 
 def _style(theme: str = "护眼") -> None:
@@ -1310,7 +1368,7 @@ def main() -> None:
         st.session_state.orchestrator = HotelOrchestrator()
     orchestrator: HotelOrchestrator = st.session_state.orchestrator
     has_model = bool(orchestrator.model.client)
-    mode_text = f"🟢 云端大模型实时驱动（{orchestrator.model.model}）" if has_model else "🟡 本地确定性规则保底（离线零成本模式）"
+    mode_text = _model_status(orchestrator)["title"]
 
     # Sidebar Controls
     st.sidebar.title("AegisStay")
@@ -1322,23 +1380,29 @@ def main() -> None:
         key="workspace-page",
     )
     st.sidebar.caption(THEME_HINTS.get(st.session_state.get("ui-theme-control", active_theme), THEME_HINTS["护眼"]))
-    if has_model:
-        st.sidebar.success(f"🟢 **云端大模型在线**\n\n`{orchestrator.model.model}`", icon="⚡")
-    else:
-        st.sidebar.info("🟡 **离线规则引擎保底**\n\n`确定性快速模式`", icon="🛡️")
+    with st.sidebar:
+        _render_model_status(orchestrator)
+        if notice := st.session_state.get("model_connection_notice"):
+            st.success(notice)
 
     with st.sidebar.expander("⚙️ 大模型连接配置 (支持云端 / 规则)", expanded=not has_model):
         provider = st.selectbox(
             "选择服务商",
             ["离线规则引擎 (零成本 · 当前)", "SiliconFlow (硅基流动)", "DeepSeek 官方", "OpenAI 官方", "本地 Ollama / 自定义"],
+            index=(1 if "siliconflow" in getattr(orchestrator.model, "base_url", "") else
+                   2 if "deepseek.com" in getattr(orchestrator.model, "base_url", "") else
+                   3 if "openai.com" in getattr(orchestrator.model, "base_url", "") else 4) if has_model else 0,
         )
         if provider == "离线规则引擎 (零成本 · 当前)":
             st.info("当前由本地确定性规则引擎与本地知识库驱动，0 成本、毫秒级响应。")
             if st.button("恢复纯规则模式"):
-                os.environ.pop("OPENAI_API_KEY", None)
-                os.environ.pop("SILICONFLOW_API_KEY", None)
-                st.session_state.orchestrator = HotelOrchestrator(force_rules=True)
-                st.rerun()
+                try:
+                    from hotel_core import OpenAICompatibleClient
+                    _runtime_for_ui(orchestrator).configure_model(GUEST_SESSION, OpenAICompatibleClient(disabled=True))
+                    st.session_state.model_connection_notice = "已切换为纯规则模式，会话与工单保留。"
+                    st.rerun()
+                except RuntimeBusy as error:
+                    st.warning(str(error))
         else:
             default_base = {
                 "SiliconFlow (硅基流动)": "https://api.siliconflow.cn/v1",
@@ -1347,7 +1411,7 @@ def main() -> None:
                 "本地 Ollama / 自定义": "http://localhost:11434/v1",
             }.get(provider, "")
             default_model = {
-                "SiliconFlow (硅基流动)": "Qwen/Qwen2.5-7B-Instruct",
+                "SiliconFlow (硅基流动)": "Qwen/Qwen3.5-27B",
                 "DeepSeek 官方": "deepseek-chat",
                 "OpenAI 官方": "gpt-4o-mini",
                 "本地 Ollama / 自定义": "qwen2.5:7b",
@@ -1359,12 +1423,18 @@ def main() -> None:
 
             if st.button("保存并连接云端大模型", type="primary"):
                 try:
-                    orchestrator, probe = _connect_cloud_model(key_input, base_input, model_input)
-                    st.session_state.orchestrator = orchestrator
+                    runtime = _runtime_for_ui(orchestrator)
+                    if any(task["status"] in {"running", "queued"} for task in orchestrator.state.tasks.values()):
+                        raise RuntimeBusy("当前有任务正在处理，请完成或取消后再切换模型。")
+                    with st.status(f"正在实测 {model_input}：模型列表与短 JSON 推理…", expanded=True) as progress:
+                        candidate, probe = _connect_cloud_model(key_input, base_input, model_input)
+                        _activate_cloud_model(runtime, orchestrator, candidate, key_input, base_input, model_input)
+                        progress.update(label="模型实测通过，配置已保存。", state="complete")
                     st.session_state.model_probe = probe
-                    st.success(f"已连接云端大模型，探测耗时 {probe['elapsed_ms']} ms。")
+                    st.session_state.model_connection_notice = f"{model_input} 实际推理通过 · {probe['elapsed_ms']} ms · 会话与工单保留。"
                     st.rerun()
-                except ValueError as error:
+                except (ValueError, RuntimeBusy) as error:
+                    st.session_state.pop("model_connection_notice", None)
                     st.error(str(error))
 
     if st.sidebar.button("🔄 清空会话与刷新系统"):

@@ -136,7 +136,11 @@
         "tests.test_compound_requests.CompoundRequestTests.test_single_unknown_item_is_specific_even_if_model_says_other",
         "tests.test_compound_requests.CompoundRequestTests.test_surname_correction_does_not_delegate_verified_identity_to_cloud",
         "tests.test_compound_requests.CompoundRequestTests.test_user_mineral_water_variant_does_not_lose_unknown_or_device",
-        "tests.test_compound_requests.CompoundRequestTests.test_user_water_noodles_temperature_has_three_explicit_outcomes"
+        "tests.test_compound_requests.CompoundRequestTests.test_user_water_noodles_temperature_has_three_explicit_outcomes",
+        "tests.test_model_runtime.ModelRuntimeTests.test_acceptable_first_json_reply_avoids_second_generation",
+        "tests.test_model_runtime.ModelRuntimeTests.test_model_parts_are_understood_once_per_compound",
+        "tests.test_model_runtime.ModelRuntimeTests.test_address_and_business_in_same_turn_both_apply",
+        "tests.test_model_runtime.ModelRuntimeTests.test_unpunctuated_address_does_not_swallow_delivery"
       ],
       "experiment_ids": [
         "EXP-03"
@@ -308,7 +312,9 @@
         "tests.test_language_modifiers.LanguageModifierTests.test_soft_water_alias_does_not_rewrite_other_water_nouns",
         "tests.test_language_modifiers.LanguageModifierTests.test_soft_water_quantity_and_final_particle_are_not_products",
         "tests.test_language_modifiers.LanguageModifierTests.test_unquantified_unknown_addition_is_not_lost_alongside_known_item",
-        "tests.test_language_modifiers.LanguageModifierTests.test_water_quantity_and_order_controls_keep_their_meaning"
+        "tests.test_language_modifiers.LanguageModifierTests.test_water_quantity_and_order_controls_keep_their_meaning",
+        "tests.test_model_runtime.ModelRuntimeTests.test_water_before_urgency_is_reminder_without_new_reservation",
+        "tests.test_model_runtime.ModelRuntimeTests.test_known_order_reminder_is_local_and_does_not_wait_for_model"
       ],
       "experiment_ids": [
         "EXP-06"
@@ -344,7 +350,20 @@
         "tests.test_compound_requests.CompoundRequestTests.test_device_control_cannot_be_invented_by_a_cloud_label",
         "tests.test_compound_requests.CompoundRequestTests.test_direct_department_still_rejects_unseparated_unknown_product",
         "tests.test_compound_requests.CompoundRequestTests.test_fault_is_not_dismissed_as_unsupported_remote_control",
-        "tests.test_compound_requests.CompoundRequestTests.test_power_and_lock_incidents_are_not_dropped_from_compound"
+        "tests.test_compound_requests.CompoundRequestTests.test_power_and_lock_incidents_are_not_dropped_from_compound",
+        "tests.test_model_runtime.ModelRuntimeTests.test_incomplete_model_proposal_cannot_drop_urgent_complaint",
+        "tests.test_semantic_intents.SemanticIntentTests.test_unpunctuated_sources_keep_distinct_catalog_quantities",
+        "tests.test_semantic_intents.SemanticIntentTests.test_explicit_unknown_is_preserved_alongside_known_delivery",
+        "tests.test_semantic_intents.SemanticIntentTests.test_missing_item_or_quantity_invalidates_whole_proposal",
+        "tests.test_semantic_intents.SemanticIntentTests.test_malformed_model_shapes_fall_back_without_exception",
+        "tests.test_semantic_intents.SemanticIntentTests.test_source_must_be_verbatim_ordered_unique_and_nonoverlapping",
+        "tests.test_semantic_intents.SemanticIntentTests.test_mutation_negative_and_correction_context_cannot_create_delivery",
+        "tests.test_semantic_intents.SemanticIntentTests.test_actual_source_coerces_delivery_device_and_fault_labels",
+        "tests.test_semantic_intents.SemanticIntentTests.test_model_cannot_invent_noun_permission_or_operation",
+        "tests.test_semantic_intents.SemanticIntentTests.test_uncatalogued_alias_stays_unknown_and_cannot_be_truncated_to_water",
+        "tests.test_semantic_intents.SemanticIntentTests.test_shared_or_conflicting_quantities_and_merged_items_fall_back",
+        "tests.test_semantic_intents.SemanticIntentTests.test_readonly_questions_do_not_deliver_and_reminders_stay_reminders",
+        "tests.test_semantic_intents.SemanticIntentTests.test_uncovered_device_fault_and_root_authority_fields"
       ],
       "experiment_ids": [
         "EXP-07"
@@ -438,7 +457,10 @@
         "tests.test_guest_history_ui.DeployedGuestHistoryUITests.test_deployed_polling_and_latest_keep_accumulated_archive",
         "tests.test_guest_history_ui.DeployedGuestHistoryUITests.test_deployed_return_latest_recreates_viewport_with_unchanged_messages",
         "tests.test_guest_history_ui.CumulativeHistoryStateTests.test_latest_keeps_native_scroll_observer_enabled_until_reading_older",
-        "tests.test_compound_requests.CompoundRequestTests.test_split_execution_archives_only_one_assistant_reply"
+        "tests.test_compound_requests.CompoundRequestTests.test_split_execution_archives_only_one_assistant_reply",
+        "tests.test_model_runtime.ModelRuntimeTests.test_preferred_address_is_independent_from_verified_identity",
+        "tests.test_model_runtime.ModelRuntimeTests.test_address_objection_clears_only_preference",
+        "tests.test_model_runtime.ModelRuntimeTests.test_address_survives_sqlite_restart"
       ],
       "experiment_ids": [
         "EXP-10"
@@ -549,7 +571,24 @@
         "tests.test_model_connection.ModelConnectionTests.test_explicit_cloud_connection_clears_offline_switch_and_probes_model",
         "tests.test_model_connection.ModelConnectionTests.test_missing_openai_sdk_is_reported_instead_of_silent_fallback",
         "tests.test_model_connection.ModelConnectionTests.test_missing_openai_sdk_uses_http_compatibility_transport",
-        "tests.test_model_connection.ModelConnectionTests.test_probe_rejects_a_model_that_is_not_listed"
+        "tests.test_model_connection.ModelConnectionTests.test_probe_rejects_a_model_that_is_not_listed",
+        "tests.test_model_runtime.ModelRuntimeTests.test_qwen35_intent_uses_bounded_non_thinking_request",
+        "tests.test_model_runtime.ModelRuntimeTests.test_qwen25_and_other_provider_do_not_receive_siliconflow_options",
+        "tests.test_model_runtime.ModelRuntimeTests.test_http_transport_flattens_sdk_extra_body",
+        "tests.test_model_runtime.ModelRuntimeTests.test_http_failure_is_observable_without_exception_body_or_key",
+        "tests.test_model_runtime.ModelRuntimeTests.test_invalid_json_is_reported_as_format_failure",
+        "tests.test_model_runtime.ModelRuntimeTests.test_connection_probe_requires_actual_selected_model_inference",
+        "tests.test_model_runtime.ModelRuntimeTests.test_listed_model_with_timed_out_inference_is_not_online",
+        "tests.test_model_runtime.ModelRuntimeTests.test_probe_rejects_valid_json_without_expected_acknowledgement",
+        "tests.test_model_runtime.ModelRuntimeTests.test_sidebar_distinguishes_configuration_success_and_failure",
+        "tests.test_model_runtime.ModelRuntimeTests.test_failed_connection_restores_all_previous_environment_settings",
+        "tests.test_model_runtime.ModelRuntimeTests.test_successful_ui_switch_persists_settings_without_resetting_session",
+        "tests.test_model_runtime.ModelRuntimeTests.test_streamlit_connect_button_retains_history_and_feedback_after_rerun",
+        "tests.test_model_runtime.ModelRuntimeTests.test_config_write_failure_keeps_old_client_and_environment",
+        "tests.test_model_runtime.ModelRuntimeTests.test_running_task_blocks_model_switch_and_then_finishes_normally",
+        "tests.test_model_runtime.ModelRuntimeTests.test_verified_model_replacement_preserves_business_and_history",
+        "tests.test_model_runtime.ModelRuntimeTests.test_failed_or_replyless_understanding_does_not_trigger_second_request",
+        "tests.test_model_runtime.ModelRuntimeTests.test_local_identity_turn_does_not_reuse_previous_cloud_mode"
       ],
       "experiment_ids": [
         "EXP-14"

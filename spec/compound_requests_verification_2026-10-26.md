@@ -17,6 +17,8 @@
 
 新增 29 个复合请求方法与 7 个语言方法，共 **36** 个；循环场景不重复计数。433 项是软件回归数，不是自然语言泛化样本数。REQ-14 现场部分仍 partial，`scope=offline-code-baseline`、`field_readiness=NOT_VERIFIED`。本文、README 链接和计划结果在运行后补充，不改业务/测试/依赖；发布提交再由 CI 验证。
 
+代码提交 `8233048e37167c7305b7298ff64acaa8ac81bf27` 的 [CI 40212070783](https://github.com/cohabit/AegisStay-MultiAgent/actions/runs/40212070783) 已成功：统一验证、证据归档、Docker 构建和目录/图片打包检查全部通过。此回执及计划勾选在其完成后追加，没有改变业务、测试或依赖。
+
 ## 逐项结果与业务断言
 
 | 用户输入或流程 | 验收结果 |

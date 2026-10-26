@@ -24,33 +24,25 @@
 
 ## 产品界面
 
-住客首屏与夜间会话来自 2026-10-25 的本地界面复核；下方业务操作截图来自受鉴权 API 工作台。数据均为合成夹具，不包含密钥或真实住客信息，采集环境和日期见 [截图说明](docs/images/README.md)。
+以下四张截图采集于 2026-10-26，展示当前版本的住客入口、夜间对话、房态库存和工单明细。使用独立本地实例与合成数据，不含密钥或真实住客资料；采集环境和复现步骤见 [截图说明](docs/images/README.md)。
 
-### 住客入口与夜间对话
+### 住客入口
 
-![完整校园湖景与聚焦住客入口](docs/images/guest-lake-entry.jpg)
+![校园湖景与居中住客服务入口](docs/images/guest-entry-20261026.jpg)
 
-![夜间住客对话与公开服务身份](docs/images/guest-night.jpg)
+### 夜间对话
 
-![完整对话归档与历史翻页](docs/images/guest-history.jpg)
+![夜间对话中逐项处理送物与设备能力咨询](docs/images/guest-chat-20261026.jpg)
 
-### 运营总览
+### 房态与库存
 
-![酒店运营总览](docs/images/operations-overview.jpg)
+![客房平面图、电梯设施、六列房间窗口与库存卡片](docs/images/operations-inventory-20261026.jpg)
 
 ### 工单执行明细与库存协调
 
-缺货申请保留为待库存协调，派送和结单按钮禁用。测试范围与证据见 [工单及设施问答验收记录](spec/operations_facility_verification_2026-10-25.md)。
+![缺货工单展示申请量、预留量、可用库存与补货缺口](docs/images/operations-fulfillment-20261026.jpg)
 
-### 住客服务处理
-
-![住客服务对话与服务进度](docs/images/guest-cancellation.jpg)
-
-### 配送变更确认
-
-![配送中的工单变更确认](docs/images/delivery-change-confirmation.jpg)
-
-截图复现步骤和采集环境见 [产品界面截图说明](docs/images/README.md)。
+缺货申请保留为待库存协调，派送和结单按钮禁用。业务测试见 [工单及设施问答验收记录](spec/operations_facility_verification_2026-10-25.md)；更早的历史截图和采集记录见 [产品界面截图说明](docs/images/README.md)。
 
 ## 核心流程
 
